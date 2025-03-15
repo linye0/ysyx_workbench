@@ -2,6 +2,10 @@
 #include "Vour_OnOff.h"
 #include "stdio.h"
 #include <stdlib.h>
+#include <nvboard.h>
+
+static TOP_NAME dut;
+void nvboard_bind_all_pins(TOP_NAME* top);
  
 vluint64_t main_time = 0;  //initial 仿真时间
  
@@ -22,6 +26,9 @@ int main(int argc, char **argv)
     top->trace(tfp, 0);   
     tfp->open("wave.vcd"); //打开vcd
  
+	nvboard_bind_all_pins(&dut);
+	nvboard_init();
+
     while (sc_time_stamp() < 20 && !Verilated::gotFinish()) { //控制仿真时间
         int a = rand() & 1;
 		int b = rand() & 1;
@@ -31,9 +38,11 @@ int main(int argc, char **argv)
 		printf("a = %d, b = %d, f = %d\n", a, b, top->f);
 		tfp->dump(main_time); //dump wave
         main_time++; //推动仿真时间
+		nvboard_update();
     }
     top->final();
     tfp->close();
+	nvboard_quit();
     delete top;
  
     return 0;
