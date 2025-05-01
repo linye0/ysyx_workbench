@@ -1,4 +1,4 @@
-TOPNAME = our_OnOff
+TOPNAME = top
 NXDC_FILES = constr/top.nxdc
 INC_PATH ?=
 
@@ -6,9 +6,19 @@ VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc  \
 				-O3 --x-assign fast --x-initial fast --noassert
 
+# verilator sim
+VERILATOR_SIM_FLAGS = --build -cc --trace  --top-module ysyx_25040131_cpu --build
+SIM_TOP = ysyx_25040131_cpu
+SIM_CPP = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
+
+SIM_V = $(shell find vsrc/ template/ -name "*.v")
+
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(TOPNAME)
+#verilator sim
+SIM_DIR = $(BUILD_DIR)/sim_dir
+SIM_BIN = $(SIM_DIR)/V$(SIM_TOP)
 
 default: $(BIN)
 
@@ -37,6 +47,23 @@ $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 		--top-module $(TOPNAME) $^ \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
+
+sim: $(SIM_BIN)
+
+$(SIM_BIN): $(SIM_V) $(SIM_CPP)
+	@echo "Building verilator simulation..."
+	$(VERILATOR) $(VERILATOR_SIM_FLAGS) \
+		$(addprefix -I, $(INC_PATH)) \
+		$(addprefix -CFLAGS , $(CXXFLAGS)) \
+		$^ \
+		--Mdir $(SIM_DIR) --exe -o $(abspath $(SIM_BIN))
+
+run-sim: $(SIM_BIN)
+	@echo "Running simulation...""
+	@cd $(SIM_DIR) && ./V$(SIM_TOP)
+
+wave:
+	gtkwave $(SIM_DIR)/wave.vcd &
 
 all: default
 

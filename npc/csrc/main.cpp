@@ -1,49 +1,46 @@
 #include "verilated_vcd_c.h" //可选，如果要导出vcd则需要加上
-#include "Vour_OnOff.h"
+#include "Vysyx_25040131_cpu.h"
 #include "stdio.h"
 #include <stdlib.h>
+#include <bits/stdc++.h>
 #include <nvboard.h>
 
-static TOP_NAME dut;
-void nvboard_bind_all_pins(TOP_NAME* top);
+static Vysyx_25040131_cpu dut;
+uint32_t *init_mem(size_t size);
+uint32_t guest_to_host(uint32_t addr);
+uint32_t pmem_read(uint32_t *memory, uint32_t vaddr);
  
-vluint64_t main_time = 0;  //initial 仿真时间
- 
-double sc_time_stamp()
-{
-    return main_time;
+static void single_cycle() {
+	dut.clk = 0; dut.eval();
+	dut.clk = 1; dut.eval();
 }
- 
+
+static void reset(int n) {
+	dut.rst = 1;
+	while (n-- > 0) single_cycle();
+	dut.rst = 0;
+}
+
 int main(int argc, char **argv)
 {
-    Verilated::commandArgs(argc, argv); 
-    Verilated::traceEverOn(true); //导出vcd波形需要加此语句
- 
-    VerilatedVcdC* tfp = new VerilatedVcdC; //导出vcd波形需要加此语句
- 
-    Vour_OnOff *top = new Vour_OnOff("top"); //调用VAccumulator.h里面的IO struct
- 
-    top->trace(tfp, 0);   
-    tfp->open("wave.vcd"); //打开vcd
- 
-	nvboard_bind_all_pins(&dut);
-	nvboard_init();
+	uint32_t *memory;
+	memory = init_mem(3);
 
-    while (sc_time_stamp() < 20 && !Verilated::gotFinish()) { //控制仿真时间
-        int a = rand() & 1;
-		int b = rand() & 1;
-		top->a = a;
-		top->b = b;
-		top->eval();
-		printf("a = %d, b = %d, f = %d\n", a, b, top->f);
-		tfp->dump(main_time); //dump wave
-        main_time++; //推动仿真时间
-		nvboard_update();
-    }
-    top->final();
-    tfp->close();
-	nvboard_quit();
-    delete top;
- 
+	Verilated::traceEverOn(true);
+	VerilatedContext* contextp = new VerilatedContext;
+	VerilatedVcdC* m_trace = new VerilatedVcdC;
+	dut.trace(m_trace, 5);
+	m_trace->open("waveform.vcd");
+
+	reset(10);
+	for (int i = 0; i < 4; i++) {
+		dut.inst = pmem_read(memory, dut.pc);
+		single_cycle();
+		m_trace->dump(contextp -> time());
+		contextp->timeInc(1);
+	}
+
+	m_trace -> close();
+
     return 0;
 }
