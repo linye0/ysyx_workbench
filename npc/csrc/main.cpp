@@ -6,9 +6,12 @@
 #include <nvboard.h>
 
 static Vysyx_25040131_cpu dut;
+extern "C" void npc_trap();
+extern "C" uint32_t get_flag();
 uint32_t *init_mem(size_t size);
 uint32_t guest_to_host(uint32_t addr);
 uint32_t pmem_read(uint32_t *memory, uint32_t vaddr);
+uint32_t endflag = 0;
  
 static void single_cycle() {
 	dut.clk = 0; dut.eval();
@@ -24,7 +27,8 @@ static void reset(int n) {
 int main(int argc, char **argv)
 {
 	uint32_t *memory;
-	memory = init_mem(3);
+	endflag = 0;
+	memory = init_mem(10);
 
 	Verilated::traceEverOn(true);
 	VerilatedContext* contextp = new VerilatedContext;
@@ -33,11 +37,13 @@ int main(int argc, char **argv)
 	m_trace->open("waveform.vcd");
 
 	reset(10);
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 10; i++) {
+		printf("clock!\n");
 		dut.inst = pmem_read(memory, dut.pc);
 		single_cycle();
 		m_trace->dump(contextp -> time());
 		contextp->timeInc(1);
+		if (endflag == 1) break;
 	}
 
 	m_trace -> close();

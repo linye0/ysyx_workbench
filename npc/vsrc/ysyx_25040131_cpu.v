@@ -47,6 +47,7 @@ module ysyx_25040131_cpu(
 		.opcode(inst[6:0]),
 		.f3(inst[14:12]),
 		.f7(inst[31:25]),
+		.f12(inst[31:20]),
 		.alu_control(alu_control),
 		.imm_type(imm_type),
 		.reg_write(reg_write)

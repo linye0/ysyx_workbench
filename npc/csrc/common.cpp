@@ -1,11 +1,27 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
+extern uint32_t endflag;
+
 static const uint32_t img[] = {
 	0b00000000010100000000000010010011,
-	0b00000000000100000000000100010011
+	0b00000000000100000000000100010011,
+	0b00000000001000000000000100010011,
+	0b00000000010100001000000100010011,
+	0b00000000000100000000000001110011
 };
+
+extern "C" void npc_trap() {
+	printf("hit ebreak!\n");
+	endflag = 1;
+	return;
+}
+
+extern "C" uint32_t get_flag() {
+	return endflag;
+}
 
 uint32_t *init_mem(size_t size) {
 	uint32_t *memory = (uint32_t*)malloc(size * sizeof(uint32_t));

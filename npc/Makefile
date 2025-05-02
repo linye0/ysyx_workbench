@@ -7,8 +7,8 @@ VERILATOR_CFLAGS += -MMD --build -cc  \
 				-O3 --x-assign fast --x-initial fast --noassert
 
 # verilator sim
-VERILATOR_SIM_FLAGS = --build -cc --trace  --top-module ysyx_25040131_cpu --build
 SIM_TOP = ysyx_25040131_cpu
+VERILATOR_SIM_FLAGS = --build -cc --trace  --top-module $(SIM_TOP) --build
 SIM_CPP = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 
 SIM_V = $(shell find vsrc/ template/ -name "*.v")
@@ -63,7 +63,8 @@ run-sim: $(SIM_BIN)
 	@cd $(SIM_DIR) && ./V$(SIM_TOP)
 
 wave:
-	gtkwave $(SIM_DIR)/wave.vcd &
+	@./$(SIM_DIR)/V$(SIM_TOP)
+	gtkwave waveform.vcd
 
 all: default
 
