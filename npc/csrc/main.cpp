@@ -28,6 +28,7 @@ int main(int argc, char **argv)
 {
 	uint32_t *memory;
 	endflag = 0;
+	
 	memory = init_mem(10);
 
 	Verilated::traceEverOn(true);
