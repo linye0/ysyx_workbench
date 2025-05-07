@@ -11,7 +11,9 @@ extern "C" uint32_t get_flag();
 uint32_t *init_mem(size_t size);
 uint32_t guest_to_host(uint32_t addr);
 uint32_t pmem_read(uint32_t *memory, uint32_t vaddr);
+uint32_t read_img(uint32_t*, const char*);
 uint32_t endflag = 0;
+char* bin_path;
  
 static void single_cycle() {
 	dut.clk = 0; dut.eval();
@@ -26,10 +28,19 @@ static void reset(int n) {
 
 int main(int argc, char **argv)
 {
+	for (int i = 0; i < argc; i++) {
+		if (i == 1) {
+			bin_path = argv[i];
+		}
+	}
 	uint32_t *memory;
 	endflag = 0;
 	
-	memory = init_mem(10);
+	memory = init_mem(100);
+	read_img(memory, bin_path);
+	for (int i = 0; i < 100; i++) {
+		printf("memory[%d]: %x\n", i, memory[i]);
+	}
 
 	Verilated::traceEverOn(true);
 	VerilatedContext* contextp = new VerilatedContext;
@@ -38,13 +49,15 @@ int main(int argc, char **argv)
 	m_trace->open("waveform.vcd");
 
 	reset(10);
-	for (int i = 0; i < 10; i++) {
-		printf("clock!\n");
+	while (get_flag() != 1) {
 		dut.inst = pmem_read(memory, dut.pc);
+		printf("dut.inst: %x\n", dut.inst);
 		single_cycle();
 		m_trace->dump(contextp -> time());
 		contextp->timeInc(1);
-		if (endflag == 1) break;
+		if (get_flag() == 1) {
+			printf("main.cpp: stop.\n");
+		}
 	}
 
 	m_trace -> close();

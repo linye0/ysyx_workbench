@@ -5,6 +5,8 @@ INC_PATH ?=
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc  \
 				-O3 --x-assign fast --x-initial fast --noassert
+				
+include ../Makefile
 
 # verilator sim
 SIM_TOP = ysyx_25040131_cpu
@@ -59,11 +61,11 @@ $(SIM_BIN): $(SIM_V) $(SIM_CPP)
 		--Mdir $(SIM_DIR) --exe -o $(abspath $(SIM_BIN))
 
 run-sim: $(SIM_BIN)
-	@echo "Running simulation...""
-	@cd $(SIM_DIR) && ./V$(SIM_TOP)
+	@echo "Running simulation..."
+	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
+	@cd $(SIM_DIR) && ./V$(SIM_TOP) $(TEST_DIR)/build/$(ALL)-$(ARCH).bin
 
 wave:
-	@./$(SIM_DIR)/V$(SIM_TOP)
 	gtkwave waveform.vcd
 
 all: default

@@ -2,16 +2,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <fstream>
+#include <cstdint>
+#include <array>
 
 extern uint32_t endflag;
-
-static const uint32_t *img[] = {
-	0b00000000010100000000000010010011,
-	0b00000000000100000000000100010011,
-	0b00000000001000000000000100010011,
-	0b00000000010100001000000100010011,
-	0b00000000000100000000000001110011
-};
 
 extern "C" void npc_trap() {
 	printf("hit ebreak!\n");
@@ -23,10 +18,30 @@ extern "C" uint32_t get_flag() {
 	return endflag;
 }
 
+uint32_t read_img(uint32_t* mem, const char* bin_path) {
+    // 打开文件（二进制模式）
+    std::ifstream file(bin_path, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file: " + std::string(bin_path));
+    }
+
+    // 获取文件大小
+    const auto file_size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // 计算元素数量
+    const uint32_t num_elements = file_size / sizeof(uint32_t);
+
+    // 读取文件内容到内存
+    if (!file.read(reinterpret_cast<char*>(mem), file_size)) {
+        throw std::runtime_error("Failed to read file content");
+    }
+
+    return num_elements;
+}
+
 uint32_t *init_mem(size_t size) {
 	uint32_t *memory = (uint32_t*)malloc(size * sizeof(uint32_t));
-	memcpy(memory, img, sizeof(img));
-	if (memory == NULL) {exit(0);}
 	return memory;
 }
 
