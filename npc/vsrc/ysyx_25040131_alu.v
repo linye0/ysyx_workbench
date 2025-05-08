@@ -1,37 +1,37 @@
 module ysyx_25040131_alu(
-	input [31:0] a,
-	input [31:0] b,
-	input [2:0] alu_control,
-	output [31:0] result,
-	output of,
-	output zf,
-	output nf,
-	output cf
+    input[4: 0] aluc,
+    input [31: 0] a, b,
+
+    output reg [31: 0] out, 
+    output reg condition_branch
 );
 
-	wire [31:0] raddsub;
-	wire [31:0] r_and;
-	wire [31:0] ror;
-	wire [31:0] b2;
-
-	assign b2 = b ^ {32{alu_control[0]}};
-	assign {cf, raddsub} = a + b2 + {32{alu_control[0]}};
-	assign of = (~(a[31]^b[31]))&(a[31]^raddsub[31]);
-	assign r_and = a^b;
-	assign ror = a|b;
-	MuxKey #(4,3,32) alumux(result, alu_control, {
-		3'b000, raddsub,
-		3'b001, raddsub,
-		3'b010, r_and,
-		3'b011, ror
-	});
-	assign zf = ~(|result);
-	assign nf = result[31];
-
-	always @(*) begin
-		$display("alu_result: %x\n", result);
-		// $display("[Verilog] opcode is %x, f12 is %x\n", opcode, f12);
-	end
-
+always @(*) begin
+    condition_branch = 0;
+    out = 32'b0;
+    case (aluc)
+        5'b00000: out = a + b;
+        5'b00001: out = a - b;
+        5'b00010: out = a & b;
+        5'b00011: out = a | b;
+        5'b00100: out = a ^ b;
+        5'b00101: out = a << b;
+        5'b00110: out = ($signed(a) < ($signed(b))) ? 32'b1 : 32'b0;
+        5'b00111: out = (a < b) ? 32'b1 : 32'b0;
+        5'b01000: out = a >> b;
+        5'b01001: out = ($signed(a)) >>> b;
+        5'b01010: begin 
+            out = a + b;
+            out[0] = 1'b0;
+        end
+        5'b01011: condition_branch = (a == b) ? 1'b1 : 1'b0;
+        5'b01100: condition_branch = (a != b) ? 1'b1 : 1'b0;
+        5'b01101: condition_branch = ($signed(a) < $signed(b)) ? 1'b1 : 1'b0;
+        5'b01110: condition_branch = ($signed(a) >= $signed(b)) ? 1'b1 : 1'b0;
+        5'b01111: condition_branch = (a < b) ? 1'b1: 1'b0;
+        5'b10000: condition_branch = (a >= b) ? 1'b1: 1'b0;
+        default: out = 32'b0;
+    endcase
+end
 
 endmodule

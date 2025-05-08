@@ -10,7 +10,7 @@ include ../Makefile
 
 # verilator sim
 SIM_TOP = ysyx_25040131_cpu
-VERILATOR_SIM_FLAGS = --build -cc --trace  --top-module $(SIM_TOP) --build
+VERILATOR_SIM_FLAGS = --build -cc --trace  --top-module $(SIM_TOP) --build --Wno-LATCH
 SIM_CPP = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 
 SIM_V = $(shell find vsrc/ template/ -name "*.v")
