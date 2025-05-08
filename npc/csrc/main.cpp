@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	reset(10);
 	while (get_flag() != 1) {
 		dut.inst = pmem_read(memory, dut.pc);
-		printf("dut.inst: %x\n", dut.inst);
+		printf("dut.pc: %x, dut.inst: %x\n", dut.pc, dut.inst);
 		single_cycle();
 		m_trace->dump(contextp -> time());
 		contextp->timeInc(1);

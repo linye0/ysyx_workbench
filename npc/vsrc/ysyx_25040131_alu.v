@@ -28,4 +28,10 @@ module ysyx_25040131_alu(
 	assign zf = ~(|result);
 	assign nf = result[31];
 
+	always @(*) begin
+		$display("alu_result: %x\n", result);
+		// $display("[Verilog] opcode is %x, f12 is %x\n", opcode, f12);
+	end
+
+
 endmodule

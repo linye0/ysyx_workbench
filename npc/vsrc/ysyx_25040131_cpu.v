@@ -38,6 +38,23 @@ module ysyx_25040131_cpu(
 		3'b100, pc + 32'h00000004
 	});
 
+	
+	always @(*) begin
+		$display("next_pc: %x\n", next_pc);
+		// $display("[Verilog] opcode is %x, f12 is %x\n", opcode, f12);
+	end
+
+	MuxKey #(3, 3, 32) wd3_mux(wd3, reg_write_d, {
+		3'b001, imm_out,
+		3'b010, alu_result,
+		3'b100, pc + 32'h00000004
+	});
+
+	MuxKey #(2, 1, 32) mux_a(alu_input1, alu_src_a, {
+		1'b0, rd1,
+		1'b1, pc
+	});
+
 	ysyx_25040131_pc pc_counter(
 		.clk(clk),
 		.rst(rst),
@@ -45,12 +62,6 @@ module ysyx_25040131_cpu(
 		.next_pc(next_pc)
 	);
 	
-	MuxKey #(3, 3, 32) wd3_mux(wd3, reg_write_d, {
-		3'b001, imm_out,
-		3'b010, alu_result,
-		3'b100, pc + 32'h00000004
-	});
-
 	ysyx_25040131_gpr gpr(
 		.clk(clk),
 		.we3(reg_write),
@@ -78,10 +89,6 @@ module ysyx_25040131_cpu(
 		.imm_out(imm_out)
 	);
 
-	MuxKey #(2, 1, 32) mux_a(alu_input1, alu_src_a, {
-		1'b0, rd1,
-		1'b1, pc
-	});
 
 	ysyx_25040131_alu alu(
 		.a(alu_input1),
