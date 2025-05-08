@@ -4,7 +4,7 @@ module ysyx_25040131_idu(
 	output reg_write,
 	output [2:0] imm_type,
 	output [2:0] reg_write_d,
-	output pc_src,
+	output [2:0] pc_src,
 	output alu_src_a
 );
 
@@ -18,13 +18,17 @@ module ysyx_25040131_idu(
 
 
 	assign alu_control = 3'b000;
-	assign reg_write = (opcode == 7'b0110111) || (opcode == 7'b0010111);
-	assign reg_write_d[0] = (opcode == 7'b0110111); // imm_out
-	assign reg_write_d[1] = (opcode == 7'b0010011); // alu_result
-	assign reg_write_d[2] = (opcode == 7'b0010111); // pc + 4
-	assign imm_type = 3'b000;
-	assign pc_src = 0;
-	assign alu_src_a = 0;
+	assign reg_write = (opcode == 7'b0110111) || (opcode == 7'b0010111) || (opcode == 7'b0010011);
+	assign reg_write_d[0] = (opcode == 7'b0110111); // U型,imm_out
+	assign reg_write_d[1] = (opcode == 7'b0010011); // I型,alu_result
+	assign reg_write_d[2] = 0; // pc + 4
+	assign imm_type[0] = (opcode == 7'b0010011) || (opcode == 7'b1100111); // addi, jalr
+	assign imm_type[1] = ~imm_type[0] && ((opcode == 7'b0110111) || (opcode == 7'b0010111)); // lui,auipc
+	assign imm_type[2] = ~imm_type[0] && ~imm_type[1] && ((opcode == 7'b1101111)); // jal
+	assign pc_src[0] = (opcode == 7'b1101111);  // jal
+	assign pc_src[1] = (opcode == 7'b1100111);  // jalr
+	assign pc_src[2] = ~pc_src[0] && ~pc_src[1]; // others
+	assign alu_src_a = (opcode == 7'b0010111) || (opcode == 7'b1101111); // src_a = pc
 
 	always @(*) begin
 		// $display("[Verilog] opcode is %x, f12 is %x\n", opcode, f12);

@@ -19,10 +19,11 @@ module ysyx_25040131_cpu(
 	wire [31:0] alu_input1;
 	wire [31:0] imm_out;
 	wire [2:0] alu_control;
-	wire pc_src;
+	wire [2:0] pc_src;
 	wire [31:0] next_pc;
 	wire [2:0] imm_type;
 	wire [2:0] reg_write_d;
+	wire [31:0] alu_result_lowest_0 = alu_result & 32'hfffffffe;
 	wire reg_write;
 	wire alu_src_a;
 	wire rd2;
@@ -31,9 +32,10 @@ module ysyx_25040131_cpu(
 	wire nf;
 	wire cf;
 
-	MuxKey #(2, 1, 32) pc_mux(next_pc, pc_src, {
-		1'b0, pc + 32'h00000004,
-		1'b1, alu_result
+	MuxKey #(3, 3, 32) pc_mux(next_pc, pc_src, {
+		3'b001, alu_result,
+		3'b010, alu_result_lowest_0,
+		3'b100, pc + 32'h00000004
 	});
 
 	ysyx_25040131_pc pc_counter(
