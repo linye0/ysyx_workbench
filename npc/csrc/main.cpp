@@ -1,19 +1,4 @@
-#include "verilated_vcd_c.h" //可选，如果要导出vcd则需要加上
-#include "Vysyx_25040131_cpu.h"
-#include "stdio.h"
-#include <stdlib.h>
-#include <bits/stdc++.h>
-#include <nvboard.h>
-
-static Vysyx_25040131_cpu dut;
-extern "C" void npc_trap();
-extern "C" uint32_t get_flag();
-uint32_t *init_mem(size_t size);
-uint32_t guest_to_host(uint32_t addr);
-uint32_t pmem_read(uint32_t *memory, uint32_t vaddr);
-uint32_t read_img(uint32_t*, const char*);
-uint32_t endflag = 0;
-char* bin_path;
+#include "npc.h"
  
 static void single_cycle() {
 	dut.clk = 0; dut.eval();
@@ -26,22 +11,23 @@ static void reset(int n) {
 	dut.rst = 0;
 }
 
-int main(int argc, char **argv)
-{
+void init_dut(int argc, char** argv) {
+	printf("Ready to initialize the memory.\n");
 	for (int i = 0; i < argc; i++) {
-		if (i == 1) {
-			bin_path = argv[i];
-		}
+		if (i == 1) bin_path = argv[i];
 	}
-	uint32_t *memory;
 	endflag = 0;
-	
 	memory = init_mem(200);
 	read_img(memory, bin_path);
+	printf("Successfully initialize the memory.\n");
 	for (int i = 0; i < 200; i++) {
 		printf("memory[%d]: %x\n", i, memory[i]);
 	}
+}
 
+int main(int argc, char **argv)
+{
+	init_dut(argc, argv);
 	Verilated::traceEverOn(true);
 	VerilatedContext* contextp = new VerilatedContext;
 	VerilatedVcdC* m_trace = new VerilatedVcdC;
