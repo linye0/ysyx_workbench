@@ -7,17 +7,34 @@
 #include <stdlib.h>
 #include <bits/stdc++.h>
 
-static Vysyx_25040131_cpu dut;
-extern "C" void npc_trap();
-extern "C" uint32_t get_flag();
-uint32_t *init_mem(size_t size);
-uint32_t guest_to_host(uint32_t addr);
-uint32_t pmem_read(uint32_t *memory, uint32_t vaddr);
-uint32_t read_img(uint32_t*, const char*);
+#define STATE_QUIT 2
+#define STATE_RUNNING 1
+#define STATE_GOOD_TRAP 0
 
-char* bin_path;
-bool endflag;
-uint32_t* memory;
+extern "C" void npc_trap();
+
+class NPC {
+	public:		
+		void init_npc(char* img_path);
+		int exit_npc();
+		uint32_t get_state();
+		uint32_t *init_mem(size_t size);
+		uint32_t guest_to_host(uint32_t addr);
+		uint32_t pmem_read(uint32_t vaddr);
+		uint32_t read_img(uint32_t*, const char*);
+		void single_cycle();
+		void reset(int n);
+		void set_state(int state);
+		void npc_exec(int n);
+	private:
+		Vysyx_25040131_cpu dut;
+		VerilatedContext* contextp;
+		VerilatedVcdC* m_trace;
+		uint32_t* memory;
+		int npc_state;
+};
+
+extern NPC npc;
 
 #endif
 

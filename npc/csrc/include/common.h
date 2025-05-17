@@ -11,5 +11,7 @@
 #include <stdio.h>
 
 void init_monitor(int, char *[]);
+void main_loop();
+int is_exit_status_bad();
 
 #endif

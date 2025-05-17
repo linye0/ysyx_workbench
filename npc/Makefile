@@ -39,6 +39,7 @@ CSRCS += $(SRC_AUTO_BIND)
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
+LDFLAGS += -lreadline -lncurses -lpthread -latomic
 
 sim: $(SIM_BIN)
 
@@ -47,13 +48,14 @@ $(SIM_BIN): $(SIM_V) $(SIM_CPP)
 	$(VERILATOR) $(VERILATOR_SIM_FLAGS) \
 		$(addprefix -I, $(INC_PATH)) \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) \
+		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		$^ \
 		--Mdir $(SIM_DIR) --exe -o $(abspath $(SIM_BIN))
 
 run-sim: $(SIM_BIN)
 	@echo "Running simulation..."
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(SIM_DIR) && ./V$(SIM_TOP) $(TEST_DIR)/build/$(ALL)-$(ARCH).bin
+	@cd $(SIM_DIR) && ./V$(SIM_TOP) -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin
 
 wave:
 	gtkwave waveform.vcd

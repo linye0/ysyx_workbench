@@ -10,7 +10,6 @@ module ysyx_25040131_id(
 );
 
 import "DPI-C" function void npc_trap();
-import "DPI-C" function unsigned get_flag();
 
 assign  opcode  = instr[6:0];
 assign  rs1 = instr[19:15];
