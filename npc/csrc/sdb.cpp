@@ -1,6 +1,8 @@
 #include <common.h>
 #include <macro.h>
 #include <npc.h>
+#include <isa.h>
+#include <sdb.h>
 #include <readline/readline.h>
 
 static char* rl_gets() {
@@ -16,11 +18,40 @@ static char* rl_gets() {
   return line_read;
 }
 
+static int cmd_info(char *args) {
+	if (args == NULL) {
+		printf("\"r\"-Print register status  or  \"w\"-Print watchpoint information\n");
+	}
+	else if (strcmp(args, "r") == 0) {
+		print_all_regs();
+	} else if (strcmp(args, "w") == 0) {
+		printf("Watchpoints wait.\n");
+	}
+	return 0;
+}
 
 
 static int cmd_c(char* args) {
+	if (npc.get_state() != STATE_RUNNING) {
+		printf("The program has ended, please restart the npc!\n");
+		return 0;
+	}
 	npc.npc_exec(-1);
-	return -1;
+	return 0;
+}
+
+static int cmd_p(char* args) {
+	if (args == NULL) {
+		printf("Wrong command: expr cannot be empty!\n");
+		return 0;
+	}
+	bool success;
+	int res = expr(args, &success);
+	if (success) 
+		printf("%d\n", res);
+	else
+		printf("not success\n");
+	return 0;
 }
 
 static int cmd_si(char* args) {
@@ -47,7 +78,9 @@ static struct {
 	{"help", "Display information about all supported commands", cmd_help},
 	{"c", "Continue the exection of the program", cmd_c},
 	{"q", "Exit NPC", cmd_q},
-	{"si", "Single step execute", cmd_si}
+	{"si", "Single step execute", cmd_si},
+	{"info", "Print information", cmd_info},
+	{"p", "Calculate expression", cmd_p}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -97,4 +130,8 @@ void main_loop() {
 		if (i == NR_CMD) {printf("Unknown command '%s'\n", cmd); }
 	}
 
+}
+
+void init_sdb() {
+	init_regex();
 }

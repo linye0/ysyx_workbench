@@ -1,6 +1,7 @@
 #include <common.h>
 #include <getopt.h>
 #include <npc.h>
+#include <sdb.h>
 
 static void welcome() {
 	printf("Welcome to npc!\n");
@@ -26,6 +27,8 @@ static int parse_args(int argc, char *argv[]) {
 
 void init_monitor(int argc, char* argv[]) {
 	parse_args(argc, argv);
+	
+	init_sdb();
 
 	npc.init_npc(img_file);
 

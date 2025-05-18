@@ -6,12 +6,16 @@
 #include "stdio.h"
 #include <stdlib.h>
 #include <bits/stdc++.h>
+#include <macro.h>
 
 #define STATE_QUIT 2
 #define STATE_RUNNING 1
 #define STATE_GOOD_TRAP 0
 
 extern "C" void npc_trap();
+extern "C" void update_gpr_mirror(int index, int value);
+
+void print_all_regs();
 
 class NPC {
 	public:		
@@ -26,12 +30,17 @@ class NPC {
 		void reset(int n);
 		void set_state(int state);
 		void npc_exec(int n);
+		void print_reg(int idx);
+		uint32_t get_reg(int idx);
+		uint32_t get_pc();
+		void set_mirror_reg(int idx, int value);
 	private:
 		Vysyx_25040131_cpu dut;
 		VerilatedContext* contextp;
 		VerilatedVcdC* m_trace;
 		uint32_t* memory;
 		int npc_state;
+		uint32_t gpr_regs[32] = {0};
 };
 
 extern NPC npc;

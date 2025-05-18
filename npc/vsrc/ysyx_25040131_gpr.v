@@ -7,10 +7,15 @@ module ysyx_25040131_gpr(
     output reg [31: 0] read_rs2_data
 );
 
+import "DPI-C" function void update_gpr_mirror(input int index, input int value);
+
 reg [31: 0] regs[31: 0];
 
 always @(posedge clk) begin
-    if(write_reg && target_reg != 5'h0) regs[target_reg] = write_rd_data;
+	if(write_reg && target_reg != 5'h0) begin 
+		regs[target_reg] = write_rd_data;
+		update_gpr_mirror({{27{1'b0}}, target_reg}, write_rd_data);
+	end
 end
 
 initial begin

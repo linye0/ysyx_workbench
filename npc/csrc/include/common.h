@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <macro.h>
 #include <stdio.h>
 
 void init_monitor(int, char *[]);

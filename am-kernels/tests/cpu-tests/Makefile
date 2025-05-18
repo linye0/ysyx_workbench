@@ -32,6 +32,12 @@ run-npc:
 	@echo "Building and running NPC simulation for $(ALL)..."
 	@cd $(YSYX_HOME)/npc && \
 		make run-sim ALL=$(ALL) ARCH=$(ARCH) TEST_DIR=$(CURDIR)
+		
+gdb-npc:
+	@make ALL=$(ALL) ARCH=$(ARCH)
+	@echo "Building and running NPC simulation for $(ALL)..."
+	@cd $(YSYX_HOME)/npc && \
+		make gdb-sim ALL=$(ALL) ARCH=$(ARCH) TEST_DIR=$(CURDIR)
 
 gdb: all
 

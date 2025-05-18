@@ -10,9 +10,29 @@
 
 NPC npc;
 
+
+extern "C" void update_gpr_mirror(int index, int value) {
+	if (index >= 0 && index < 32) {
+		npc.set_mirror_reg(index, value);
+	}
+	return;
+}
+
 extern "C" void npc_trap() {
-	printf("hit ebreak!\n");
 	npc.set_state(STATE_GOOD_TRAP);
+	return;
+}
+
+uint32_t NPC::get_pc(void) {
+	return dut.pc;
+}
+
+uint32_t NPC::get_reg(int idx) {
+	return gpr_regs[idx];
+}
+
+void NPC::set_mirror_reg(int index, int value) {
+	gpr_regs[index] = value;
 	return;
 }
 
@@ -22,6 +42,11 @@ uint32_t NPC::get_state() {
 
 void NPC::set_state(int state) {
 	npc_state = state;
+	return;
+}
+
+void NPC::print_reg(int idx) {
+	printf("x%02d = 0x%08x\n", idx, gpr_regs[idx]);
 	return;
 }
 
@@ -97,5 +122,8 @@ void NPC::npc_exec(int n) {
 		m_trace->dump(contextp->time());
 		contextp->timeInc(1);
 	}	
+	if (get_state() == STATE_GOOD_TRAP) {
+		printf("HIT GOOD TRAP!\n");
+	}
 }
 
