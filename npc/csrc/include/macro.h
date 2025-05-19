@@ -5,5 +5,6 @@
 #define STATE_GOOD_TRAP 1
 #define STATE_QUIT 2
 #define STATE_HALT 3
+#define STATE_PAUSE 4
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 #endif
