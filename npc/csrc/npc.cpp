@@ -7,9 +7,9 @@
 #include <array>
 #include <npc.h>
 #include <common.h>
+#include <difftest.h>
 
 NPC npc;
-
 
 extern "C" void update_gpr_mirror(int index, int value) {
 	if (index >= 0 && index < 32) {
@@ -114,16 +114,26 @@ int NPC::exit_npc() {
 }
 
 void NPC::npc_exec(int n) {
+	if (get_state() == STATE_HALT) set_state(STATE_RUNNING);
 	int step = 0;
 	while (get_state() == STATE_RUNNING && (step++ < n || n == -1)) {
 		dut.inst = pmem_read(dut.pc);
 		printf("dut.pc = %x, dut.inst = %x\n", dut.pc, dut.inst);
 		single_cycle();
+		int diffnum = wp_difftest();
+		if (diffnum != 0) {
+			set_state(STATE_HALT);
+			break;
+		}
 		m_trace->dump(contextp->time());
 		contextp->timeInc(1);
-	}	
+	}
 	if (get_state() == STATE_GOOD_TRAP) {
 		printf("HIT GOOD TRAP!\n");
+	} else if (get_state() == STATE_HALT) {
+		printf("Program halts.\n");
+	} else if (get_state() != STATE_RUNNING) {
+		printf("The program has ended, please restart the npc!\n");
 	}
 }
 

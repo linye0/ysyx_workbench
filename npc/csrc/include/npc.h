@@ -8,9 +8,6 @@
 #include <bits/stdc++.h>
 #include <macro.h>
 
-#define STATE_QUIT 2
-#define STATE_RUNNING 1
-#define STATE_GOOD_TRAP 0
 
 extern "C" void npc_trap();
 extern "C" void update_gpr_mirror(int index, int value);

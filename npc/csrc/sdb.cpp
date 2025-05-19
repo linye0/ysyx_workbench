@@ -4,6 +4,7 @@
 #include <isa.h>
 #include <sdb.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -15,6 +16,10 @@ static char* rl_gets() {
 
   line_read = readline("(npc) ");
 
+  if (line_read && *line_read) {
+	add_history(line_read);
+  }
+
   return line_read;
 }
 
@@ -25,17 +30,45 @@ static int cmd_info(char *args) {
 	else if (strcmp(args, "r") == 0) {
 		print_all_regs();
 	} else if (strcmp(args, "w") == 0) {
-		printf("Watchpoints wait.\n");
+		info_watchpoint();
 	}
 	return 0;
 }
 
 
-static int cmd_c(char* args) {
-	if (npc.get_state() != STATE_RUNNING) {
-		printf("The program has ended, please restart the npc!\n");
+static int cmd_x(char* args) {
+  if (args == NULL) {
+        printf("Wrong Command!\n");
+        return 0;
+    }                                                                           
+	int N;
+	char expression[100];
+	sscanf(args,"%d%s",&N,expression);
+	bool success;
+	int startAddress = expr(expression, &success);
+	if (!success) {
+		printf("invalid expression!\n");
 		return 0;
 	}
+	for (int i = 0;i < N;i ++){
+      printf("%x\n", paddr_read(startAddress));
+      //C语言会自动执行类型提升以匹配表达式的操作数的类型。所以，4 被转换为 uint32_t，
+      startAddress += 4;
+	}
+	return 0;
+}
+
+static int cmd_d(char* args) {
+	if (args == NULL) {
+		return 0;
+	}
+	int n;
+	sscanf(args, "%d", &n);
+	wp_remove(n);
+	return 0;
+}
+
+static int cmd_c(char* args) {
 	npc.npc_exec(-1);
 	return 0;
 }
@@ -50,7 +83,7 @@ static int cmd_p(char* args) {
 	if (success) 
 		printf("%d\n", res);
 	else
-		printf("not success\n");
+		printf("Not success\n");
 	return 0;
 }
 
@@ -68,6 +101,30 @@ static int cmd_q(char* args) {
 	return -1;
 }
 
+static int cmd_w(char* args) {
+	bool success;
+	int ret = expr(args, &success);
+	if (success) {
+		printf("Successfully set the watchpoint!\n");
+		wp_set(args, ret);
+	} else
+		printf("Not success: the expression is illegal!\n");
+	return 0;
+}
+
+static int cmd_b(char* args) {
+	if (args == NULL) {
+		printf("Need an address to set breakpoint!\n");
+		return 0;
+	}
+	char pcstr[50];
+	strcpy(pcstr, "$pc==");
+	strcat(pcstr, args);
+	printf("%s\n", pcstr);
+	cmd_w(pcstr);
+	return 0;
+}
+
 static int cmd_help(char*);
 
 static struct {
@@ -78,9 +135,13 @@ static struct {
 	{"help", "Display information about all supported commands", cmd_help},
 	{"c", "Continue the exection of the program", cmd_c},
 	{"q", "Exit NPC", cmd_q},
+	{"x", "Print Memory", cmd_x},
 	{"si", "Single step execute", cmd_si},
 	{"info", "Print information", cmd_info},
-	{"p", "Calculate expression", cmd_p}
+	{"p", "Calculate expression", cmd_p},
+	{"w", "set point", cmd_w},
+    { "d", "Delete watchpoint", cmd_d},
+	{ "b", "Set breakpoint", cmd_b}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -134,4 +195,6 @@ void main_loop() {
 
 void init_sdb() {
 	init_regex();
+	init_wp_pool();
+	using_history();
 }

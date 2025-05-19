@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <macro.h>
 #include <stdio.h>
+#include <autoconf.h>
 
 void init_monitor(int, char *[]);
 void main_loop();

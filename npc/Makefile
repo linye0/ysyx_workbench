@@ -1,12 +1,14 @@
 TOPNAME = top
 NXDC_FILES = constr/top.nxdc
 INC_PATH = $(abspath csrc/include)
+INC_PATH += $(NEMU_HOME)/include/generated
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc \
 				-O3 --x-assign fast --x-initial fast --noassert
 				
 include ../Makefile
+include $(NPC_HOME)/scripts/config.mk
 
 # verilator sim
 SIM_TOP = ysyx_25040131_cpu
