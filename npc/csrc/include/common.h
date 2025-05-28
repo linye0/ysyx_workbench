@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <autoconf.h>
 
+#include <utils.h>
+
 void init_monitor(int, char *[]);
 void main_loop();
 int is_exit_status_bad();

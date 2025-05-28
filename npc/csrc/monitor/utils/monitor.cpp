@@ -30,6 +30,8 @@ void init_monitor(int argc, char* argv[]) {
 	
 	init_sdb();
 
+	init_log("npc-log.log");
+
 	npc.init_npc(img_file);
 
 	welcome();
