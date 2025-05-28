@@ -3,12 +3,18 @@ NXDC_FILES = constr/top.nxdc
 INC_PATH = $(abspath csrc/include)
 INC_PATH += $(NEMU_HOME)/include/generated
 
+
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc \
 				-O3 --x-assign fast --x-initial fast --noassert
 				
 include ../Makefile
 include $(NPC_HOME)/scripts/config.mk
+
+# Include all filelist.mk to merge file lists
+FILELIST_MK = $(shell find -L ./csrc -name "filelist.mk")
+$(info FILELIST_MK: $(FILELIST_MK))
+include $(FILELIST_MK)
 
 # verilator sim
 SIM_TOP = ysyx_25040131_cpu
@@ -28,20 +34,15 @@ default: $(BIN)
 
 $(shell mkdir -p $(BUILD_DIR))
 
-# constraint file
-SRC_AUTO_BIND = $(abspath $(BUILD_DIR)/auto_bind.cpp)
-$(SRC_AUTO_BIND): $(NXDC_FILES)
-	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
-
 # project source
 VSRCS = $(shell find $(abspath ./vsrc) -name "*.v")
 CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
-CSRCS += $(SRC_AUTO_BIND)
 
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
 LDFLAGS += -lreadline -lncurses -lpthread -latomic
+
 
 sim: $(SIM_BIN)
 

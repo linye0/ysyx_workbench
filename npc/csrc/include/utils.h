@@ -24,5 +24,6 @@
 	} while (0)
 
 void init_log(const char *log_file);
+void init_disasm();
 
 #endif 

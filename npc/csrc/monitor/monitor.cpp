@@ -32,6 +32,8 @@ void init_monitor(int argc, char* argv[]) {
 
 	init_log("npc-log.log");
 
+	if(CONFIG_ITRACE) init_disasm();
+
 	npc.init_npc(img_file);
 
 	welcome();

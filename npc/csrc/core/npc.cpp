@@ -113,12 +113,20 @@ int NPC::exit_npc() {
 	return npc_state;
 }
 
+
 void NPC::npc_exec(int n) {
 	if (get_state() == STATE_PAUSE) set_state(STATE_RUNNING);
 	int step = 0;
 	while (get_state() == STATE_RUNNING && (step++ < n || n == -1)) {
 		dut.inst = pmem_read(dut.pc);
-		printf("dut.pc = %x, dut.inst = %x\n", dut.pc, dut.inst);
+		Log("dut.pc = %x, dut.inst = %x\n", dut.pc, dut.inst);
+		#ifdef CONFIG_ITRACE	
+		void disassemble(char* str, int size, uint64_t pc, uint8_t* code, int nbyte);
+		char disasm_str[256];
+		uint32_t inst = dut.inst;
+		disassemble(disasm_str, sizeof(disasm_str), dut.pc, (uint8_t*)&inst, sizeof(inst));
+		Log("command: %s\n", disasm_str);
+		#endif
 		single_cycle();
 		int diffnum = wp_difftest();
 		if (diffnum != 0) {
@@ -129,11 +137,11 @@ void NPC::npc_exec(int n) {
 		contextp->timeInc(1);
 	}
 	if (get_state() == STATE_GOOD_TRAP) {
-		printf("HIT GOOD TRAP!\n");
+		Log("HIT GOOD TRAP!\n");
 	} else if (get_state() == STATE_PAUSE) {
-		printf("Program pauses.\n");
+		Log("Program pauses.\n");
 	} else if (get_state() != STATE_RUNNING) {
-		printf("The program has ended, please restart the npc!\n");
+		Log("The program has ended, please restart the npc!\n");
 	}
 }
 

@@ -14,6 +14,10 @@
 
 #include <utils.h>
 
+typedef MUXDEF(CONFIG_ISA64, uint64_t, uint32_t) word_t;
+
+typedef word_t vaddr_t;
+
 void init_monitor(int, char *[]);
 void main_loop();
 int is_exit_status_bad();

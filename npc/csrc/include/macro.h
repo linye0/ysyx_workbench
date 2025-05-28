@@ -38,4 +38,16 @@
 		} \
 	} while (0)
 
+// simplification for conditional compilation
+#define __IGNORE(...)
+#define __KEEP(...) __VA_ARGS__
+// keep the code if a boolean macro is defined
+#define IFDEF(macro, ...) MUXDEF(macro, __KEEP, __IGNORE)(__VA_ARGS__)
+// keep the code if a boolean macro is undefined
+#define IFNDEF(macro, ...) MUXNDEF(macro, __KEEP, __IGNORE)(__VA_ARGS__)
+// keep the code if a boolean macro is defined to 1
+#define IFONE(macro, ...) MUXONE(macro, __KEEP, __IGNORE)(__VA_ARGS__)
+// keep the code if a boolean macro is defined to 0
+#define IFZERO(macro, ...) MUXZERO(macro, __KEEP, __IGNORE)(__VA_ARGS__)
+
 #endif
