@@ -113,7 +113,6 @@ int NPC::exit_npc() {
 	return npc_state;
 }
 
-
 void NPC::npc_exec(int n) {
 	if (get_state() == STATE_PAUSE) set_state(STATE_RUNNING);
 	int step = 0;
@@ -126,6 +125,10 @@ void NPC::npc_exec(int n) {
 		uint32_t inst = dut.inst;
 		disassemble(disasm_str, sizeof(disasm_str), dut.pc, (uint8_t*)&inst, sizeof(inst));
 		Log("command: %s\n", disasm_str);
+		char log_buf[256];
+		snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", dut.pc, dut.inst, disasm_str);
+		void itrace_record(const char* log, vaddr_t pc);
+		itrace_record(log_buf, dut.pc);
 		#endif
 		single_cycle();
 		int diffnum = wp_difftest();
@@ -141,7 +144,10 @@ void NPC::npc_exec(int n) {
 	} else if (get_state() == STATE_PAUSE) {
 		Log("Program pauses.\n");
 	} else if (get_state() != STATE_RUNNING) {
+		// encounter unexpected situation
 		Log("The program has ended, please restart the npc!\n");
+		void itrace_write_into_log(int num);
+		itrace_write_into_log(10);
 	}
 }
 
