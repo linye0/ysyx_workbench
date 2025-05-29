@@ -43,6 +43,7 @@ INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
 LDFLAGS += -lreadline -lncurses -lpthread -latomic
 
+NPC_ARGS += -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin -e $(TEST_DIR)/build/$(ALL)-$(ARCH).elf
 
 sim: $(SIM_BIN)
 
@@ -67,12 +68,12 @@ $(SIM_BIN_GDB): $(SIM_V) $(SIM_CPP)
 run-sim: $(SIM_BIN)
 	@echo "Running simulation..."
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(SIM_DIR) && ./V$(SIM_TOP) -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin
+	@cd $(SIM_DIR) && ./V$(SIM_TOP) $(NPC_ARGS)
 	
 gdb-sim: $(SIM_BIN_GDB)
 	@echo "Running simulation..."
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(SIM_DIR) && gdb --args ./V$(SIM_TOP) -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin
+	@cd $(SIM_DIR) && gdb --args ./V$(SIM_TOP) $(NPC_ARGS)
 
 gdb-npc: $(SIM_BIN)
 	@cd $(AK_HOME)/tests/cpu-tests && make ALL=$(ALL) ARCH=riscv32e-npc gdb-npc

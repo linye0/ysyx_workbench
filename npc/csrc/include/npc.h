@@ -31,6 +31,8 @@ class NPC {
 		uint32_t get_reg(int idx);
 		uint32_t get_pc();
 		void set_mirror_reg(int idx, int value);
+		void exec_once();
+		void ftrace();
 	private:
 		Vysyx_25040131_cpu dut;
 		VerilatedContext* contextp;

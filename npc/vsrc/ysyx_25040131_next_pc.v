@@ -2,7 +2,6 @@ module ysyx_25040131_next_pc(
     input [1: 0] pcImm_NEXTPC_rs1Imm,
     input condition_branch,
     input [31: 0] pc, offset, rs1Data,
-
     output reg [31: 0] next_pc
 );
 

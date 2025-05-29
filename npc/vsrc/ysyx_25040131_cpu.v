@@ -1,19 +1,21 @@
 module ysyx_25040131_cpu(
     input clk, rst,
 	input [31:0] inst,
-	output [31:0] pc
+	output [31:0] pc,
+	output [31:0] next_pc,
+	output [31:0] imm_32
 );
 
 // 数据
 wire [31: 0] write_rd_data; // 寄存器 rd数据
 wire [31: 0] read_rs1_data; // 寄存器 rs1的数据
 wire [31: 0] read_rs2_data; // 寄存器 rs2的数据
-wire [31: 0] imm_32; // 32位立即数
+// wire [31: 0] imm_32; // 32位立即数
 wire [31: 0] in_alu_a; // 输入给运算器的 a口
 wire [31: 0] in_alu_b; // 输入给运算器的 b口
 wire [31: 0] out_alu; // ALU的运算结果
 wire [31: 0] out_mem; // 从内存中读的数据
-wire [31: 0] next_pc; // 下一条指令地址
+// wire [31: 0] next_pc; // 下一条指令地址
 wire [4:  0] rd, rs1, rs2; // 寄存器地址
 wire [6: 0] opcode;
 wire [2: 0] func3;
@@ -35,7 +37,6 @@ ysyx_25040131_pc PC(
     .rst(rst),
     .clk(clk),
     .next_pc(next_pc),
-
     .pc(pc)
 );
 
@@ -68,13 +69,11 @@ ysyx_25040131_controller CONTROLLER(
 ysyx_25040131_imm IMM(
     .instr(inst),
     .extOP(extOP),
-
     .imm_32(imm_32)
 );
 
 ysyx_25040131_id ID(
     .instr(inst),
-
     // 译码的相关数据
     .opcode(opcode),
     .func3(func3),
@@ -126,7 +125,6 @@ ysyx_25040131_alu ALU(
     .aluc(aluc),
     .a(in_alu_a),
     .b(in_alu_b),
-
     .out(out_alu),
     .condition_branch(condition_branch)
 );

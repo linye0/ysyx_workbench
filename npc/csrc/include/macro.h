@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 // npc state macro
 #define STATE_RUNNING 0
 #define STATE_GOOD_TRAP 1
@@ -30,13 +31,6 @@
 #define MUXONE(macro, X, Y)  MUX_MACRO_PROPERTY(__P_ONE_, macro, X, Y)
 #define MUXZERO(macro, X, Y) MUX_MACRO_PROPERTY(__P_ZERO_,macro, X, Y)
 
-#define Assert(condition, format, ...) \
-	do { \
-		if (!(condition)) { \
-			fprintf(stderr, "Assertion fialed: " #condition ", File: %s, Line: %d, " format, __FILE__, __LINE__, __VA_ARGS__); \
-			exit(EXIT_FAILURE); \
-		} \
-	} while (0)
 
 // simplification for conditional compilation
 #define __IGNORE(...)
@@ -49,5 +43,6 @@
 #define IFONE(macro, ...) MUXONE(macro, __KEEP, __IGNORE)(__VA_ARGS__)
 // keep the code if a boolean macro is defined to 0
 #define IFZERO(macro, ...) MUXZERO(macro, __KEEP, __IGNORE)(__VA_ARGS__)
+
 
 #endif
