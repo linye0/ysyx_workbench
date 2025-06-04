@@ -496,7 +496,7 @@ void trace_func_call(paddr_t pc, paddr_t target, bool is_tail) {
 	log_write(FMT_PADDR ": %*scall [%s@" FMT_PADDR "]\n",
 		pc,
 		(call_depth-3)*2, "",
-		i>=0?symbol_tbl[i].name:"???",
+		i?symbol_tbl[i].name:"???",
 		target
 	);
 

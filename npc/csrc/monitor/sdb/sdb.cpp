@@ -1,3 +1,5 @@
+#include "npc_verilog.h"
+#include "verilated.h"
 #include <common.h>
 #include <macro.h>
 #include <npc.h>
@@ -5,6 +7,23 @@
 #include <sdb.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <type_traits>
+#include <cpu.h>
+
+NPCState npc = {
+	.state = NPC_RUNNING,
+	.gpr = NULL,
+	.pc = NULL,
+
+	.inst = NULL,
+};
+
+VerilatedContext* contextp = NULL;
+VerilatedVcdC* tfp = NULL;
+TOP_NAME* top = NULL;
+
+static bool is_batch_mode = false;
+static bool enable_vcd = true;
 
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -21,6 +40,37 @@ static char* rl_gets() {
   }
 
   return line_read;
+}
+
+void reset(TOP_NAME* top, int n) {
+	top->rst = 1;
+	for (int i = 0; i < 10; i++) {
+		void cpu_exec_one_cycle();
+		cpu_exec_one_cycle();
+	}
+	top->rst = 0;
+}
+
+void npc_abort() {
+	contextp->gotFinish(true);
+	npc.state = NPC_ABORT;
+}
+
+extern "C" void npc_exu_ebreak()
+{
+	contextp->gotFinish(true);
+	Log("EBREAK at pc = " FMT_WORD_NO_PREFIX "", *npc.pc);
+	npc.state = NPC_END;
+}
+
+extern "C" void npc_illegal_inst() {
+	contextp->gotFinish(true);
+	Error("Illegal instruction at pc = " FMT_WORD_NO_PREFIX "", *npc.pc);
+	npc_abort();
+}
+
+void sdb_set_batch_mode() {
+	is_batch_mode = true;
 }
 
 static int cmd_info(char *args) {
@@ -69,7 +119,7 @@ static int cmd_d(char* args) {
 }
 
 static int cmd_c(char* args) {
-	npc.npc_exec(-1);
+	cpu_exec(-1);
 	return 0;
 }
 
@@ -92,12 +142,15 @@ static int cmd_si(char* args) {
 	if (args == NULL) {
 		n = 1;
 	} else sscanf(args, "%d", &n);
-	npc.npc_exec(n);
+	cpu_exec(n);
 	return 0;
 }
 
 static int cmd_q(char* args) {
-	npc.set_state(STATE_QUIT);
+	if (npc.state == NPC_RUNNING) {
+		npc.state = NPC_QUIT;
+	}
+	cpu_exec(0);
 	return -1;
 }
 
@@ -140,8 +193,8 @@ static struct {
 	{"info", "Print information", cmd_info},
 	{"p", "Calculate expression", cmd_p},
 	{"w", "set point", cmd_w},
-    { "d", "Delete watchpoint", cmd_d},
-	{ "b", "Set breakpoint", cmd_b}
+    {"d", "Delete watchpoint", cmd_d},
+	{"b", "Set breakpoint", cmd_b}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -167,9 +220,20 @@ static int cmd_help(char* args) {
 	return 0;
 }
 
+void sdb_sim_init(int argc, char* argv[]) {
+	contextp = new VerilatedContext;
+	contextp->commandArgs(argc, argv);
+	top = new TOP_NAME{contextp};
+	verilog_connect(top, &npc);
+
+	reset(top, 32);
+}
 
 void main_loop() {
-	
+	if (is_batch_mode) {
+		cmd_c(NULL);
+		return;
+	}
 	// 读入一个cmd，并且执行相关的操作，如果在操作之后检测到state不为running，则退出
 	for (char* str; (str = rl_gets()) != NULL; ) {
 		char *str_end = str + strlen(str);
@@ -188,13 +252,16 @@ void main_loop() {
 			}
 		}
 		
-		if (i == NR_CMD) {printf("Unknown command '%s'\n", cmd); }
+		if (i == NR_CMD) {
+			printf("Unknown command '%s'\n", cmd); 
+		}
 	}
 
 }
 
-void init_sdb() {
+void init_sdb(int argc, char* argv[]) {
 	init_regex();
 	init_wp_pool();
 	using_history();
+	sdb_sim_init(argc, argv);
 }

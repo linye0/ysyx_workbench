@@ -100,174 +100,174 @@ static void read_elf_header(int fd, Elf32_Ehdr *eh) {
 
 static void display_elf_header(Elf32_Ehdr eh) {
 	/* Storage capacity class */
-	log_write("Storage class\t= ");
+	Log("Storage class\t= ");
 	switch(eh.e_ident[EI_CLASS])
 	{
 		case ELFCLASS32:
-			log_write("32-bit objects\n");
+			Log("32-bit objects\n");
 			break;
 
 		case ELFCLASS64:
-			log_write("64-bit objects\n");
+			Log("64-bit objects\n");
 			break;
 
 		default:
-			log_write("INVALID CLASS\n");
+			Log("INVALID CLASS\n");
 			break;
 	}
 
 	/* Data Format */
-	log_write("Data format\t= ");
+	Log("Data format\t= ");
 	switch(eh.e_ident[EI_DATA])
 	{
 		case ELFDATA2LSB:
-			log_write("2's complement, little endian\n");
+			Log("2's complement, little endian\n");
 			break;
 
 		case ELFDATA2MSB:
-			log_write("2's complement, big endian\n");
+			Log("2's complement, big endian\n");
 			break;
 
 		default:
-			log_write("INVALID Format\n");
+			Log("INVALID Format\n");
 			break;
 	}
 
 	/* OS ABI */
-	log_write("OS ABI\t\t= ");
+	Log("OS ABI\t\t= ");
 	switch(eh.e_ident[EI_OSABI])
 	{
 		case ELFOSABI_SYSV:
-			log_write("UNIX System V ABI\n");
+			Log("UNIX System V ABI\n");
 			break;
 
 		case ELFOSABI_HPUX:
-			log_write("HP-UX\n");
+			Log("HP-UX\n");
 			break;
 
 		case ELFOSABI_NETBSD:
-			log_write("NetBSD\n");
+			Log("NetBSD\n");
 			break;
 
 		case ELFOSABI_LINUX:
-			log_write("Linux\n");
+			Log("Linux\n");
 			break;
 
 		case ELFOSABI_SOLARIS:
-			log_write("Sun Solaris\n");
+			Log("Sun Solaris\n");
 			break;
 
 		case ELFOSABI_AIX:
-			log_write("IBM AIX\n");
+			Log("IBM AIX\n");
 			break;
 
 		case ELFOSABI_IRIX:
-			log_write("SGI Irix\n");
+			Log("SGI Irix\n");
 			break;
 
 		case ELFOSABI_FREEBSD:
-			log_write("FreeBSD\n");
+			Log("FreeBSD\n");
 			break;
 
 		case ELFOSABI_TRU64:
-			log_write("Compaq TRU64 UNIX\n");
+			Log("Compaq TRU64 UNIX\n");
 			break;
 
 		case ELFOSABI_MODESTO:
-			log_write("Novell Modesto\n");
+			Log("Novell Modesto\n");
 			break;
 
 		case ELFOSABI_OPENBSD:
-			log_write("OpenBSD\n");
+			Log("OpenBSD\n");
 			break;
 
 		case ELFOSABI_ARM_AEABI:
-			log_write("ARM EABI\n");
+			Log("ARM EABI\n");
 			break;
 
 		case ELFOSABI_ARM:
-			log_write("ARM\n");
+			Log("ARM\n");
 			break;
 
 		case ELFOSABI_STANDALONE:
-			log_write("Standalone (embedded) app\n");
+			Log("Standalone (embedded) app\n");
 			break;
 
 		default:
-			log_write("Unknown (0x%x)\n", eh.e_ident[EI_OSABI]);
+			Log("Unknown (0x%x)\n", eh.e_ident[EI_OSABI]);
 			break;
 	}
 
 	/* ELF filetype */
-	log_write("Filetype \t= ");
+	Log("Filetype \t= ");
 	switch(eh.e_type)
 	{
 		case ET_NONE:
-			log_write("N/A (0x0)\n");
+			Log("N/A (0x0)\n");
 			break;
 
 		case ET_REL:
-			log_write("Relocatable\n");
+			Log("Relocatable\n");
 			break;
 
 		case ET_EXEC:
-			log_write("Executable\n");
+			Log("Executable\n");
 			break;
 
 		case ET_DYN:
-			log_write("Shared Object\n");
+			Log("Shared Object\n");
 			break;
 		default:
-			log_write("Unknown (0x%x)\n", eh.e_type);
+			Log("Unknown (0x%x)\n", eh.e_type);
 			break;
 	}
 
 	/* ELF Machine-id */
-	log_write("Machine\t\t= ");
+	Log("Machine\t\t= ");
 	switch(eh.e_machine)
 	{
 		case EM_NONE:
-			log_write("None (0x0)\n");
+			Log("None (0x0)\n");
 			break;
 
 		case EM_386:
-			log_write("INTEL x86 (0x%x)\n", EM_386);
+			Log("INTEL x86 (0x%x)\n", EM_386);
 			break;
 
 		case EM_X86_64:
-			log_write("AMD x86_64 (0x%x)\n", EM_X86_64);
+			Log("AMD x86_64 (0x%x)\n", EM_X86_64);
 			break;
 
 		case EM_AARCH64:
-			log_write("AARCH64 (0x%x)\n", EM_AARCH64);
+			Log("AARCH64 (0x%x)\n", EM_AARCH64);
 			break;
 
 		default:
-			log_write(" 0x%x\n", eh.e_machine);
+			Log(" 0x%x\n", eh.e_machine);
 			break;
 	}
 
 	/* Entry point */
-	log_write("Entry point\t= 0x%08x\n", eh.e_entry);
+	Log("Entry point\t= 0x%08x\n", eh.e_entry);
 
 	/* ELF header size in bytes */
-	log_write("ELF header size\t= 0x%08x\n", eh.e_ehsize);
+	Log("ELF header size\t= 0x%08x\n", eh.e_ehsize);
 
 	/* Program Header */
-	log_write("Program Header\t= ");
-	log_write("0x%08x\n", eh.e_phoff);		/* start */
-	log_write("\t\t  %d entries\n", eh.e_phnum);	/* num entry */
-	log_write("\t\t  %d bytes\n", eh.e_phentsize);	/* size/entry */
+	Log("Program Header\t= ");
+	Log("0x%08x\n", eh.e_phoff);		/* start */
+	Log("\t\t  %d entries\n", eh.e_phnum);	/* num entry */
+	Log("\t\t  %d bytes\n", eh.e_phentsize);	/* size/entry */
 
 	/* Section header starts at */
-	log_write("Section Header\t= ");
-	log_write("0x%08x\n", eh.e_shoff);		/* start */
-	log_write("\t\t  %d entries\n", eh.e_shnum);	/* num entry */
-	log_write("\t\t  %d bytes\n", eh.e_shentsize);	/* size/entry */
-	log_write("\t\t  0x%08x (string table offset)\n", eh.e_shstrndx);
+	Log("Section Header\t= ");
+	Log("0x%08x\n", eh.e_shoff);		/* start */
+	Log("\t\t  %d entries\n", eh.e_shnum);	/* num entry */
+	Log("\t\t  %d bytes\n", eh.e_shentsize);	/* size/entry */
+	Log("\t\t  0x%08x (string table offset)\n", eh.e_shstrndx);
 
 	/* File flags (Machine specific)*/
-	log_write("File flags \t= 0x%08x\n", eh.e_flags);
+	Log("File flags \t= 0x%08x\n", eh.e_flags);
 
 	/* ELF file flags are machine specific.
 	 * INTEL implements NO flags.
@@ -275,50 +275,50 @@ static void display_elf_header(Elf32_Ehdr eh) {
 	 * Add support below to parse ELF file flags on ARM
 	 */
 	int32_t ef = eh.e_flags;
-	log_write("\t\t  ");
+	Log("\t\t  ");
 
 	if(ef & EF_ARM_RELEXEC)
-		log_write(",RELEXEC ");
+		Log(",RELEXEC ");
 
 	if(ef & EF_ARM_HASENTRY)
-		log_write(",HASENTRY ");
+		Log(",HASENTRY ");
 
 	if(ef & EF_ARM_INTERWORK)
-		log_write(",INTERWORK ");
+		Log(",INTERWORK ");
 
 	if(ef & EF_ARM_APCS_26)
-		log_write(",APCS_26 ");
+		Log(",APCS_26 ");
 
 	if(ef & EF_ARM_APCS_FLOAT)
-		log_write(",APCS_FLOAT ");
+		Log(",APCS_FLOAT ");
 
 	if(ef & EF_ARM_PIC)
-		log_write(",PIC ");
+		Log(",PIC ");
 
 	if(ef & EF_ARM_ALIGN8)
-		log_write(",ALIGN8 ");
+		Log(",ALIGN8 ");
 
 	if(ef & EF_ARM_NEW_ABI)
-		log_write(",NEW_ABI ");
+		Log(",NEW_ABI ");
 
 	if(ef & EF_ARM_OLD_ABI)
-		log_write(",OLD_ABI ");
+		Log(",OLD_ABI ");
 
 	if(ef & EF_ARM_SOFT_FLOAT)
-		log_write(",SOFT_FLOAT ");
+		Log(",SOFT_FLOAT ");
 
 	if(ef & EF_ARM_VFP_FLOAT)
-		log_write(",VFP_FLOAT ");
+		Log(",VFP_FLOAT ");
 
 	if(ef & EF_ARM_MAVERICK_FLOAT)
-		log_write(",MAVERICK_FLOAT ");
+		Log(",MAVERICK_FLOAT ");
 
-	log_write("\n");
+	Log("\n");
 
 	/* MSB of flags conatins ARM EABI version */
-	log_write("ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
+	Log("ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
-	log_write("\n");	/* End of ELF header */
+	Log("\n");	/* End of ELF header */
 }
 
 static void read_section(int fd, Elf32_Shdr sh, void *dst) {
@@ -341,27 +341,27 @@ static void display_section_headers(int fd, Elf32_Ehdr eh, Elf32_Shdr sh_tbl[]) 
   
 	/* Read section-header string-table */
 
-	log_write("========================================");
-	log_write("========================================\n");
-	log_write(" idx offset     load-addr  size       algn"
+	Log("========================================");
+	Log("========================================\n");
+	Log(" idx offset     load-addr  size       algn"
 			" flags      type       section\n");
-	log_write("========================================");
-	log_write("========================================\n");
+	Log("========================================");
+	Log("========================================\n");
 
 	for(int i = 0; i < eh.e_shnum; i++) {
-		log_write(" %03d ", i);
-		log_write("0x%08x ", sh_tbl[i].sh_offset);
-		log_write("0x%08x ", sh_tbl[i].sh_addr);
-		log_write("0x%08x ", sh_tbl[i].sh_size);
-		log_write("%-4d ", sh_tbl[i].sh_addralign);
-		log_write("0x%08x ", sh_tbl[i].sh_flags);
-		log_write("0x%08x ", sh_tbl[i].sh_type);
-		log_write("%s\t", (sh_str + sh_tbl[i].sh_name));
-		log_write("\n");
+		Log(" %03d ", i);
+		Log("0x%08x ", sh_tbl[i].sh_offset);
+		Log("0x%08x ", sh_tbl[i].sh_addr);
+		Log("0x%08x ", sh_tbl[i].sh_size);
+		Log("%-4d ", sh_tbl[i].sh_addralign);
+		Log("0x%08x ", sh_tbl[i].sh_flags);
+		Log("0x%08x ", sh_tbl[i].sh_type);
+		Log("%s\t", (sh_str + sh_tbl[i].sh_name));
+		Log("\n");
 	}
-	log_write("========================================");
-	log_write("========================================\n");
-	log_write("\n");	/* end of section header table */
+	Log("========================================");
+	Log("========================================\n");
+	Log("\n");	/* end of section header table */
 }
 
 static void read_symbol_table(int fd, Elf32_Ehdr eh, Elf32_Shdr sh_tbl[], int sym_idx) {
@@ -374,12 +374,12 @@ static void read_symbol_table(int fd, Elf32_Ehdr eh, Elf32_Shdr sh_tbl[], int sy
   
   int sym_count = (sh_tbl[sym_idx].sh_size / sizeof(Elf32_Sym));
 	// log
-  log_write("Symbol count: %d\n", sym_count);
-  log_write("====================================================\n");
-  log_write(" num    value            type size       name\n");
-  log_write("====================================================\n");
+  Log("Symbol count: %d\n", sym_count);
+  Log("====================================================\n");
+  Log(" num    value            type size       name\n");
+  Log("====================================================\n");
   for (int i = 0; i < sym_count; i++) {
-    log_write(" %-3d    %016x %-4d %-10d %s\n",
+    Log(" %-3d    %016x %-4d %-10d %s\n",
       i,
       sym_tbl[i].st_value, 
       ELF32_ST_TYPE(sym_tbl[i].st_info),
@@ -387,7 +387,7 @@ static void read_symbol_table(int fd, Elf32_Ehdr eh, Elf32_Shdr sh_tbl[], int sy
       str_tbl + sym_tbl[i].st_name
     );
   }
-  log_write("====================================================\n\n");
+  Log("====================================================\n\n");
 
 	// read
 	symbol_tbl_size = sym_count;
@@ -475,7 +475,7 @@ void trace_func_call(paddr_t pc, paddr_t target, bool is_tail) {
 	if (call_depth <= 2) return; // ignore _trm_init & main
 
 	int i = find_symbol_func(target, true);
-	log_write(FMT_PADDR ": %*scall [%s@" FMT_PADDR "]\n",
+	Log(FMT_PADDR ": %*scall [%s@" FMT_PADDR "]\n",
 		pc,
 		(call_depth-3)*2, "",
 		i>=0?symbol_tbl[i].name:"???",
@@ -497,7 +497,7 @@ void trace_func_ret(paddr_t pc) {
 	}
 
 	int i = find_symbol_func(pc, false);
-	log_write(FMT_PADDR ": %*sret [%s]\n",
+	Log(FMT_PADDR ": %*sret [%s]\n",
 		pc,
 		(call_depth-3)*2, "",
 		i>=0?symbol_tbl[i].name:"???"

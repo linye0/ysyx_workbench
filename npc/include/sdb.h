@@ -2,9 +2,9 @@
 #define __SDB_H__
 
 #include <common.h>
-#include <expr.h>
 
 uint32_t expr(char *e, bool *success);
+void init_regex();
 void info_watchpoint();
 void wp_set(char*, int32_t);
 void wp_remove(int);

@@ -1,8 +1,10 @@
 #include <common.h>
 #include <npc.h>
 
+extern NPCState npc;
+
 int is_exit_status_bad() {
-  int state = npc.get_state();
-  int good = (state == STATE_QUIT) || (state == STATE_GOOD_TRAP);
+  int state = npc.state;
+  int good = (state == NPC_END) || (state == NPC_QUIT);
   return !good;
 }

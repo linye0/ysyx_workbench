@@ -10,6 +10,8 @@
 #include <difftest.h>
 #include <utils.h>
 
+/*
+
 class {
 	public:
 		int opcode;
@@ -32,6 +34,7 @@ class {
 } deinst;
 
 NPC npc;
+NPCState npcstate;
 
 extern "C" void update_gpr_mirror(int index, int value) {
 	if (index >= 0 && index < 32) {
@@ -54,25 +57,25 @@ uint32_t NPC::get_pc(void) {
 }
 
 uint32_t NPC::get_reg(int idx) {
-	return gpr_regs[idx];
+	return state->gpr_regs[idx];
 }
 
 void NPC::set_mirror_reg(int index, int value) {
-	gpr_regs[index] = value;
+	state->gpr_regs[index] = value;
 	return;
 }
 
 uint32_t NPC::get_state() {
-	return npc_state;
+	return state->npc_state;
 }
 
 void NPC::set_state(int state) {
-	npc_state = state;
+	this->state->npc_state = state;
 	return;
 }
 
 void NPC::print_reg(int idx) {
-	printf("x%02d = 0x%08x\n", idx, gpr_regs[idx]);
+	printf("x%02d = 0x%08x\n", idx, state->gpr_regs[idx]);
 	return;
 }
 
@@ -81,8 +84,8 @@ uint32_t* NPC::init_mem(size_t size) {
 	return memory;
 }
 
-uint32_t NPC::guest_to_host(uint32_t addr) {return addr - 0x80000000;}
-uint32_t NPC::pmem_read(uint32_t vaddr) {
+uint32_t guest_to_host(uint32_t addr) {return addr - 0x80000000;}
+uint32_t pmem_read(uint32_t vaddr) {
 	uint32_t paddr = guest_to_host(vaddr);
 	return memory[paddr/4];
 }
@@ -122,7 +125,8 @@ uint32_t NPC::read_img(uint32_t* mem, const char* bin_path) {
 
 void NPC::init_npc(char* img_path) {
 	printf("Ready to initialize the memory.\n");
-	npc_state = STATE_RUNNING;
+	this->state = &npcstate;
+	set_state(STATE_RUNNING);
 	memory = init_mem(200);
 	read_img(memory, img_path);
 	printf("Successfully initialize the memory.\n");
@@ -136,7 +140,7 @@ void NPC::init_npc(char* img_path) {
 
 int NPC::exit_npc() {
 	m_trace->close();
-	return npc_state;
+	return state->npc_state;
 }
 
 void NPC::ftrace() {
@@ -198,4 +202,6 @@ void NPC::npc_exec(int n) {
 		itrace_write_into_log(10);
 	}
 }
+*/
+
 

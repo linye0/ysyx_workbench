@@ -2,6 +2,7 @@
 #include <npc.h>
 #include <isa.h>
 
+extern NPCState npc;
 
 const char *regs[] = {  // 实际定义（分配内存）
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -26,14 +27,14 @@ void isa_reg_display() {
 uint32_t isa_reg_str2val(const char *s, bool *success) {
 	if (strcmp(s, "pc") == 0) {
 		*success = true;
-		return npc.get_pc();
+		return *npc.pc;
 	}
    for (int i = 0; i < sizeof(regs) / sizeof(const char*); i++) {
         if (strcmp(s, regs[i]) == 0) {
             *success = true;
             /* 变量cpu定义于$NEMU_HOME/src/cpu/cpu-exec.c: CPU_state cpu = {};
                声明见文件$NEMU_HOME/include/isa.h: extern CPU_state cpu; */
-            return npc.get_reg(i);  // 数组regs的声明顺序与riscv32的定义一致
+            return npc.gpr[i];  // 数组regs的声明顺序与riscv32的定义一致
         }
     }
 
@@ -42,5 +43,6 @@ uint32_t isa_reg_str2val(const char *s, bool *success) {
 }
 
 uint32_t paddr_read(int addr) {
-	return npc.pmem_read(addr);
+  uint32_t pmem_read(uint32_t vaddr);
+	return pmem_read(addr);
 }

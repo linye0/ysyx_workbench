@@ -1,18 +1,23 @@
 #ifndef __NPC_H__ 
-#define __NPC_H_
+#define __NPC_H__
 
 #include "verilated_vcd_c.h"
-#include "Vysyx_25040131_cpu.h"
 #include "stdio.h"
 #include <stdlib.h>
 #include <bits/stdc++.h>
 #include <macro.h>
 
-
+/*
 extern "C" void npc_trap();
 extern "C" void update_gpr_mirror(int index, int value);
 
 void print_all_regs();
+
+typedef struct {
+	int pc;
+	int npc_state;
+	uint32_t gpr_regs[32] = {0};
+} NPCState;
 
 class NPC {
 	public:		
@@ -38,11 +43,13 @@ class NPC {
 		VerilatedContext* contextp;
 		VerilatedVcdC* m_trace;
 		uint32_t* memory;
-		int npc_state;
-		uint32_t gpr_regs[32] = {0};
+		NPCState* state;		
 };
 
+extern NPCState npcstate;
 extern NPC npc;
+*/
+
 
 #endif
 
