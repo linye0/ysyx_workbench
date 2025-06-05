@@ -8,9 +8,8 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <macro.h>
 #include <stdio.h>
-#include <autoconf.h>
+#include <generated/autoconf.h>
 
 typedef uint32_t word_t;
 typedef word_t paddr_t;
@@ -54,11 +53,11 @@ extern FILE *log_fp;
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define Log(format, ...)                                \
-    _Log("%s:%d %s " format "\n",             \
-         __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
+    _Log( format ,             \
+         ##__VA_ARGS__)
 
 #define Error(format, ...)                \
-  _Log("%s:%3d %s " format "\n", \
+  _Log("[Error] %s:%3d %s " format "\n", \
        __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 #define Assert(cond, format, ...)                       \

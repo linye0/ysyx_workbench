@@ -1,8 +1,6 @@
 #include "npc_verilog.h"
 #include "verilated.h"
 #include <common.h>
-#include <macro.h>
-#include <npc.h>
 #include <isa.h>
 #include <sdb.h>
 #include <readline/readline.h>
@@ -59,7 +57,8 @@ void npc_abort() {
 extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
-	Log("EBREAK at pc = " FMT_WORD_NO_PREFIX "", *npc.pc);
+	Log("EBREAK at pc = " FMT_WORD_NO_PREFIX "\n", *npc.pc);
+	printf("HIT GOOD TRAP!\n");
 	npc.state = NPC_END;
 }
 
@@ -147,9 +146,7 @@ static int cmd_si(char* args) {
 }
 
 static int cmd_q(char* args) {
-	if (npc.state == NPC_RUNNING) {
-		npc.state = NPC_QUIT;
-	}
+	npc.state = NPC_QUIT;
 	cpu_exec(0);
 	return -1;
 }

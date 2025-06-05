@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "common.h"
-#include "utils.h"
 #include <fcntl.h>
 #include <elf.h>
 #include <unistd.h>

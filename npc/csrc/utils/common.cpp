@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstdint>
 #include <array>
+#include <common.h>
 
 uint32_t read_img(uint32_t* mem, const char* bin_path) {
     // 打开文件（二进制模式）

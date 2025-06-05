@@ -14,8 +14,11 @@
 ***************************************************************************************/
 
 #include "sdb.h"
+#include <common.h>
 
 #define NR_WP 32
+
+extern NPCState npc;
 
 typedef struct watchpoint {
   int NO;
@@ -125,6 +128,9 @@ int wp_difftest() {
 			diffnum++;
 		}
 		pos = pos->next;
+	}
+	if (diffnum > 0) {
+		npc.state = NPC_STOP;
 	}
 #endif
 	return diffnum;

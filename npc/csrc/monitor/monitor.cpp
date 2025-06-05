@@ -1,8 +1,6 @@
 #include <common.h>
 #include <getopt.h>
-#include <npc.h>
 #include <sdb.h>
-#include <utils.h>
 #include <memory.h>
 
 static const uint32_t img[] = {

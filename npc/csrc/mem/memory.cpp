@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <common.h>
-#include <utils.h>
 
 void difftest_skip_ref();
 void npc_abort();

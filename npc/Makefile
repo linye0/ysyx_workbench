@@ -84,4 +84,6 @@ run-npc: $(BIN)
 wave:
 	gtkwave waveform.vcd
 
+include ./scripts/config.mk
+
 .PHONY: sim run-sim gdb-sim gdb-npc run-npc wave 

@@ -18,7 +18,6 @@
 #include <limits.h>
 #include <common.h>
 #include <isa.h>
-#include <macro.h>
 
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.

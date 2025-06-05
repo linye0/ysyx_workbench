@@ -1,5 +1,4 @@
 #include <common.h>
-#include <npc.h>
 
 extern NPCState npc;
 

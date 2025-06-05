@@ -4,9 +4,9 @@
 #include <difftest.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <npc.h>
 #include <npc_verilog.h>
 #include <memory.h>
+#include <verilated_vcd_c.h>
 
 
 #define MAX_INST_TO_PRINT 10
@@ -96,16 +96,14 @@ void cpu_exec(uint64_t n)
     uint64_t cur_inst_cycle = 0;
     while (!contextp->gotFinish() && npc.state == NPC_RUNNING && n-- > 0) {
 		top->inst = pmem_read(top->pc);
-        printf("read inst: %0x\n", top->inst);
+        printf("pc: %0x, inst: %0x\n", top->pc, top->inst);
         cpu_exec_one_cycle();
-        if (npc.state == NPC_END) {
-            break;    
-        }
         #ifdef CONFIG_ITRACE
         void disassemble(char* str, int size, uint64_t pc, uint8_t* code, int nbyte);
         char disasm_str[256];
         uint32_t inst = top->inst;
         disassemble(disasm_str, sizeof(disasm_str), top->pc, (uint8_t*)&inst, sizeof(inst));
+        printf("command: %s\n", disasm_str);
         Log("command: %s\n", disasm_str);
         char log_buf[512];
         snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", top->pc, top->inst, disasm_str);
@@ -115,6 +113,11 @@ void cpu_exec(uint64_t n)
         ftrace();
         #endif
         npc.last_inst = *(npc.inst);
+        int wp_difftest(void);
+        wp_difftest();
+        if (npc.state == NPC_END) {
+            break;    
+        }
     }
         switch (npc.state)
         {
@@ -131,6 +134,8 @@ void cpu_exec(uint64_t n)
             case NPC_QUIT:
                 Log("Program quit.");
             break;
+            case NPC_STOP:
+                break;
             default:
                 assert(0);
             break;
