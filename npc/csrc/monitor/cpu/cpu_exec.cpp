@@ -112,6 +112,10 @@ void cpu_exec(uint64_t n)
         void ftrace();
         ftrace();
         #endif
+
+        #ifdef CONFIG_DIFFTEST
+        difftest_step(*npc.cpc);
+        #endif
         npc.last_inst = *(npc.inst);
         int wp_difftest(void);
         wp_difftest();

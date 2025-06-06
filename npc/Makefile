@@ -33,7 +33,7 @@ INCFLAGS = $(addprefix -I, $(INC_PATH))
 CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
 GDBFLAGS = $(CXXFLAGS) -g -O0
 LDFLAGS += -lreadline -lncurses -lpthread -latomic
-NPC_ARGS += -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin -e $(TEST_DIR)/build/$(ALL)-$(ARCH).elf
+NPC_ARGS += -i $(TEST_DIR)/build/$(ALL)-$(ARCH).bin -e $(TEST_DIR)/build/$(ALL)-$(ARCH).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 
 all: default
 

@@ -1,3 +1,4 @@
+#include "difftest.h"
 #include <common.h>
 #include <getopt.h>
 #include <sdb.h>
@@ -52,6 +53,7 @@ static void welcome() {
 static char* img_file = NULL;
 static char* elf_file = NULL;
 static char* log_file = NULL;
+static char* ref_so_file = NULL;
 
 void parse_elf(const char* elf_file);
 void sdb_set_batch_mode();
@@ -102,11 +104,13 @@ static int parse_args(int argc, char *argv[]) {
 		{"img", required_argument, NULL, 'i'},
 		{"elf", required_argument, NULL, 'e'},
 		{"batch", no_argument, NULL, 'b'},
+    {"diff", required_argument, NULL, 'd'},
 	};
 	int o;
-	while ((o = getopt_long(argc, argv, "-bi:e:", table, NULL)) != -1) {
+	while ((o = getopt_long(argc, argv, "-bi:e:d:", table, NULL)) != -1) {
 		switch (o) {
       case 'b': sdb_set_batch_mode(); break;
+      case 'd': ref_so_file = optarg; break;
 			case 'i': img_file = optarg; break;
 			case 'e': elf_file = optarg; break;	
 			default:
@@ -128,7 +132,11 @@ void init_monitor(int argc, char* argv[]) {
 
 	parse_elf(elf_file);
 
-	if(CONFIG_ITRACE) init_disasm();
+  init_difftest(ref_so_file, img_size, 0);
+
+  #ifdef CONFIG_ITRACE
+  init_disasm();
+  #endif
 
 	welcome();
 }

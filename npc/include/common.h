@@ -60,6 +60,7 @@ extern FILE *log_fp;
   _Log("[Error] %s:%3d %s " format "\n", \
        __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
+
 #define Assert(cond, format, ...)                       \
     do {                                               \
         if (!(cond)) {                                 \
