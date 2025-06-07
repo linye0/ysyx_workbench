@@ -43,6 +43,6 @@ uint32_t isa_reg_str2val(const char *s, bool *success) {
 }
 
 uint32_t paddr_read(int addr) {
-  uint32_t pmem_read(uint32_t vaddr);
-	return pmem_read(addr);
+  uint32_t local_pmem_read(uint32_t vaddr);
+	return local_pmem_read(addr);
 }

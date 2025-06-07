@@ -50,8 +50,8 @@ static void checkregs(NPCState *ref, vaddr_t pc) {
     }
     for (int i = 0; i < GPR_SIZE; i++) {
         if (npc.gpr[i] != ref->gpr[i]) {
-            printf(FMT_RED("[ERROR]") " gpr[%d] is different! ref = " FMT_GREEN(FMT_WORD_NO_PREFIX) ", dut = " FMT_RED(FMT_WORD_NO_PREFIX) "\n",
-                i, ref->gpr[i], npc.gpr[i]);
+            printf(FMT_RED("[ERROR]") " gpr[%d](%s) is different! ref = " FMT_GREEN(FMT_WORD_NO_PREFIX) ", dut = " FMT_RED(FMT_WORD_NO_PREFIX) "\n",
+                i, regs[i], ref->gpr[i], npc.gpr[i]);
             is_same = false;
         }
     }

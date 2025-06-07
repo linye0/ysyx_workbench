@@ -60,19 +60,19 @@ void cpu_exec_one_cycle() {
 }
 
 void ftrace() {
-    DecodedInst deinst = decode_inst(top->pc);
+    DecodedInst deinst = decode_inst(*npc.inst);
 	if (deinst.opcode == 0b1101111) {
 		if (deinst.rd == 1) {
-			trace_func_call(top->pc, top->next_pc, false);
+			trace_func_call(*npc.cpc, *npc.pc, false);
 		}
 	}
 	if (deinst.func3 == 0b000 && deinst.opcode == 0b1100111) {
 		if (top->inst == 0x00008067)	{
-			trace_func_ret(top->pc);
+			trace_func_ret(*npc.cpc);
 		} else if (deinst.rd == 1) {
-			trace_func_call(top->pc, top->next_pc, false);
+			trace_func_call(*npc.cpc, *npc.pc, false);
 		} else if (deinst.rd == 0 && top->imm_32 == 0) {
-			trace_func_call(top->pc, top->next_pc, true);
+			trace_func_call(*npc.cpc, *npc.pc, true);
 		}
 	}
 }
@@ -95,22 +95,24 @@ void cpu_exec(uint64_t n)
 
     uint64_t cur_inst_cycle = 0;
     while (!contextp->gotFinish() && npc.state == NPC_RUNNING && n-- > 0) {
-		top->inst = pmem_read(top->pc);
+	    top->inst = local_pmem_read(top->pc);
         printf("pc: %0x, inst: %0x\n", top->pc, top->inst);
         cpu_exec_one_cycle();
+
         #ifdef CONFIG_ITRACE
         void disassemble(char* str, int size, uint64_t pc, uint8_t* code, int nbyte);
         char disasm_str[256];
         uint32_t inst = top->inst;
         disassemble(disasm_str, sizeof(disasm_str), top->pc, (uint8_t*)&inst, sizeof(inst));
         printf("command: %s\n", disasm_str);
+        void print_all_regs();
         Log("command: %s\n", disasm_str);
         char log_buf[512];
         snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", top->pc, top->inst, disasm_str);
         void itrace_record(const char* log, vaddr_t pc);
         itrace_record(log_buf, top->pc);
         void ftrace();
-        ftrace();
+        // ftrace();
         #endif
 
         #ifdef CONFIG_DIFFTEST

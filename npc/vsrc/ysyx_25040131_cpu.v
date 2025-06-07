@@ -6,6 +6,9 @@ module ysyx_25040131_cpu(
 	output [31:0] imm_32
 );
 
+
+// 指令
+
 // 数据
 wire [31: 0] write_rd_data; // 寄存器 rd数据
 wire [31: 0] read_rs1_data; // 寄存器 rs1的数据
@@ -38,6 +41,16 @@ ysyx_25040131_pc PC(
     .clk(clk),
     .next_pc(next_pc),
     .pc(pc)
+);
+
+ysyx_25040131_mem MEM(
+    .clk(clk),
+    .rst(rst),
+    .addr(out_alu),
+    .data(read_rs2_data),
+    .read_mem(read_mem),
+    .write_mem(write_mem),
+    .read_data(out_mem)
 );
 
 ysyx_25040131_next_pc NEXT_PC(

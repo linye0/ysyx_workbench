@@ -8,6 +8,8 @@
 
 #define ITRACE_BUF_SIZE 16
 
+extern FILE *log_fp;
+
 /* 以下为iringbuffer部分 */
 
 typedef struct {

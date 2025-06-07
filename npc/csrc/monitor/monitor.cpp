@@ -124,11 +124,11 @@ static int parse_args(int argc, char *argv[]) {
 void init_monitor(int argc, char* argv[]) {
 	parse_args(argc, argv);
 
+	init_log("npc-log.log");
+
   long img_size = load_img();
 
 	init_sdb(argc, argv);
-
-	init_log("npc-log.log");
 
 	parse_elf(elf_file);
 

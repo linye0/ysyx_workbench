@@ -8,8 +8,7 @@ paddr_t host_to_guest(uint8_t *addr);
 
 inline word_t host_read(void *addr, int len);
 
-
-uint32_t pmem_read(uint32_t vaddr);
+uint32_t local_pmem_read(uint32_t vaddr);
 
 void vaddr_show(vaddr_t addr, int n);
 

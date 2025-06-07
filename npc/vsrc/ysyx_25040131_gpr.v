@@ -2,15 +2,16 @@ module ysyx_25040131_gpr(
     input rst, clk, write_reg,
     input [4: 0] rs1, rs2, target_reg,
     input [31: 0] write_rd_data,
-
     output reg [31: 0] read_rs1_data,
     output reg [31: 0] read_rs2_data
 );
+
 
 reg [31: 0] regs[31: 0];
 
 always @(posedge clk) begin
 	if(write_reg && target_reg != 5'h0) begin 
+        //$display("write_reg = %d, target_reg = %d, write_rd_data = %d", write_reg, target_reg, write_rd_data);
 		regs[target_reg] = write_rd_data;
 	end
 end

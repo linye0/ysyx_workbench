@@ -42,7 +42,7 @@ static char* rl_gets() {
 
 void reset(TOP_NAME* top, int n) {
 	top->rst = 1;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < n; i++) {
 		void cpu_exec_one_cycle();
 		cpu_exec_one_cycle();
 	}
@@ -223,7 +223,7 @@ void sdb_sim_init(int argc, char* argv[]) {
 	top = new TOP_NAME{contextp};
 	verilog_connect(top, &npc);
 
-	reset(top, 32);
+	reset(top, 16);
 }
 
 void main_loop() {
