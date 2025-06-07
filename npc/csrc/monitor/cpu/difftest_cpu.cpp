@@ -1,3 +1,4 @@
+#include "isa.h"
 #include <common.h>
 #include <cpu.h>
 #include <memory.h>
@@ -5,7 +6,7 @@
 #include <difftest.h>
 
 extern NPCState npc;
-extern char* regs[];
+extern const char* regs[];
 
 uint8_t pmem_ref[MSIZE] = {};
 
@@ -56,6 +57,7 @@ static void checkregs(NPCState *ref, vaddr_t pc) {
         }
     }
     if (!is_same) {
+        print_all_regs();
         Assert(false, "difftest failed!\n");
     }
 }

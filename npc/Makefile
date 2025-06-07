@@ -75,11 +75,23 @@ gdb-sim: $(BIN_GDB)
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
 	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(NPC_ARGS)
 
+batch-run-sim: $(BIN)
+	@echo "Running simulation..."
+	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
+	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(NPC_ARGS) -b
+
 gdb-npc: $(BIN_GDB)
 	@cd $(AK_HOME)/tests/cpu-tests && make ALL=$(ALL) ARCH=riscv32e-npc gdb-npc
 
 run-npc: $(BIN)
 	@cd $(AK_HOME)/tests/cpu-tests && make ALL=$(ALL) ARCH=riscv32e-npc run-npc
+
+test: $(BIN)
+	@echo "Running test..."
+	@cd $(AK_HOME)/tests/cpu-tests && \
+	for file in tests/*.c; do \
+		make ALL=$$(basename $$file .c) ARCH=riscv32e-npc test-npc; \
+	done
 
 wave:
 	gtkwave waveform.vcd

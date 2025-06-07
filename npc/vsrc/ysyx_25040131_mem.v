@@ -48,11 +48,11 @@ always @(*) begin
         end
         // sh
         2'b10:begin
-            pmem_write(addr, data, 32'hc);
+            pmem_write(addr, data, 32'h3);
         end
         // sb
         2'b11:begin
-            pmem_write(addr, data, 32'h3);
+            pmem_write(addr, data, 32'h1);
         end
         default: begin
             

@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <stdint.h>
 #include <common.h>
 
@@ -62,9 +63,9 @@ uint32_t local_pmem_read(uint32_t vaddr) {
 }
 
 extern "C" int pmem_read(word_t raddr, char wmask) {
-    //printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
+    printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
     uint8_t *host_addr = guest_to_host(raddr);
-    host_addr = (uint8_t*)((size_t)host_addr & ~0x3);
+    host_addr = (uint8_t*)((size_t)host_addr);
     if (host_addr == NULL) {
         // Log(FMT_RED("Invalid read: addr = " FMT_WORD ", mask = %02x\n"), raddr, wmask);
         // printf(FMT_RED("Invalid read: addr = " FMT_WORD ", mask = %02x\n"), raddr, wmask);
@@ -75,21 +76,16 @@ extern "C" int pmem_read(word_t raddr, char wmask) {
         case 0xf:
             //printf("case 0xff\n");
             //printf("return value = %02x\n", host_read(host_addr, 4));
-            printf("case 0xff\n");
             return host_read(host_addr, 4);
             break;
         case 0xc:
-            printf("case 0xc\n");
-            return host_read(host_addr + 2, 2);
+            return host_read(host_addr, 2);
             break;
         case 0x3:
-            printf("case 0x3\n");
-            printf("return value = %02x\n", host_read(host_addr, 2));
             return host_read(host_addr, 2);
             break;
         case 0x1:
-            printf("case 0x1\n");
-            return host_read(host_addr + 2, 1);
+            return host_read(host_addr, 1);
             break;
         default:
             Assert(0, "Invalid mask = %02x", wmask);
@@ -121,7 +117,7 @@ extern "C" void pmem_write(word_t waddr, word_t wdata, char wmask) {
             host_write(host_addr, wdata, 4);
             break;
         case 0xc:
-            host_write(host_addr + 2, wdata, 2);
+            host_write(host_addr, wdata, 2);
             break;
         /*
         case 0xff:
