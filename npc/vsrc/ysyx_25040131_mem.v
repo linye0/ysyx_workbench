@@ -35,7 +35,7 @@ always @(*) begin
         end
         // lhu
         3'b010:begin
-            read_data = pmem_read(addr, 32'hc);
+            read_data = pmem_read(addr, 32'h3);
         end
         default: begin
             read_data = 32'b0;

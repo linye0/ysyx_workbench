@@ -79,6 +79,7 @@ void ftrace() {
 
 void cpu_exec(uint64_t n)
 {
+    int origin_n = n;
     switch (npc.state)
     {
     case NPC_END:
@@ -92,11 +93,11 @@ void cpu_exec(uint64_t n)
         npc.state = NPC_RUNNING;
         break;
     }
-
+    
     uint64_t cur_inst_cycle = 0;
     while (!contextp->gotFinish() && npc.state == NPC_RUNNING && n-- > 0) {
 	    top->inst = local_pmem_read(top->pc);
-        printf("pc: %0x, inst: %0x\n", top->pc, top->inst);
+        if (origin_n != -1) printf("pc: %0x, inst: %0x\n", top->pc, top->inst);
         cpu_exec_one_cycle();
 
         #ifdef CONFIG_ITRACE
@@ -104,7 +105,7 @@ void cpu_exec(uint64_t n)
         char disasm_str[256];
         uint32_t inst = top->inst;
         disassemble(disasm_str, sizeof(disasm_str), top->pc, (uint8_t*)&inst, sizeof(inst));
-        printf("command: %s\n", disasm_str);
+        if (origin_n != -1) printf("command: %s\n", disasm_str);
         void print_all_regs();
         Log("command: %s\n", disasm_str);
         char log_buf[512];
@@ -125,25 +126,32 @@ void cpu_exec(uint64_t n)
             break;    
         }
     }
-        switch (npc.state)
-        {
-            case NPC_RUNNING:
-                npc.state = NPC_STOP;
-                break;
-            case NPC_END:
-            case NPC_ABORT:
-                Log("Program execution has ended or aborted.");
-                if (npc.state == NPC_ABORT) {
-                    itrace_display_history(10);
-                }
-                break;
-            case NPC_QUIT:
-                Log("Program quit.");
+
+    if (origin_n == -1) {
+        #ifdef CONFIG_ITRACE
+        itrace_display_history(10);
+        #endif
+    }
+
+    switch (npc.state)
+    {
+        case NPC_RUNNING:
+            npc.state = NPC_STOP;
             break;
-            case NPC_STOP:
-                break;
-            default:
-                assert(0);
+        case NPC_END:
+        case NPC_ABORT:
+            Log("Program execution has ended or aborted.");
+            if (npc.state == NPC_ABORT) {
+                itrace_display_history(10);
+            }
             break;
-        }
+        case NPC_QUIT:
+            Log("Program quit.");
+        break;
+        case NPC_STOP:
+            break;
+        default:
+            assert(0);
+        break;
+    }
 }

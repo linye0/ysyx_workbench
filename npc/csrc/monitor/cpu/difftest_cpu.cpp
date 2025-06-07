@@ -57,6 +57,11 @@ static void checkregs(NPCState *ref, vaddr_t pc) {
         }
     }
     if (!is_same) {
+        #ifdef CONFIG_ITRACE
+        void itrace_display_history(int num);
+        itrace_display_history(10);
+        #endif
+        printf("regs information:\n");
         print_all_regs();
         Assert(false, "difftest failed!\n");
     }

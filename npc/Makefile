@@ -92,6 +92,7 @@ test: $(BIN)
 	for file in tests/*.c; do \
 		make ALL=$$(basename $$file .c) ARCH=riscv32e-npc test-npc; \
 	done
+	@echo "Passed all tests!"
 
 wave:
 	gtkwave waveform.vcd

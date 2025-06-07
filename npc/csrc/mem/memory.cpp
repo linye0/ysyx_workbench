@@ -63,7 +63,7 @@ uint32_t local_pmem_read(uint32_t vaddr) {
 }
 
 extern "C" int pmem_read(word_t raddr, char wmask) {
-    printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
+    // printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
     uint8_t *host_addr = guest_to_host(raddr);
     host_addr = (uint8_t*)((size_t)host_addr);
     if (host_addr == NULL) {
@@ -79,7 +79,11 @@ extern "C" int pmem_read(word_t raddr, char wmask) {
             return host_read(host_addr, 4);
             break;
         case 0xc:
-            return host_read(host_addr, 2);
+            if (host_read(host_addr, 2) & (1 << 15)) {
+                return host_read(host_addr, 2) | 0xFFFF0000;
+            } else {
+                return host_read(host_addr, 2) & 0x0000FFFF;
+            }
             break;
         case 0x3:
             return host_read(host_addr, 2);
