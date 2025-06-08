@@ -113,6 +113,9 @@ void cpu_exec(uint64_t n)
         snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", top->pc, top->inst, disasm_str);
         void itrace_record(const char* log, vaddr_t pc);
         itrace_record(log_buf, top->pc);
+        #endif
+
+        #ifdef CONFIG_FTRACE
         void ftrace(paddr_t pc, paddr_t target);
         ftrace(origin_pc, *npc.cpc);
         #endif
