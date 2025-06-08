@@ -44,8 +44,8 @@ extern FILE *log_fp;
 #define _Log(...)                               \
     do {                                        \
         if (log_fp) {                           \
-            fprintf(log_fp, __VA_ARGS__);       \
-            fflush(log_fp); /* 立即刷新缓冲区 */ \
+              fprintf(log_fp, __VA_ARGS__);   \
+              fflush(log_fp);                 \
         }                                       \
     } while (0)
 

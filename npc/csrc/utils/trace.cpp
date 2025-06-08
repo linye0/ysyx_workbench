@@ -435,6 +435,11 @@ void parse_elf(const char *elf_file) {
 
   read_symbols(fd, eh, sh_tbl);
 
+	Log("symbol_tbl: \n");
+	for (int i = 0; i < symbol_tbl_size; i++) {
+		Log("name: %s, addr: %08x, info: %d, size: %ld\n", symbol_tbl[i].name, symbol_tbl[i].addr, ELF32_ST_TYPE(symbol_tbl[i].info), symbol_tbl[i].size);
+	}
+
 	init_tail_rec_list();
 
 	close(fd);
@@ -476,12 +481,11 @@ void trace_func_call(paddr_t pc, paddr_t target, bool is_tail) {
 	if (call_depth <= 2) return; // ignore _trm_init & main
 
 	int i = find_symbol_func(target, true);
-	Log(FMT_PADDR ": %*scall [%s@" FMT_PADDR "]\n",
-		pc,
-		(call_depth-3)*2, "",
-		i>=0?symbol_tbl[i].name:"???",
-		target
-	);
+
+    // 0x80000088: call [check@0x80000010]
+	// Log("%08x: call [%s@%08x]\n", pc, i>=0?symbol_tbl[i].name:"???", target);
+	// ?????好奇怪的问题啊，这边改成Log马上就会出现SIGSEGV错误，为什么？？？？我排查了快一天，发现问题好像出现在Log里面调用了fflush，然后会往越界的内存里面写入东西？？？
+	if (log_fp) fprintf(log_fp, "%08x: call [%s@%08x]\n", pc, i>=0?symbol_tbl[i].name:"???", target);
 
 	if (is_tail) {
 		insert_tail_rec(pc, target);
@@ -498,11 +502,14 @@ void trace_func_ret(paddr_t pc) {
 	}
 
 	int i = find_symbol_func(pc, false);
+	if (log_fp) fprintf(log_fp, "%08x: ret [%s]\n", pc, i>=0?symbol_tbl[i].name:"???");
+	/*
 	Log(FMT_PADDR ": %*sret [%s]\n",
 		pc,
 		(call_depth-3)*2, "",
 		i>=0?symbol_tbl[i].name:"???"
 	);
+	*/
 	
 	--call_depth;
 

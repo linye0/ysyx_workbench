@@ -59,20 +59,20 @@ void cpu_exec_one_cycle() {
     contextp->timeInc(1);
 }
 
-void ftrace() {
+void ftrace(paddr_t pc, paddr_t target) {
     DecodedInst deinst = decode_inst(*npc.inst);
 	if (deinst.opcode == 0b1101111) {
 		if (deinst.rd == 1) {
-			trace_func_call(*npc.cpc, *npc.pc, false);
+			trace_func_call(pc, target, false);
 		}
 	}
 	if (deinst.func3 == 0b000 && deinst.opcode == 0b1100111) {
 		if (top->inst == 0x00008067)	{
-			trace_func_ret(*npc.cpc);
+			trace_func_ret(target);
 		} else if (deinst.rd == 1) {
-			trace_func_call(*npc.cpc, *npc.pc, false);
+			trace_func_call(pc, target, false);
 		} else if (deinst.rd == 0 && top->imm_32 == 0) {
-			trace_func_call(*npc.cpc, *npc.pc, true);
+			trace_func_call(pc, target, true);
 		}
 	}
 }
@@ -84,7 +84,7 @@ void cpu_exec(uint64_t n)
     {
     case NPC_END:
     case NPC_ABORT:
-        printf("Program execution has ended. To restart the program, exit NEMU and run again.\n");
+        printf("Program execution has ended. To restart the program, NPC and run again.\n");
         return;
     case NPC_QUIT:
         printf("Program execution has been quitted.\n");
@@ -98,6 +98,7 @@ void cpu_exec(uint64_t n)
     while (!contextp->gotFinish() && npc.state == NPC_RUNNING && n-- > 0) {
 	    top->inst = local_pmem_read(top->pc);
         if (origin_n != -1) printf("pc: %0x, inst: %0x\n", top->pc, top->inst);
+        uint32_t origin_pc = top->pc;
         cpu_exec_one_cycle();
 
         #ifdef CONFIG_ITRACE
@@ -107,13 +108,13 @@ void cpu_exec(uint64_t n)
         disassemble(disasm_str, sizeof(disasm_str), top->pc, (uint8_t*)&inst, sizeof(inst));
         if (origin_n != -1) printf("command: %s\n", disasm_str);
         void print_all_regs();
-        Log("command: %s\n", disasm_str);
+        Log("pc: %08x, command: %s\n", origin_pc, disasm_str);
         char log_buf[512];
         snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", top->pc, top->inst, disasm_str);
         void itrace_record(const char* log, vaddr_t pc);
         itrace_record(log_buf, top->pc);
-        void ftrace();
-        // ftrace();
+        void ftrace(paddr_t pc, paddr_t target);
+        ftrace(origin_pc, *npc.cpc);
         #endif
 
         #ifdef CONFIG_DIFFTEST

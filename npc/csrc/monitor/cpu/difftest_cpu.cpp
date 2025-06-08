@@ -70,7 +70,6 @@ static void checkregs(NPCState *ref, vaddr_t pc) {
 
 void difftest_step(vaddr_t pc) {
     NPCState ref_r;
-
     ref_difftest_exec(1);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
     checkregs(&ref_r, *npc.cpc);
