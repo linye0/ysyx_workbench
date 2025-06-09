@@ -89,10 +89,12 @@ run-npc: $(BIN)
 test: $(BIN)
 	@echo "Running test..."
 	@cd $(AK_HOME)/tests/cpu-tests && \
+	count=0; \
 	for file in tests/*.c; do \
 		make ALL=$$(basename $$file .c) ARCH=riscv32e-npc test-npc; \
-	done
-	@echo "Passed all tests!"
+		count=$$((count+1)); \
+	done; \
+	echo "Passed all $$count tests!"
 
 wave:
 	gtkwave waveform.vcd

@@ -7,6 +7,7 @@
 #define LKC_H
 
 #include "expr.h"
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {

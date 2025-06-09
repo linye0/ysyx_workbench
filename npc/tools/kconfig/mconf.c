@@ -331,10 +331,10 @@ static void set_subtitle(void)
 	list_for_each_entry(sp, &trail, entries) {
 		if (sp->text) {
 			if (pos) {
-				pos->next = xcalloc(1, sizeof(*pos));
+				pos->next = (struct subtitle_list *)xcalloc(1, sizeof(*pos));
 				pos = pos->next;
 			} else {
-				subtitles = pos = xcalloc(1, sizeof(*pos));
+				subtitles = pos = (struct subtitle_list *)xcalloc(1, sizeof(*pos));
 			}
 			pos->text = sp->text;
 		}
@@ -363,7 +363,7 @@ struct search_data {
 
 static void update_text(char *buf, size_t start, size_t end, void *_data)
 {
-	struct search_data *data = _data;
+	struct search_data *data = (struct search_data *)_data;
 	struct jump_key *pos;
 	int k = 0;
 
@@ -675,8 +675,8 @@ static void conf(struct menu *menu, struct menu *active_menu)
 			if (!item_tag())
 				continue;
 		}
-		submenu = item_data();
-		active_menu = item_data();
+		submenu = (struct menu *)item_data();
+		active_menu = (struct menu *)item_data();
 		if (submenu)
 			sym = submenu->sym;
 		else
@@ -831,7 +831,7 @@ static void conf_choice(struct menu *menu)
 		switch (res) {
 		case 0:
 			if (selected) {
-				child = item_data();
+				child = (struct menu *)item_data();
 				if (!child->sym)
 					break;
 
@@ -840,7 +840,7 @@ static void conf_choice(struct menu *menu)
 			return;
 		case 1:
 			if (selected) {
-				child = item_data();
+				child = (struct menu *)item_data();
 				show_help(child);
 				active = child->sym;
 			} else
