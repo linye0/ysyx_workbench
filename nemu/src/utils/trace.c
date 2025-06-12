@@ -86,6 +86,15 @@ void log_pwrite(paddr_t addr, int len, word_t data) {
 	log_write("pwrite at " FMT_PADDR " len = %d, data = " FMT_WORD "\n", addr, len, data);
 }
 
+void log_mmio_read(paddr_t addr, int len, const char* device_name) {
+	log_write("mmio read at " FMT_PADDR " len = %d, device = %s\n", addr, len, device_name);
+}
+
+void log_mmio_write(paddr_t addr, int len, word_t data, const char* device_name) {
+	log_write("mmio write at " FMT_PADDR " len = %d, data = " FMT_WORD ", device = %s\n", addr, len, data, device_name);
+}
+
+
 /* 以下为ftrace部分 */
 
 typedef struct {
