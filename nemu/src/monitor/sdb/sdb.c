@@ -157,6 +157,17 @@ static int cmd_d(char* args) {
 	return 0;
 }
 
+static int cmd_h(char *args) {
+  if (args == NULL) {
+    printf("Need a number to print history!\n");
+    return 0;
+  }
+  int num = atoi(args);
+  void itrace_display_history(int num);
+  itrace_display_history(num);
+  return 0;
+}
+
 static int cmd_test(char *args){
   int right_ans = 0;
   FILE *input_file = fopen("/home/lockedcore/ysyx/ics2024/nemu/tools/gen-expr/output", "r");
@@ -223,10 +234,12 @@ static struct {
   { "w", "Set watchpoint", cmd_w},
   { "d", "Delete watchpoint", cmd_d},
   { "test", "Test p command accuracy", cmd_test},
-  { "b", "Set breakpoint", cmd_b}
+  { "b", "Set breakpoint", cmd_b},
+  { "h", "Print history", cmd_h}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
+
 
 static int cmd_help(char *args) {
   /* extract the first argument */

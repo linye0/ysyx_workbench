@@ -132,6 +132,8 @@ void init_monitor(int argc, char* argv[]) {
 
 	parse_elf(elf_file);
 
+  printf("ref_so_file: %s\n", ref_so_file);
+
   init_difftest(ref_so_file, img_size, 0);
 
   #ifdef CONFIG_ITRACE

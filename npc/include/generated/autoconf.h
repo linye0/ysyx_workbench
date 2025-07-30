@@ -8,5 +8,7 @@
 #define CONFIG_CC_O2 1
 #define CONFIG_ITRACE 1
 #define CONFIG_DIFFTEST 1
+#define CONFIG_SOFT_MMIO 1
+#define CONFIG_FTRACE 1
 #define CONFIG_CC_OPT "-O2"
 #define CONFIG_DEBUG 1

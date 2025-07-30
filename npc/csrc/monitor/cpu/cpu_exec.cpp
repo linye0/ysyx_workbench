@@ -1,6 +1,7 @@
 #include "verilated.h"
 #include <common.h>
 #include <cstdint>
+#include <cstdio>
 #include <difftest.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -108,7 +109,7 @@ void cpu_exec(uint64_t n)
         disassemble(disasm_str, sizeof(disasm_str), top->pc, (uint8_t*)&inst, sizeof(inst));
         if (origin_n != -1) printf("command: %s\n", disasm_str);
         void print_all_regs();
-        Log("pc: %08x, command: %s\n", origin_pc, disasm_str);
+        // printf("pc: %08x, command: %s\n", origin_pc, disasm_str);
         char log_buf[512];
         snprintf(log_buf, sizeof(log_buf), "pc: 0x%08x, inst: 0x%08x, %s", top->pc, top->inst, disasm_str);
         void itrace_record(const char* log, vaddr_t pc);

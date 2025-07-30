@@ -16,6 +16,28 @@ void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 void (*ref_difftest_init)(int port) = NULL;
 
+static bool is_skip_ref = false;
+static bool should_diff_mem = false;
+static int skip_dut_nr_inst = 0;
+
+void difftest_should_diff_mem() {
+    should_diff_mem = true;
+}
+
+void difftest_skip_ref() {
+    is_skip_ref = true;
+}
+
+void difftest_skip_dut(int nr_ref, int nr_dut)
+{
+  skip_dut_nr_inst += nr_dut;
+
+  while (nr_ref-- > 0)
+  {
+    ref_difftest_exec(1);
+  }
+}
+
 void init_difftest(char* ref_so_file, long img_size, int port) { 
 #ifdef CONFIG_DIFFTEST
     assert(ref_so_file != NULL);
@@ -70,6 +92,16 @@ static void checkregs(NPCState *ref, vaddr_t pc) {
 
 void difftest_step(vaddr_t pc) {
     NPCState ref_r;
+    if (skip_dut_nr_inst > 0) {
+        skip_dut_nr_inst--;
+        return;
+    }
+    if (is_skip_ref) {
+        ref_difftest_regcpy(&npc, DIFFTEST_TO_REF);
+        ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
+        is_skip_ref = false;
+        return;
+    }
     ref_difftest_exec(1);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
     checkregs(&ref_r, *npc.cpc);

@@ -7,7 +7,7 @@
 #include <elf.h>
 #include <unistd.h>
 
-#define ITRACE_BUF_SIZE 16  // 稍微大于10，提供一些缓冲空间
+#define ITRACE_BUF_SIZE 50  // 稍微大于10，提供一些缓冲空间
 
 /* 以下为iringbuffer部分 */
 

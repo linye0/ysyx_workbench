@@ -6,12 +6,32 @@ void difftest_skip_ref();
 void npc_abort();
 
 static uint8_t pmem[MSIZE] = {};
+static uint8_t sdram[SDRAM_SIZE] = {};
+static uint8_t sram[SRAM_SIZE] = {};
+static uint8_t mrom[MROM_SIZE] = {};
+static uint8_t flash[FLASH_SIZE] = {};
+#ifdef CONFIG_SOFT_MMIO
+static uint32_t rtc_port_base[2] = {0x0, 0x0};
+#endif
 
 uint8_t *guest_to_host(paddr_t addr)
 {
     if (addr >= MBASE && addr <= MBASE + MSIZE)
     {
         return pmem + addr - MBASE;
+    }
+    if (addr >= MROM_BASE && addr < MROM_BASE + MROM_SIZE) 
+    {
+        return mrom + addr - MROM_BASE;
+    }
+    if (addr >= SRAM_BASE && addr < SRAM_BASE + SRAM_SIZE) {
+        return sram + addr - SRAM_BASE;
+    }
+    if (addr >= FLASH_BASE && addr < FLASH_BASE + FLASH_SIZE) {
+        return flash + addr - FLASH_BASE;
+    }
+    if (addr >= SDRAM_BASE && addr < SDRAM_BASE + SDRAM_SIZE) {
+        return sdram + addr - SDRAM_BASE;
     }
     // Assert(0, "Invalid guest address: " FMT_WORD, addr);
     return NULL;
@@ -63,6 +83,19 @@ uint32_t local_pmem_read(uint32_t vaddr) {
 }
 
 extern "C" int pmem_read(word_t raddr, char wmask) {
+    #ifdef CONFIG_SOFT_MMIO
+        if (raddr == RTC_ADDR + 4) {
+            uint64_t t = get_time();
+            rtc_port_base[0] = (uint32_t)(t >> 32);
+            difftest_skip_ref();
+            return rtc_port_base[0];
+        } else if (raddr == RTC_ADDR) {
+            uint64_t t = get_time();
+            rtc_port_base[1] = (uint32_t)(t);
+            difftest_skip_ref();
+            return rtc_port_base[1];
+        }
+    #endif
     // printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
     uint8_t *host_addr = guest_to_host(raddr);
     host_addr = (uint8_t*)((size_t)host_addr);
@@ -99,6 +132,13 @@ extern "C" int pmem_read(word_t raddr, char wmask) {
 }
 
 extern "C" void pmem_write(word_t waddr, word_t wdata, char wmask) {
+    #ifdef CONFIG_SOFT_MMIO
+        if (waddr == SERIAL_PORT) {
+            putchar(wdata);
+            difftest_skip_ref();
+            return;
+        }
+    #endif
     // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
     // `wmask`中每比特表示`wdata`中1个字节的掩码,
     // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变

@@ -34,9 +34,6 @@ static bool g_print_step = false;
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
-#ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-#endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
   int wp_difftest();
@@ -127,7 +124,7 @@ void cpu_exec(uint64_t n) {
 	  if (nemu_state.state == NEMU_ABORT || nemu_state.halt_ret != 0) {
 		  printf("Program exits because of ABORT or ERROR.\n");
 		  void itrace_display_history(int num);
-		  itrace_display_history(10);
+		  itrace_display_history(40);
 	  }
       #endif 
       Log("nemu: %s at pc = " FMT_WORD,

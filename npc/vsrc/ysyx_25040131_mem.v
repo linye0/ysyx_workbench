@@ -41,6 +41,10 @@ always @(*) begin
             read_data = 32'b0;
         end
     endcase
+    end
+end
+
+always@(posedge clk) begin
     case (write_mem)
         // sw
         2'b01:begin
@@ -58,6 +62,5 @@ always @(*) begin
             
         end
     endcase
-    end
 end
 endmodule

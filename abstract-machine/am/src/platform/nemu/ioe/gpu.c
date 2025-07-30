@@ -4,6 +4,7 @@
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 
 void __am_gpu_init() {
+  /*
   int i;
   int w = inl(VGACTL_ADDR) >> 16;
   int h = inl(VGACTL_ADDR) & 0xffff;
@@ -12,6 +13,7 @@ void __am_gpu_init() {
     fb[i] = i;
   }
   outl(SYNC_ADDR, 1);
+  */
 }
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {

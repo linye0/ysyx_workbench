@@ -39,6 +39,40 @@ typedef word_t vaddr_t;
 #define MBASE 0x80000000
 #define MSIZE 0x08000000
 
+#define PSRAM_BASE 0x80000000
+#define PSRAM_SIZE 0x08000000
+
+#define SDRAM_BASE 0xa0000000
+#define SDRAM_SIZE 0x20000000
+
+#define SRAM_BASE 0x0f000000
+#define SRAM_SIZE 0x00002000
+
+#define MROM_BASE 0x20000000
+#define MROM_SIZE 0x00010000
+
+#define FLASH_BASE 0x30000000
+#define FLASH_SIZE 0x10000000
+
+#ifdef CONFIG_SOFT_MMIO
+
+#define DEVICE_BASE 0xa0000000
+
+#define MMIO_BASE 0xa0000000
+
+#define SERIAL_PORT (DEVICE_BASE + 0x00003f8)
+#define KBD_ADDR (DEVICE_BASE + 0x0000060)
+#define RTC_ADDR (DEVICE_BASE + 0x0000048)
+#define VGACTL_ADDR (DEVICE_BASE + 0x0000100)
+#define AUDIO_ADDR (DEVICE_BASE + 0x0000200)
+#define DISK_ADDR (DEVICE_BASE + 0x0000300)
+#define FB_ADDR (MMIO_BASE + 0x1000000)
+#define AUDIO_SBUF_ADDR (MMIO_BASE + 0x1200000)
+
+#endif
+
+uint64_t get_time();
+
 extern FILE *log_fp;
 
 #define _Log(...)                               \
