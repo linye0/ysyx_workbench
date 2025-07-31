@@ -28,6 +28,7 @@ always @(*) begin
         // lb
         3'b111:begin
             read_data = pmem_read(addr, 32'h1);
+            read_data = {{24{read_data[7]}}, read_data[7:0]};
         end
         // lbu
         3'b011:begin

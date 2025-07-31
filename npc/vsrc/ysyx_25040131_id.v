@@ -18,7 +18,7 @@ assign  func3  = instr[14:12];
 assign  func7  = instr[31:25];
 
 always @(*) begin
-		// $display("[Verilog]cur_inst:\nopcode:%0x,\nrs1:%0x,\nrs2:%0x,\nrd:%0x,\nfunc3:%0x,\nfunc7:%0x\n", opcode, rs1, rs2, rd, func3, func7);
+		// $display("[Verilog]cur_inst:\ninst:%h,\nopcode:%h,\nrs1:%h,\nrs2:%h,\nrd:%h,\nfunc3:%h,\nfunc7:%h\n", instr, opcode, rs1, rs2, rd, func3, func7);
 		if (opcode == 7'b1110011 && instr[31:20] == 12'b000000000001) begin
 			npc_exu_ebreak();
 		end

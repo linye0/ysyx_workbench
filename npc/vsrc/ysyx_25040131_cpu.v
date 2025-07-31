@@ -35,6 +35,10 @@ wire [2: 0] read_mem; // 读内存信号
 wire [2: 0] extOP; // 立即数产生信号
 wire[1: 0] pcImm_NEXTPC_rs1Imm; // 无条件跳转
 wire condition_branch; // 条件跳转
+wire equal;
+wire [31:0] write_aluormem_rd_data;
+
+wire[6:0] lui_opcode = 7'b0110111;
 
 ysyx_25040131_pc PC(
     .rst(rst),
@@ -109,13 +113,28 @@ ysyx_25040131_gpr REG_FILE(
     .read_rs2_data(read_rs2_data)
 );
 
-ysyx_25040131_mux_2 MUX_WB(
+ysyx_25040131_comparator_7bit lui_judge(
+    .a(opcode),
+    .b(lui_opcode),
+    .equal(equal)
+);
+
+ysyx_25040131_mux_2 MUX_ALUORMEM_WB(
     .signal(aluOut_WB_memOut),
     .a(out_alu),
     .b(out_mem),
 
+    .out(write_aluormem_rd_data)
+);
+
+ysyx_25040131_mux_2 MUX_WB(
+    .signal(equal),
+    .a(write_aluormem_rd_data),
+    .b(imm_32),
+
     .out(write_rd_data)
 );
+
 
 ysyx_25040131_mux_3 MUX_EX_B(
     .signal(rs2Data_EX_imm32_4),
@@ -141,5 +160,11 @@ ysyx_25040131_alu ALU(
     .out(out_alu),
     .condition_branch(condition_branch)
 );
+
+/*
+always @(posedge clk) begin
+    $display("aluc: %d, a: %d, b: %d, alu_out: %d\n", aluc, in_alu_a, in_alu_b, out_alu);
+end
+*/
 
 endmodule
