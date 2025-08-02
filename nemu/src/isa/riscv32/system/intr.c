@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "isa-def.h"
 #include <isa.h>
 
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
@@ -20,7 +21,30 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
    * Then return the address of the interrupt/exception vector.
    */
 
-  return 0;
+  word_t tval = 0;
+
+  switch (NO) {
+    case MCA_BREAK_POINT:
+      tval = epc;
+      break;
+    case MCA_ENV_CAL_MMO:
+    case MCA_ENV_CAL_SMO:
+    case MCA_ENV_CAL_UMO:
+      tval = 0;
+      break;
+    default:
+      break;
+  }
+
+  word_t ret_pc = 0;
+
+  cpu.sr[CSR_MTVAL] = tval;
+  cpu.sr[CSR_MEPC] = epc;
+  cpu.sr[CSR_MCAUSE] = NO;
+
+  ret_pc = cpu.sr[CSR_MTVEC];
+
+  return ret_pc;
 }
 
 word_t isa_query_intr() {

@@ -15,17 +15,20 @@
 
 #include "local-include/reg.h"
 #include <cpu/cpu.h>
+#include <cpu/difftest.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
 
 #define R(i) gpr(i)
+#define CSR(i) sr(i)
 #define Mr vaddr_read
 #define Mw vaddr_write
+
 
 enum {
   TYPE_I, TYPE_U, TYPE_S,
   TYPE_N, TYPE_J, TYPE_B,
-  TYPE_R// none
+  TYPE_I_I, TYPE_R// none
 };
 
 #define src1R() do { *src1 = R(rs1); } while (0)
@@ -36,13 +39,39 @@ enum {
 #define immB() do { *imm = ((SEXT(BITS(i, 31, 31), 1) << 12) | BITS(i, 7, 7) << 11 | (BITS(i, 30, 25) << 5) | (BITS(i, 11, 8)) << 1 ) & ~1ull; } while(0)
 #define immJ() do { *imm = (SEXT(BITS(i, 31, 31), 1) << 20 | BITS(i, 19, 12) << 12 | BITS(i, 20, 20) << 11 | BITS(i, 30, 21) << 1) & ~1ull;} while (0)
 
-static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
+bool csr_valid(Decode *s, uint16_t csr)
+{
+  CSR_status csr_status = check_csr_exist(csr);
+  switch (csr_status)
+  {
+  case CSR_EXIST:
+    return true;
+    break;
+  case CSR_EXIST_DIFF_SKIP:
+    difftest_skip_ref();
+    return true;
+    break;
+  case CSR_NOT_EXIST:
+    s->dnpc = isa_raise_intr(MCA_ILLEGAL_INS, s->pc);
+    difftest_skip_ref();
+    break;
+  default:
+    panic("Wrong csr_status");
+    break;
+  }
+  return false;
+}
+
+
+static void decode_operand(Decode *s, int *rd, int* rs, word_t *src1, word_t *src2, word_t *imm, int type) {
   uint32_t i = s->isa.inst;
   int rs1 = BITS(i, 19, 15);
   int rs2 = BITS(i, 24, 20);
   *rd     = BITS(i, 11, 7);
+  *rs     = rs1;
   switch (type) {
     case TYPE_I: src1R();          immI(); break;
+    case TYPE_I_I: *src1 = rs1;    immI(); break;
     case TYPE_U:                   immU(); break;
     case TYPE_S: src1R(); src2R(); immS(); break;
 	case TYPE_J: immJ(); break;
@@ -58,9 +87,9 @@ static int decode_exec(Decode *s) {
 
 #define INSTPAT_INST(s) ((s)->isa.inst)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
-  int rd = 0; \
+  int rd = 0, rs1 = 0;\
   word_t src1 = 0, src2 = 0, imm = 0; \
-  decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
+  decode_operand(s, &rd, &rs1, &src1, &src2, &imm, concat(TYPE_, type)); \
   __VA_ARGS__ ; \
 }
 
@@ -150,13 +179,28 @@ static int decode_exec(Decode *s) {
   // fence
   // fence.i
   // ecall
-  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall, N,
+            s->dnpc = isa_raise_intr(
+                ((cpu.priv == PRV_U) ? MCA_ENV_CAL_UMO : ((cpu.priv == PRV_S) ? MCA_ENV_CAL_SMO : MCA_ENV_CAL_MMO)),
+                s->pc));
+  // ebreak
+  #if defined(CONFIG_DEBUG)
+    INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  #else
+    INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, { s->dnpc = isa_raise_intr(MCA_BREAK_POINT, s->pc); });
+  #endif
   // csrrw
   // csrrs
   // csrrc
   // csrrwi
   // cssrrsi
   // csrrci
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw, I, { if (csr_valid(s, imm)) {R(rd) = CSR(imm); CSR(imm) = src1; } });
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs, I, { if (csr_valid(s, imm)) {R(rd) = CSR(imm); if (rs1 != 0) { CSR(imm) = CSR(imm) | src1;}; } });
+  INSTPAT("??????? ????? ????? 011 ????? 11100 11", csrrc, I, { if (csr_valid(s, imm)) {R(rd) = CSR(imm); if (rs1 != 0) { CSR(imm) = CSR(imm) & ~src1;}; } });
+  INSTPAT("??????? ????? ????? 101 ????? 11100 11", csrrwi, I_I, { if (csr_valid(s, imm)) { R(rd) = CSR(imm); CSR(imm) = src1;} });
+  INSTPAT("??????? ????? ????? 110 ????? 11100 11", csrrsi, I_I, { if (csr_valid(s, imm)) { R(rd) = CSR(imm); if (rs1 != 0) { CSR(imm) = CSR(imm) | src1; };} });
+  INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci, I_I, { if (csr_valid(s, imm)) { R(rd) = CSR(imm); if (rs1 != 0) { CSR(imm) = CSR(imm) & ~src1; };} });
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   INSTPAT_END();
 
