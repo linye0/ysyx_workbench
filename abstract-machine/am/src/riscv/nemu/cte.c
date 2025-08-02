@@ -8,10 +8,37 @@ Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
-      default: ev.event = EVENT_ERROR; break;
+      case 0x8ul:
+      case 0x9ul:
+      case 0xbul:
+      {
+        c->mepc = c->mepc + 4;
+        if (c->GPR1 == -1) {
+          ev.event = EVENT_YIELD;
+        } else {
+          ev.event = EVENT_SYSCALL;
+        }
+      }
+      break;
+  #if defined(CONFIG_ISA64)
+      case 0x8000000000000007:
+  #endif
+      case 0x80000007:
+      {
+        ev.event = EVENT_IRQ_TIMER;
+      }
+      break;
+    default: ev.event = EVENT_ERROR; break;
     }
-
+    size_t mscratch = 0, sp;
+    asm volatile("csrr %0, mscratch\nmv %1, sp" : "=r"(mscratch), "=r"(sp));
+    // printf("mscratch = %d, sp = %d\n", mscratch, sp);
+     // printf("- c: %p, c->np: %d, cp->gpr[sp]: %p, mscratch = %d, sp = %p\n",
+           // c, c->np, c->gpr[2], mscratch, sp);
     c = user_handler(ev, c);
+    asm volatile("csrr %0, mscratch\nmv %1, sp" : "=r"(mscratch), "=r"(sp));
+     // printf("= c: %p, c->np: %d, cp->gpr[sp]: %p, mscratch = %d, sp = %p\n",
+       //    c, c->np, c->gpr[2], mscratch, sp);
     assert(c != NULL);
   }
 

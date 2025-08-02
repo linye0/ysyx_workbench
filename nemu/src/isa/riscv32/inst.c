@@ -189,6 +189,17 @@ static int decode_exec(Decode *s) {
   #else
     INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, { s->dnpc = isa_raise_intr(MCA_BREAK_POINT, s->pc); });
   #endif
+  // mret
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret, N, s->dnpc = CSR(CSR_MEPC);
+          csr_t reg = {.val = CSR(CSR_MSTATUS)};
+          cpu.last_inst_priv = cpu.priv;
+          cpu.priv = reg.mstatus.mpp;
+          reg.mstatus.mie = reg.mstatus.mpie;
+          reg.mstatus.mpie = 1;
+          reg.mstatus.mpp = PRV_U;
+          // printf(" mret: priv: %d, mstatus_p: " FMT_WORD_NO_PREFIX ", mstatus: " FMT_WORD "\n",
+          //        cpu.priv, CSR(CSR_MSTATUS), reg.val);
+          CSR(CSR_MSTATUS) = reg.val;);
   // csrrw
   // csrrs
   // csrrc
