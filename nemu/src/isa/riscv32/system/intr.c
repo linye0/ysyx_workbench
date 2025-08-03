@@ -21,6 +21,11 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
    * Then return the address of the interrupt/exception vector.
    */
 
+  #ifdef CONFIG_ETRACE
+  printf("ETRACE | NO: %d at epc: " FMT_WORD " trap-handler base address: " FMT_WORD,
+         NO, epc, cpu.sr[CSR_MTVEC]);
+  #endif
+
   word_t tval = 0;
 
   switch (NO) {

@@ -1,6 +1,6 @@
 #include <amtest.h>
 
-Context *simple_trap(Event ev, Context *ctx) {
+Context *simple_trap(Event ev, Context *ctx) { 
   switch(ev.event) {
     case EVENT_IRQ_TIMER:
       putch('t'); break;
