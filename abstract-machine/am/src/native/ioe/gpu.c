@@ -3,12 +3,12 @@
 #include <fenv.h>
 
 //#define MODE_800x600
-#define WINDOW_W 800
-#define WINDOW_H 600
 #ifdef MODE_800x600
-const int disp_w = WINDOW_W, disp_h = WINDOW_H;
+# define W    800
+# define H    600
 #else
-const int disp_w = 400, disp_h = 300;
+# define W    400
+# define H    300
 #endif
 
 #define FPS   60
@@ -31,8 +31,13 @@ void __am_gpu_init() {
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
   window = SDL_CreateWindow("Native Application",
       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      WINDOW_W, WINDOW_H, SDL_WINDOW_OPENGL);
-  surface = SDL_CreateRGBSurface(SDL_SWSURFACE, disp_w, disp_h, 32,
+#ifdef MODE_800x600
+      W, H,
+#else
+      W * 2, H * 2,
+#endif
+      SDL_WINDOW_OPENGL);
+  surface = SDL_CreateRGBSurface(SDL_SWSURFACE, W, H, 32,
       RMASK, GMASK, BMASK, AMASK);
   SDL_AddTimer(1000 / FPS, texture_sync, NULL);
 }
@@ -40,7 +45,7 @@ void __am_gpu_init() {
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
   *cfg = (AM_GPU_CONFIG_T) {
     .present = true, .has_accel = false,
-    .width = disp_w, .height = disp_h,
+    .width = W, .height = H,
     .vmemsz = 0
   };
 }

@@ -22,7 +22,7 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
    */
 
   #ifdef CONFIG_ETRACE
-  printf("ETRACE | NO: %d at epc: " FMT_WORD " trap-handler base address: " FMT_WORD,
+  printf("ETRACE | NO: %d at epc: " FMT_WORD " trap-handler base address: " FMT_WORD "\n",
          NO, epc, cpu.sr[CSR_MTVEC]);
   #endif
 

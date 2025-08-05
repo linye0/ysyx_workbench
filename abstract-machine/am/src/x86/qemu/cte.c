@@ -141,7 +141,7 @@ Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
 #if __x86_64__
   ctx->cs     = KSEL(SEG_KCODE);
-  ctx->rip    = (uintptr_t)__am_kcontext_start;
+  ctx->rip    = (uintptr_t)__am__start;
   ctx->rflags = FL_IF;
   ctx->rsp    = (uintptr_t)kstack.end;
 #else
