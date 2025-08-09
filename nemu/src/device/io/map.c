@@ -61,6 +61,7 @@ word_t map_read(paddr_t addr, int len, IOMap *map) {
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
   invoke_callback(map->callback, offset, len, false); // prepare data to read
+  // 问题1：为什么在host_read之前要调用invoke_callback? invoke_callback没有返回值，那么具体干了什么事情？
   word_t ret = host_read(map->space + offset, len);
   return ret;
 }
