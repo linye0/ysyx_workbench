@@ -85,7 +85,7 @@ void cpu_exec(uint64_t n)
     {
     case NPC_END:
     case NPC_ABORT:
-        printf("Program execution has ended. To restart the program, NPC and run again.\n");
+        printf("Program execution has ended. To  threstarte program, NPC and run again.\n");
         return;
     case NPC_QUIT:
         printf("Program execution has been quitted.\n");
@@ -121,15 +121,16 @@ void cpu_exec(uint64_t n)
         ftrace(origin_pc, *npc.cpc);
         #endif
 
+        if (npc.state == NPC_END) {
+            break;    
+        }
+
         #ifdef CONFIG_DIFFTEST
         difftest_step(*npc.cpc);
         #endif
         npc.last_inst = *(npc.inst);
         int wp_difftest(void);
         wp_difftest();
-        if (npc.state == NPC_END) {
-            break;    
-        }
     }
 
     if (origin_n == -1) {

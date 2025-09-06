@@ -38,15 +38,6 @@ NPC_ARGS += -i $(IMG).bin -e $(IMG).elf -d $(NEMU_HOME)/build/riscv32-nemu-inter
 
 all: default
 
-run: $(BIN)
-	@$^
-
-clean:
-	rm -rf $(BUILD_DIR)
-
-.PHONY: default all clean run
-
-sim: $(BIN)
 
 $(BIN): $(VSRCS) $(CSRCS)
 	@echo "Building verilator simulation..."
@@ -66,26 +57,23 @@ $(BIN_GDB): $(VSRCS) $(CSRCS)
 		$^ \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN_GDB))
 
-run-sim: $(BIN)
+run: $(BIN)
 	@echo "Running simulation..."
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
 	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(NPC_ARGS)
 
-gdb-sim: $(BIN_GDB)
-	@echo "Running simulation..."
+gdb: $(BIN_GDN)
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
 	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(NPC_ARGS)
 
-batch-run-sim: $(BIN)
-	@echo "Running simulation..."
+batch-run: $(BIN)
 	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
 	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(NPC_ARGS) -b
 
-gdb-npc: $(BIN_GDB)
-	@cd $(AK_HOME)/tests/cpu-tests && make ALL=$(ALL) ARCH=riscv32e-npc gdb-npc
+clean:
+	rm -rf $(BUILD_DIR)
 
-run-npc: $(BIN)
-	@cd $(AK_HOME)/tests/cpu-tests && make ALL=$(ALL) ARCH=riscv32e-npc run-npc
+.PHONY: default all clean run gdb
 
 test: $(BIN)
 	@echo "Running test..."
