@@ -31,7 +31,7 @@ void init_disasm() {
 	}
 // 构造完整的路径字符串
     char libpath[1024];
-    snprintf(libpath, sizeof(libpath), "%s/tools/capstone/repo/libcapstone.so.5", nemu_home);
+  snprintf(libpath, sizeof(libpath), "%s/tools/capstone/repo/libcapstone.so.5", nemu_home);
   void *dl_handle;
   dl_handle = dlopen(libpath, RTLD_LAZY);
   assert(dl_handle);

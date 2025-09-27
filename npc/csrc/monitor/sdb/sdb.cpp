@@ -218,9 +218,9 @@ static int cmd_help(char* args) {
 }
 
 void sdb_sim_init(int argc, char* argv[]) {
-	contextp = new VerilatedContext;
-	contextp->commandArgs(argc, argv);
-	top = new TOP_NAME{contextp};
+	contextp = new verilatedcontext;
+	contextp->commandargs(argc, argv);
+	top = new top_name{contextp};
 	verilog_connect(top, &npc);
 
 	reset(top, 16);

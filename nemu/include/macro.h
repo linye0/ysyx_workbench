@@ -18,9 +18,17 @@
 
 #include <string.h>
 
+#ifdef CONFIG_NPC
+#define _CONCAT(x, y) x##y
+#define CONCAT(x, y) _CONCAT(x, y)
+#define CONCAT_HEAD(x) <x.h>
+#endif
+
 // macro stringizing
 #define str_temp(x) #x
 #define str(x) str_temp(x)
+
+#define FMT_WORD_NO_PREFIX "%08x"
 
 // strlen() for string constant
 #define STRLEN(CONST_STR) (sizeof(CONST_STR) - 1)

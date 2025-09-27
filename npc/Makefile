@@ -1,6 +1,5 @@
 TOPNAME = ysyx_25040131_cpu
 NXDC_FILES = constr/top.nxdc
-INC_PATH = $(abspath include)
 INC_PATH += $(NEMU_HOME)/include/generated
 
 VERILATOR = verilator
@@ -11,6 +10,7 @@ BUILD_DIR = $(abspath build)
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(OBJ_DIR)/V$(TOPNAME)
 BIN_GDB = $(OBJ_DIR)/V$(TOPNAME)_gdb
+GUEST_ISA = riscv32
 
 default: $(BIN)
 
@@ -18,26 +18,25 @@ include ../Makefile
 include $(NPC_HOME)/scripts/config.mk
 
 FILELIST_MK = $(shell find -L ./csrc -name "filelist.mk")
+FILELIST_MK += $(shell find -L $(NEMU_HOME)/src -name "filelist.mk")
 $(info FILELIST_MK: $(FILELIST_MK))
 include $(FILELIST_MK)
-
 
 INC_PATH += $(OBJ_DIR)
 
 $(shell mkdir -p $(BUILD_DIR))
 
 VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
-CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
+CSRCS = $(shell find $(abspath $(NEMU_HOME)/src) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
+INC_PATH += $(NEMU_HOME)/include
+$(info INC_PATH: $(INC_PATH))
 
 INCFLAGS = $(addprefix -I, $(INC_PATH))
-CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
+CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -DCONFIG_NPC -D__GUEST_ISA__=$(GUEST_ISA) -DCONFIG_RVE
 GDBFLAGS = $(CXXFLAGS) -g -O0
-LDFLAGS += -lreadline -lncurses -lpthread -latomic
-IMG ?= $(TEST_DIR)/build/$(ALL)-$(ARCH)
-NPC_ARGS += -i $(IMG).bin -e $(IMG).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
+LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
 all: default
-
 
 $(BIN): $(VSRCS) $(CSRCS)
 	@echo "Building verilator simulation..."
@@ -59,16 +58,16 @@ $(BIN_GDB): $(VSRCS) $(CSRCS)
 
 run: $(BIN)
 	@echo "Running simulation..."
-	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(NPC_ARGS)
+	@echo "executing $(IMG)..."
+	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(ARGS) $(IMG)
 
 gdb: $(BIN_GDN)
-	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(NPC_ARGS)
+	@echo "executing $(IMG).bin..."
+	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(ARGS) $(IMG)
 
 batch-run: $(BIN)
-	@echo "executing $(TEST_DIR)/build/$(ALL)-$(ARCH).bin..."
-	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(NPC_ARGS) -b
+	@echo "executing $(IMG).bin..."
+	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(ARGS) -b
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -88,6 +87,5 @@ test: $(BIN)
 wave:
 	gtkwave waveform.vcd
 
-include ./scripts/config.mk
 
 .PHONY: sim run-sim gdb-sim gdb-npc run-npc wave 

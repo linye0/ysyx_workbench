@@ -19,6 +19,10 @@
 // Located at src/isa/$(GUEST_ISA)/include/isa-def.h
 #include <isa-def.h>
 
+#ifdef CONFIG_NPC
+#include <npc/npc_verilog.h>
+#endif
+
 // The macro `__GUEST_ISA__` is defined in $(CFLAGS).
 // It will be expanded as "x86" or "mips32" ...
 typedef concat(__GUEST_ISA__, _CPU_state) CPU_state;
@@ -54,5 +58,9 @@ word_t isa_query_intr();
 // difftest
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc);
 void isa_difftest_attach();
+
+#ifdef CONFIG_NPC
+void update_cpu_state(CPU_state *cpu, NPCState top);
+#endif
 
 #endif

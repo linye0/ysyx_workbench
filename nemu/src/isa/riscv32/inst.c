@@ -17,7 +17,11 @@
 #include <cpu/cpu.h>
 #include <cpu/difftest.h>
 #include <cpu/ifetch.h>
+#include <utils.h>
 #include <cpu/decode.h>
+#ifdef CONFIG_NPC
+#include <npc/npc_verilog.h>
+#endif
 
 #define R(i) gpr(i)
 #define CSR(i) sr(i)
@@ -184,11 +188,11 @@ static int decode_exec(Decode *s) {
                 ((cpu.priv == PRV_U) ? MCA_ENV_CAL_UMO : ((cpu.priv == PRV_S) ? MCA_ENV_CAL_SMO : MCA_ENV_CAL_MMO)),
                 s->pc));
   // ebreak
-  #if defined(CONFIG_DEBUG)
+  // #if defined(CONFIG_DEBUG)
     INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
-  #else
-    INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, { s->dnpc = isa_raise_intr(MCA_BREAK_POINT, s->pc); });
-  #endif
+  // #else
+    // INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, { s->dnpc = isa_raise_intr(MCA_BREAK_POINT, s->pc); });
+  // #endif
   // mret
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret, N, s->dnpc = CSR(CSR_MEPC);
           csr_t reg = {.val = CSR(CSR_MSTATUS)};
@@ -220,7 +224,20 @@ static int decode_exec(Decode *s) {
   return 0;
 }
 
+#ifdef CONFIG_NPC
+static int npc_exec(Decode *s) {
+  top->inst = s->isa.inst;
+  cpu_exec_once();
+  update_cpu_state(&cpu, nemu_state);
+  return 0;
+}
+#endif
+
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
+  #ifdef CONFIG_NPC
+  return npc_exec(s);
+  #else
   return decode_exec(s);
+  #endif
 }

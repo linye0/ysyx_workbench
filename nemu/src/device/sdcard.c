@@ -123,6 +123,7 @@ static void sdcard_io_handler(uint32_t offset, int len, bool is_write) {
 }
 
 void init_sdcard() {
+  #ifdef CONFIG_SDCARD_CTL_MMIO
   base = (uint32_t *)new_space(0x80);
   add_mmio_map("sdhci", CONFIG_SDCARD_CTL_MMIO, base, 0x80, sdcard_io_handler);
 
@@ -131,4 +132,5 @@ void init_sdcard() {
   const char *img = CONFIG_SDCARD_IMG_PATH;
   fp = fopen(img, "r+");
   if (fp == NULL) Log("Can not find sdcard image: %s", img);
+  #endif
 }

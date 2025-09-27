@@ -67,6 +67,22 @@ void itrace_write_into_log(int num) {
 	}
 }
 
+/* 以下为mtrace部分 */
+void log_pread(paddr_t addr, int len) {
+	Log("pread at %p, len = %d\n", addr, len);
+}
+
+void log_pwrite(paddr_t addr, int len, word_t data) {
+	Log("pwrite at %p, len = %d, data = 0x%08x\n", addr, len, data);
+}
+
+void log_mmio_read(paddr_t addr, int len, const char* device_name) {
+	Log("mmio read at %p, len = %d, device = %s\n", addr, len, device_name);
+}
+
+void log_mmio_write(paddr_t addr, int len, word_t data, const char* device_name) {
+	Log("mmio write at %p, len = %d, data = 0x%08x, device = %s\n", addr, len, data, device_name);
+}
 
 /* 以下为ftrace部分 */
 

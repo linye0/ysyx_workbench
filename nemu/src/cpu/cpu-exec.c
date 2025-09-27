@@ -19,6 +19,10 @@
 #include <utils.h>
 #include <locale.h>
 
+#ifdef CONFIG_NPC
+#include <npc/npc_verilog.h>
+#endif
+
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -36,7 +40,7 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
-  int wp_difftest();
+  int wp_difftest(void);
   if (wp_difftest() > 0) nemu_state.state = NEMU_STOP;
 }
 
@@ -76,7 +80,11 @@ static void exec_once(Decode *s, vaddr_t pc) {
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
+    #ifdef CONFIG_NPC
+    exec_once(&s, top->pc);
+    #else
     exec_once(&s, cpu.pc);
+    #endif
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
 

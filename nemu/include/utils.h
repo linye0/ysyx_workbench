@@ -16,6 +16,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include "macro.h"
 #include <common.h>
 
 // ----------- state -----------
@@ -24,11 +25,78 @@ enum { NEMU_RUNNING, NEMU_STOP, NEMU_END, NEMU_ABORT, NEMU_QUIT };
 
 typedef struct {
   int state;
-  vaddr_t halt_pc;
+  uint32_t halt_pc;
   uint32_t halt_ret;
 } NEMUState;
 
-extern NEMUState nemu_state;
+
+typedef struct
+{
+  int state;
+  uint32_t halt_pc;
+  uint32_t halt_ret;
+
+  uint32_t *gpr;
+  //uint32_t *ret;
+  uint32_t *pc;
+
+  // csr
+  /*
+  uint32_t *sstatus;
+  uint32_t *sie____;
+  uint32_t *stvec__;
+
+  uint32_t *scounte;
+
+  uint32_t *sscratch;
+  uint32_t *sepc___;
+  uint32_t *scause_;
+  uint32_t *stval__;
+  uint32_t *sip____;
+  uint32_t *satp___;
+
+  uint32_t *mstatus;
+  uint32_t *misa___;
+  uint32_t *medeleg;
+  uint32_t *mideleg;
+  uint32_t *mie____;
+  uint32_t *mtvec__;
+
+  uint32_t *mstatush;
+
+  uint32_t *mscratch;
+  uint32_t *mepc___;
+  uint32_t *mcause_;
+  uint32_t *mtval__;
+  uint32_t *mip____;
+
+  uint32_t *mcycle_;
+  uint32_t *time___;
+  uint32_t *timeh__;
+  */
+
+  // for mem diff
+  /*
+  uint32_t vwaddr;
+  uint32_t pwaddr;
+  uint32_t wdata;
+  uint32_t wstrb;
+  uint32_t len;
+  */
+
+  // for itrace
+  uint32_t *inst;
+  uint32_t *cpc;
+  uint32_t last_inst;
+
+  // for soc
+  // uint8_t *soc_sram;
+} NPCState;
+
+
+extern MUXDEF(CONFIG_NPC, NPCState, NEMUState) nemu_state;
+
+
 
 // ----------- timer -----------
 

@@ -24,8 +24,11 @@ static void (*cs_free_dl)(cs_insn *insn, size_t count);
 static csh handle;
 
 void init_disasm() {
+  char lib_path[1024];
+  const char *nemu_home = getenv("NEMU_HOME");
+  int ret = snprintf(lib_path, sizeof(lib_path), "%s/tools/capstone/repo/libcapstone.so.5", nemu_home);
   void *dl_handle;
-  dl_handle = dlopen("tools/capstone/repo/libcapstone.so.5", RTLD_LAZY);
+  dl_handle = dlopen(lib_path, RTLD_LAZY);
   assert(dl_handle);
 
   cs_err (*cs_open_dl)(cs_arch arch, cs_mode mode, csh *handle) = NULL;
@@ -46,7 +49,7 @@ void init_disasm() {
                    MUXDEF(CONFIG_ISA_mips32, CS_MODE_MIPS32,
                    MUXDEF(CONFIG_ISA_riscv,  MUXDEF(CONFIG_ISA64, CS_MODE_RISCV64, CS_MODE_RISCV32) | CS_MODE_RISCVC,
                    MUXDEF(CONFIG_ISA_loongarch32r,  CS_MODE_LOONGARCH32, -1))));
-	int ret = cs_open_dl(arch, mode, &handle);
+	ret = cs_open_dl(arch, mode, &handle);
   assert(ret == CS_ERR_OK);
 
 #ifdef CONFIG_ISA_x86

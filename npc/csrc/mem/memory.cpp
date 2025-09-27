@@ -1,10 +1,12 @@
 #include <cstdint>
 #include <stdint.h>
 #include <common.h>
+#include <memory/host.h>
 
 void difftest_skip_ref();
 void npc_abort();
 
+/*
 static uint8_t pmem[MSIZE] = {};
 static uint8_t sdram[SDRAM_SIZE] = {};
 static uint8_t sram[SRAM_SIZE] = {};
@@ -13,6 +15,7 @@ static uint8_t flash[FLASH_SIZE] = {};
 #ifdef CONFIG_SOFT_MMIO
 static uint32_t rtc_port_base[2] = {0x0, 0x0};
 #endif
+*/
 
 uint8_t *guest_to_host(paddr_t addr)
 {
@@ -40,46 +43,6 @@ uint8_t *guest_to_host(paddr_t addr)
 paddr_t host_to_guest(uint8_t *addr)
 {
     return addr + MBASE - pmem;
-}
-
-static inline word_t host_read(void *addr, int len = 4)
-{
-    switch (len)
-    {
-    case 1:
-        return *(uint8_t *)addr;
-    case 2:
-        return *(uint16_t *)addr;
-    case 4:
-        return *(uint32_t *)addr;
-    case 8:
-        return *(uint64_t *)addr;
-    default:
-        assert(0);
-    }
-}
-
-static inline void host_write(void *addr, word_t data, int len) {
-    switch(len) {
-        case 1:
-            *(uint8_t *)addr = data;
-            break;
-        case 2:
-            *(uint16_t *)addr = data;
-            break;
-        case 4:
-            *(uint32_t *)addr = data;
-            break;
-        case 8:
-            *(uint64_t *)addr = data;
-            break;
-        default:
-            assert(0);
-    }
-}
-
-uint32_t local_pmem_read(uint32_t vaddr) {
-	return host_read(guest_to_host(vaddr),  4);
 }
 
 extern "C" int pmem_read(word_t raddr, char wmask) {

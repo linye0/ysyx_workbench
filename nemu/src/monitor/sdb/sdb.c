@@ -19,6 +19,21 @@
 #include <readline/history.h>
 #include "sdb.h"
 
+#ifdef CONFIG_NPC
+#include <utils.h>
+NPCState npc = {
+	.state = NEMU_RUNNING,
+	.gpr = NULL,
+	.pc = NULL,
+
+	.inst = NULL,
+};
+
+VerilatedContext* contextp = NULL;
+VerilatedVcdC* tfp = NULL;
+TOP_NAME* top = NULL;
+#endif
+
 static int is_batch_mode = false;
 
 void init_regex();
@@ -71,8 +86,10 @@ static int cmd_info(char *args){
   else if (strcmp(args, "r") == 0){
     isa_reg_display();
   } else if (strcmp(args, "w") == 0) {
-	void wp_print();
-	wp_print();
+	  void wp_print();
+	  wp_print();
+  } else if (strcmp(args, "pc") == 0) {
+    printf("pc: 0x%x\n", cpu.pc);
   }
  
   return 0;
