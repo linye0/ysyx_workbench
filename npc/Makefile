@@ -69,8 +69,8 @@ run: $(BIN)
 	@echo "executing $(IMG)..."
 	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(ARGS) $(IMG)
 
-gdb: $(BIN_GDN)
-	@echo "executing $(IMG).bin..."
+gdb: $(BIN_GDB)
+	@echo "executing $(IMG)"
 	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(ARGS) $(IMG)
 
 batch-run: $(BIN)

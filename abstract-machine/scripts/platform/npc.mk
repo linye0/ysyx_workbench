@@ -32,5 +32,8 @@ image: image-dep
 run: insert-arg
 	# echo "TODO: add command here to run simulation"
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	
+gdb: insert-arg
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 
 .PHONY: insert-arg
