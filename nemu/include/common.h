@@ -21,7 +21,12 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifndef CONFIG_NPC
 #include <generated/autoconf.h>
+#else
+#include <autoconf.h>
+#endif
+
 #include <macro.h>
 
 #ifdef CONFIG_TARGET_AM
