@@ -1,6 +1,6 @@
 TOPNAME = ysyx_25040131_cpu
 NXDC_FILES = constr/top.nxdc
-INC_PATH += $(NEMU_HOME)/include/generated
+INC_PATH += $(NPC_HOME)/include/generated
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc -trace --top-module $(TOPNAME)  --Wno-LATCH\
@@ -14,6 +14,8 @@ GUEST_ISA = riscv32
 
 default: $(BIN)
 
+-include $(NPC_HOME)/include/config/auto.conf
+-include $(NPC_HOME)/include/config/auto.conf.cmd
 include ../Makefile
 include $(NPC_HOME)/scripts/config.mk
 
@@ -22,12 +24,18 @@ FILELIST_MK += $(shell find -L $(NEMU_HOME)/src -name "filelist.mk")
 $(info FILELIST_MK: $(FILELIST_MK))
 include $(FILELIST_MK)
 
+# Filter out directories and files in blacklist to obtain the final set of source files
+DIRS-BLACKLIST-y += $(DIRS-BLACKLIST)
+SRCS-BLACKLIST-y += $(SRCS-BLACKLIST) $(shell find -L $(DIRS-BLACKLIST-y) -name "*.c")
+SRCS-y += $(shell find -L $(DIRS-y) -name "*.c")
+CSRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
+$(info CSRCS: $(CSRCS))
+
 INC_PATH += $(OBJ_DIR)
 
 $(shell mkdir -p $(BUILD_DIR))
 
 VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
-CSRCS = $(shell find $(abspath $(NEMU_HOME)/src) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 INC_PATH += $(NEMU_HOME)/include
 $(info INC_PATH: $(INC_PATH))
 
