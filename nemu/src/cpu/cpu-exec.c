@@ -81,11 +81,13 @@ static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     #ifdef CONFIG_NPC
+    printf("execute: top->pc = 0x%x\n", top->pc);
     exec_once(&s, top->pc);
     #else
     exec_once(&s, cpu.pc);
     #endif
     g_nr_guest_inst ++;
+    printf("execute: cpu.pc = 0x%x\n", cpu.pc);
     trace_and_difftest(&s, cpu.pc);
 
     if (nemu_state.state != NEMU_RUNNING) break;

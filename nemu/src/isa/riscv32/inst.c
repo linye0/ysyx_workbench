@@ -228,7 +228,8 @@ static int decode_exec(Decode *s) {
 static int npc_exec(Decode *s) {
   top->inst = s->isa.inst;
   cpu_exec_once();
-  update_cpu_state(&cpu, nemu_state);
+  update_cpu_state(nemu_state);
+  printf("npc_exec: cpu.pc = 0x%x\n", cpu.pc);
   return 0;
 }
 #endif

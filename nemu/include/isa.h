@@ -60,7 +60,7 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc);
 void isa_difftest_attach();
 
 #ifdef CONFIG_NPC
-void update_cpu_state(CPU_state *cpu, NPCState top);
+void update_cpu_state(NPCState top);
 #endif
 
 #endif

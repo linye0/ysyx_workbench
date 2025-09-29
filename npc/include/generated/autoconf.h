@@ -26,6 +26,7 @@
 #define CONFIG_ITRACE_COND "true"
 #define CONFIG_CC "gcc"
 #define CONFIG_DIFFTEST_REF_PATH "tools/spike-diff"
+#define CONFIG_RVE 1
 #define CONFIG_TRACE_START 0
 #define CONFIG_CC_GCC 1
 #define CONFIG_TRACE 1

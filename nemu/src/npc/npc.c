@@ -40,10 +40,13 @@ void cpu_exec_once() {
     contextp->timeInc(1);
 }
 
-void update_cpu_state(CPU_state *cpu, NPCState npc) {
-    cpu->pc = *(npc.pc);
+void update_cpu_state(NPCState npc) {
+    printf("update_cpu_state:\n");
+    cpu.pc = *(npc.pc);
+    printf("cpu->pc: 0x%x\n", cpu.pc);
     for (int i = 0; i < 32; i++) {
-        cpu->gpr[i] = npc.gpr[i];
+        cpu.gpr[i] = npc.gpr[i];
+        printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
     }
     // TODO: fill in sr, priv and last_inst_priv.
     return;
