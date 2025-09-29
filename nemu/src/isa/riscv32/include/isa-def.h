@@ -179,9 +179,9 @@ enum MCAUSE
 };
 
 typedef struct {
-  // word_t gpr[MUXDEF(CONFIG_RVE, 16, 32)];
+  word_t gpr[MUXDEF(CONFIG_RVE, 32, 16)];
   // 我写的npc也是32个gpr，所以应该不用这一行?
-  word_t gpr[32];
+  // word_t gpr[32];
   vaddr_t pc;
   word_t sr[4096];
   uint32_t priv;
