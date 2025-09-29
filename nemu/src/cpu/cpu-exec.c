@@ -86,6 +86,7 @@ static void execute(uint64_t n) {
     printf("execute: top->pc = 0x%x\n", top->pc);
     exec_once(&s, top->pc);
     #else
+    printf("ref: execute: cpu.pc = 0x%x\n", cpu.pc);
     exec_once(&s, cpu.pc);
     #endif
     g_nr_guest_inst ++;
