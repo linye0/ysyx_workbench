@@ -87,7 +87,7 @@ static void execute(uint64_t n) {
     exec_once(&s, cpu.pc);
     #endif
     g_nr_guest_inst ++;
-    printf("execute: cpu.pc = 0x%x\n", cpu.pc);
+    // printf("execute: cpu.pc = 0x%x\n", cpu.pc);
     trace_and_difftest(&s, cpu.pc);
 
     if (nemu_state.state != NEMU_RUNNING) break;
