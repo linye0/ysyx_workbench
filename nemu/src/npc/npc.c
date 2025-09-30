@@ -31,12 +31,14 @@ void cpu_exec_once() {
     if (tfp) {
         tfp->dump(contextp->time());
     }
+    printf("cpu_exec_once: pc = 0x%x", *(npc.pc));
     contextp->timeInc(1);
     top->clk = (top->clk == 0) ? 1 : 0;
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
     }
+    printf("cpu_exec_once: pc = 0x%x", *(npc.pc));
     contextp->timeInc(1);
 }
 
