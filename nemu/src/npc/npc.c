@@ -4,6 +4,7 @@
 #include <memory/paddr.h>
 #include <memory/vaddr.h>
 #include <debug.h>
+#include <utils.h>
 
 #ifdef CONFIG_NPC
 
@@ -31,20 +32,23 @@ void cpu_exec_once() {
     if (tfp) {
         tfp->dump(contextp->time());
     }
-    printf("cpu_exec_once: pc = 0x%x", *(npc.pc));
+    printf("cpu_exec_once: pc = 0x%x\n", top->pc);
+
     contextp->timeInc(1);
     top->clk = (top->clk == 0) ? 1 : 0;
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
     }
-    printf("cpu_exec_once: pc = 0x%x", *(npc.pc));
+    printf("cpu_exec_once: pc = 0x%x\n", top->pc);
+
     contextp->timeInc(1);
 }
 
 void update_cpu_state(NPCState npc) {
     printf("update_cpu_state:\n");
-    cpu.pc = *(npc.pc);
+    // cpu.pc = *(npc.pc);
+    cpu.pc = top->pc;
     printf("cpu->pc: 0x%x\n", cpu.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];
