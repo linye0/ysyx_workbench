@@ -222,6 +222,8 @@ static int decode_exec(Decode *s) {
 
   R(0) = 0; // reset $zero to 0
 
+  printf("isa_display:\n");
+  isa_reg_display();
   return 0;
 }
 
@@ -241,7 +243,5 @@ int isa_exec_once(Decode *s) {
   return npc_exec(s);
   #else
   return decode_exec(s);
-  printf("isa_display:\n");
-  isa_reg_display();
   #endif
 }
