@@ -48,10 +48,8 @@ void cpu_exec_once() {
 }
 
 void update_cpu_state(NPCState npc) {
-    printf("update_cpu_state:\n");
     // cpu.pc = *(npc.pc);
     cpu.pc = top->pc;
-    printf("cpu->pc: 0x%x\n", cpu.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];
         // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);

@@ -49,9 +49,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->snpc = pc;
   isa_exec_once(s);
   #ifndef CONFIG_NPC
-  printf("ref: exec_once: cpu.pc=0x%x\n", cpu.pc);
   cpu.pc = s->dnpc;
-  printf("ref: exec_once(2): cpu.pc=0x%x\n", cpu.pc);
   #endif
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
@@ -85,14 +83,11 @@ static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     #ifdef CONFIG_NPC
-    printf("execute: top->pc = 0x%x\n", top->pc);
     exec_once(&s, top->pc);
     #else
-    printf("ref: execute: cpu.pc = 0x%x\n", cpu.pc);
     exec_once(&s, cpu.pc);
     #endif
     g_nr_guest_inst ++;
-    printf("execute: cpu.pc = 0x%x\n", cpu.pc);
     trace_and_difftest(&s, cpu.pc);
 
     if (nemu_state.state != NEMU_RUNNING) break;
