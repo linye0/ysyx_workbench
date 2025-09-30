@@ -17,7 +17,7 @@ always @(posedge clk) begin
 end
 
 initial begin
-    regs[5'd2] = 32'd128;
+    // regs[5'd2] = 32'd128;
 end
 
 always @(*) begin

@@ -27,12 +27,13 @@ void init_verilog(int argc, char* argv[]) {
 }
 
 void cpu_exec_once() {
+    // printf("before exec: cpu->gpr[2] = %d\n", nemu_state.gpr[2]);
     top->clk = (top->clk == 0) ? 1 : 0;
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
     }
-    printf("cpu_exec_once: pc = 0x%x\n", top->pc);
+    // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
     contextp->timeInc(1);
     top->clk = (top->clk == 0) ? 1 : 0;
@@ -40,9 +41,10 @@ void cpu_exec_once() {
     if (tfp) {
         tfp->dump(contextp->time());
     }
-    printf("cpu_exec_once: pc = 0x%x\n", top->pc);
+    // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
     contextp->timeInc(1);
+    // printf("after exec: cpu->gpr[2] = %d\n", nemu_state.gpr[2]);
 }
 
 void update_cpu_state(NPCState npc) {
@@ -52,7 +54,7 @@ void update_cpu_state(NPCState npc) {
     printf("cpu->pc: 0x%x\n", cpu.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];
-        printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
+        // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
     }
     // TODO: fill in sr, priv and last_inst_priv.
     return;
