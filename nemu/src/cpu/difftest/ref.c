@@ -41,15 +41,18 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
   CPU_state *npc = (CPU_state *)dut;
   if (direction == DIFFTEST_TO_REF) {
     cpu.pc = npc->pc;
-    printf("ref_difftest_regcpy:\n");
+    printf("ref_difftest_regcpy_to_ref:\n");
     printf("cpu.pc: 0x%x\n", cpu.pc);
     for (int i = 0; i < 32; i++) {
       cpu.gpr[i] = npc->gpr[i];
     } 
     printf("checktwice: cpu.pc: 0x%x\n", cpu.pc);
   } else if (direction == DIFFTEST_TO_DUT) {
+    printf("ref_difftest_regcpy_to_dut:\n");
+    printf("cpu.pc: 0x%x\n", cpu.pc);
     npc->pc = cpu.pc;
     for (int i = 0; i < 32; i++) {
+      printf("cpu.gpr[%d] = %d\n", i, cpu.gpr[i]);
       npc->gpr[i] = cpu.gpr[i];
     }
   }
