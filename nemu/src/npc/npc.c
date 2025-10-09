@@ -62,7 +62,7 @@ extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
 	// printf("EBREAK at pc = 0x%x\n", *(nemu_state.pc));
-	// printf("HIT GOOD TRAP!\n");
+	printf("HIT GOOD TRAP!\n");
     nemu_state.halt_pc = *(nemu_state.pc) - 8;
 	nemu_state.state = NEMU_END;
 }
