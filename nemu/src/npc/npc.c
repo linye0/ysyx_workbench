@@ -5,6 +5,7 @@
 #include <memory/vaddr.h>
 #include <debug.h>
 #include <utils.h>
+#include <difftest-def.h>
 
 #ifdef CONFIG_NPC
 
@@ -89,7 +90,7 @@ extern "C" void npc_illegal_inst() {
 }
 
 extern "C" int pmem_read_(int raddr, int wmask) {
-    #ifdef CONFIG_SOFT_MMIO
+    #ifdef CONFIG_HAS_TIMER
         if (raddr == RTC_ADDR + 4) {
             uint64_t t = get_time();
             rtc_port_base[0] = (uint32_t)(t >> 32);

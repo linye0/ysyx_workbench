@@ -28,8 +28,8 @@ include $(FILELIST_MK)
 DIRS-BLACKLIST-y += $(DIRS-BLACKLIST)
 SRCS-BLACKLIST-y += $(SRCS-BLACKLIST) $(shell find -L $(DIRS-BLACKLIST-y) -name "*.c")
 SRCS-y += $(shell find -L $(DIRS-y) -name "*.c")
-CSRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
-# $(info CSRCS: $(CSRCS))
+SRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
+# $(info SRCS: $(SRCS))
 ARGS ?= -l $(OBJ_DIR)/npc-log.txt -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 
 INC_PATH += $(OBJ_DIR)
@@ -38,6 +38,9 @@ $(shell mkdir -p $(BUILD_DIR))
 
 VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
 INC_PATH += $(NEMU_HOME)/include
+#device
+INC_PATH += $(AM_HOME)/am/src/riscv/npc/include
+
 $(info INC_PATH: $(INC_PATH))
 
 INCFLAGS = $(addprefix -I, $(INC_PATH))
@@ -47,7 +50,7 @@ LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
 all: default
 
-$(BIN): $(VSRCS) $(CSRCS)
+$(BIN): $(VSRCS) $(SRCS)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -I, $(INC_PATH)) \
@@ -56,7 +59,7 @@ $(BIN): $(VSRCS) $(CSRCS)
 		$^ \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
 
-$(BIN_GDB): $(VSRCS) $(CSRCS)
+$(BIN_GDB): $(VSRCS) $(SRCS)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -I, $(INC_PATH)) \

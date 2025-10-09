@@ -21,7 +21,7 @@ wire [11:0] instr3120 = instr[31:20]; // 使用wire和连续赋值
 
 always @(*) begin
 		// $display("[Verilog]cur_inst:\ninst:%h,\nopcode:%h,\nrs1:%h,\nrs2:%h,\nrd:%h,\nfunc3:%h,\nfunc7:%h\n", instr, opcode, rs1, rs2, rd, func3, func7);
-        $display("[Verilog]opcode = %h, instr[31:20] = %h\n", opcode, instr3120);
+        // $display("[Verilog]opcode = %h, instr[31:20] = %h\n", opcode, instr3120);
 		if (opcode == 7'b1110011 && instr[31:20] == 12'b000000000001) begin
 			npc_exu_ebreak();
 		end
