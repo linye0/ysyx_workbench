@@ -101,7 +101,9 @@ extern "C" int pmem_read_(int raddr, int wmask) {
             return rtc_port_base[1];
         }
     #endif
+    #ifdef CONFIG_DEBUG
     printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
+    #endif
     uint8_t *host_addr = guest_to_host(raddr);
     host_addr = (uint8_t*)((size_t)host_addr);
     if (host_addr == NULL) {
