@@ -43,6 +43,10 @@ void itrace_record(const char *log, vaddr_t pc) {
     strncpy(itrace_buf.entries[index].log, log, sizeof(itrace_buf.entries[index].log) - 1);
     itrace_buf.entries[index].log[sizeof(itrace_buf.entries[index].log) - 1] = '\0';
     itrace_buf.entries[index].pc = pc;
+
+	#ifdef CONFIG_DEBUG
+	printf("%s\n", log);
+	#endif
     
     itrace_buf.head = (itrace_buf.head + 1) % ITRACE_BUF_SIZE;
     if (itrace_buf.count < ITRACE_BUF_SIZE) {

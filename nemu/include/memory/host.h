@@ -19,7 +19,13 @@
 #include <common.h>
 
 static inline word_t host_read(void *addr, int len) {
-  printf("addr: %p\n", addr);
+  #ifdef CONFIG_DEBUG
+  #ifndef CONFIG_NPC
+  printf("ref host_read addr: %p\n", addr);
+  #else 
+  printf("host host_read addr: %p\n", addr);
+  #endif
+  #endif
   switch (len) {
     case 1: return *(uint8_t  *)addr;
     case 2: return *(uint16_t *)addr;
