@@ -7,7 +7,7 @@ VERILATOR_CFLAGS += -MMD --build -cc -trace --top-module $(TOPNAME)  --Wno-LATCH
 				-O3 --x-assign fast --x-initial fast --noassert
 
 BUILD_DIR = $(abspath build)
-OBJ_DIR = $(BUILD_DIR)/obj_dir
+OBJ_DIR = $(BUILD_DIR)
 BIN = $(OBJ_DIR)/V$(TOPNAME)
 BIN_GDB = $(OBJ_DIR)/V$(TOPNAME)_gdb
 GUEST_ISA = riscv32
@@ -29,7 +29,8 @@ DIRS-BLACKLIST-y += $(DIRS-BLACKLIST)
 SRCS-BLACKLIST-y += $(SRCS-BLACKLIST) $(shell find -L $(DIRS-BLACKLIST-y) -name "*.c")
 SRCS-y += $(shell find -L $(DIRS-y) -name "*.c")
 CSRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
-$(info CSRCS: $(CSRCS))
+# $(info CSRCS: $(CSRCS))
+ARGS ?= -l $(OBJ_DIR)/npc-log.txt -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 
 INC_PATH += $(OBJ_DIR)
 

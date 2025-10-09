@@ -48,7 +48,11 @@ static char* rl_gets() {
     line_read = NULL;
   }
 
+  #ifndef CONFIG_NPC
   line_read = readline("(nemu) ");
+  #else
+  line_read = readline("(npc)");
+  #endif
 
   if (line_read && *line_read) {
     add_history(line_read);
@@ -241,7 +245,7 @@ static struct {
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
+  { "q", MUXDEF(CONFIG_NPC, "Exit NPC", "Exit NEMU"), cmd_q },
 
   /* TODO: Add more commands */
   { "si", "Single step execute", cmd_si},

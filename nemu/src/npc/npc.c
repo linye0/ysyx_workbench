@@ -61,8 +61,9 @@ void update_cpu_state(NPCState npc) {
 extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
-	// Log("EBREAK at pc = " FMT_WORD_NO_PREFIX "\n", *(nemu_state.pc));
-	printf("HIT GOOD TRAP!\n");
+	// printf("EBREAK at pc = 0x%x\n", *(nemu_state.pc));
+	// printf("HIT GOOD TRAP!\n");
+    nemu_state.halt_pc = *(nemu_state.pc) - 8;
 	nemu_state.state = NEMU_END;
 }
 

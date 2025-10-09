@@ -33,7 +33,11 @@ static void welcome() {
         "to record the trace. This may lead to a large log file. "
         "If it is not necessary, you can disable it in menuconfig"));
   Log("Build time: %s, %s", __TIME__, __DATE__);
+  #ifndef CONFIG_NPC
   printf("Welcome to %s-NEMU!\n", ANSI_FMT(m_str(__GUEST_ISA__), ANSI_FG_YELLOW ANSI_BG_RED));
+  #else
+  printf("Welcome to riscv32e-NPC!\n");
+  #endif
   printf("For help, type \"help\"\n");
 }
 
