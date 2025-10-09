@@ -62,7 +62,7 @@ extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
 	// Log("EBREAK at pc = " FMT_WORD_NO_PREFIX "\n", *(nemu_state.pc));
-	printf("HIT GOOD TRAP!\n");
+	// printf("HIT GOOD TRAP!\n");
 	nemu_state.state = NEMU_END;
 }
 
