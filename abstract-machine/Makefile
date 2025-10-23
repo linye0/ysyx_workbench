@@ -35,7 +35,27 @@ ARCH_SPLIT = $(subst -, ,$(ARCH))
 ISA        = $(word 1,$(ARCH_SPLIT))
 PLATFORM   = $(word 2,$(ARCH_SPLIT))
 
-
+### SRCS在这里第一次出现，但是没有被定义，定义在哪里？ 在./am/Makefile里面：
+### SRCS = $(addprefix src/, $(AM_SRCS))
+# NEMU里面的定义是这样的：
+# AM_SRCS := platform/nemu/trm.c \
+#           platform/nemu/ioe/ioe.c \
+#           platform/nemu/ioe/timer.c \
+#           platform/nemu/ioe/input.c \
+#           platform/nemu/ioe/gpu.c \
+#           platform/nemu/ioe/audio.c \
+#           platform/nemu/ioe/disk.c \
+#           platform/nemu/mpe.c
+# NPC里面的定义是这样的：
+# AM_SRCS := riscv/npc/start.S \
+#           riscv/npc/trm.c \
+#           riscv/npc/ioe.c \
+#           riscv/npc/timer.c \
+#           riscv/npc/input.c \
+#           riscv/npc/cte.c \
+#           riscv/npc/trap.S \
+#           platform/dummy/vme.c \
+#           platform/dummy/mpe.c
 ### Check if there is something to build
 ifeq ($(flavor SRCS), undefined)
   $(error Nothing to build)

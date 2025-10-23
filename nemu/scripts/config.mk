@@ -21,6 +21,7 @@ $(warning $(COLOR_RED)Warning: .config does not exist!$(COLOR_END))
 $(warning $(COLOR_RED)To build the project, first run 'make menuconfig'.$(COLOR_END))
 endif
 
+# 配置文件
 Q            := @
 KCONFIG_PATH := $(NEMU_HOME)/tools/kconfig
 FIXDEP_PATH  := $(NEMU_HOME)/tools/fixdep
@@ -41,6 +42,7 @@ $(MCONF):
 $(FIXDEP):
 	$(Q)$(MAKE) $(silent) -C $(FIXDEP_PATH)
 
+# 具体的配置命令
 menuconfig: $(MCONF) $(CONF) $(FIXDEP)
 	$(Q)$(MCONF) $(Kconfig)
 	$(Q)$(CONF) $(silent) --syncconfig $(Kconfig)
