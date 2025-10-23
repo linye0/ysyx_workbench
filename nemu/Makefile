@@ -59,11 +59,10 @@ LDFLAGS += $(CFLAGS_BUILD)
 include $(NEMU_HOME)/scripts/config.mk
 
 ifdef CONFIG_TARGET_AM
-# AM的构建方式
+# AM的构建方式(从来没有用过)
 include $(AM_HOME)/Makefile
-$(info ARCHIVES: $(ARCHIVES))
 LINKAGE += $(ARCHIVES)
 else
-# Include rules to build NEMU (本地构建方式，不使用AM相关功能)
+# Include rules to build NEMU
 include $(NEMU_HOME)/scripts/native.mk
 endif

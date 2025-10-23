@@ -1,3 +1,4 @@
+#include "common.h"
 #include <npc/npc_verilog.h>
 #include <isa.h>
 #include <memory/host.h>
@@ -89,7 +90,8 @@ extern "C" void npc_illegal_inst() {
 	npc_abort();
 }
 
-extern "C" int pmem_read_(int raddr, int wmask) {
+extern "C" int npc_read(int raddr, int wmask) {
+    /*
     #ifdef CONFIG_HAS_TIMER
         if (raddr == RTC_ADDR + 4) {
             uint64_t t = get_time();
@@ -114,24 +116,25 @@ extern "C" int pmem_read_(int raddr, int wmask) {
         // npc_abort();
         return 0;
     }
+    */
     switch(wmask) {
         case 15:
             //printf("case 0xff\n");
             //printf("return value = %02x\n", host_read(host_addr, 4));
-            return host_read(host_addr, 4);
+            return paddr_read(raddr, 4);
             break;
         case 12:
-            if (host_read(host_addr, 2) & (1 << 15)) {
-                return host_read(host_addr, 2) | 0xFFFF0000;
+            if (paddr_read(host_addr, 2) & (1 << 15)) {
+                return paddr_read(host_addr, 2) | 0xFFFF0000;
             } else {
-                return host_read(host_addr, 2) & 0x0000FFFF;
+                return paddr_read(host_addr, 2) & 0x0000FFFF;
             }
             break;
         case 3:
-            return host_read(host_addr, 2);
+            return paddr_read(host_addr, 2);
             break;
         case 1:
-            return host_read(host_addr, 1);
+            return paddr_read(host_addr, 1);
             break;
         default:
             // Assert(0, "Invalid mask = %02x", wmask);

@@ -8,9 +8,8 @@
 
 
 #ifdef CONFIG_NPC
-#ifdef CONFIG_DEVICE
-#include <npc.h>
-#endif
+// #ifdef CONFIG_DEVICE
+// #endif
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
