@@ -124,17 +124,17 @@ extern "C" int npc_read(int raddr, int wmask) {
             return paddr_read(raddr, 4);
             break;
         case 12:
-            if (paddr_read(host_addr, 2) & (1 << 15)) {
-                return paddr_read(host_addr, 2) | 0xFFFF0000;
+            if (paddr_read(raddr, 2) & (1 << 15)) {
+                return paddr_read(raddr, 2) | 0xFFFF0000;
             } else {
-                return paddr_read(host_addr, 2) & 0x0000FFFF;
+                return paddr_read(raddr, 2) & 0x0000FFFF;
             }
             break;
         case 3:
-            return paddr_read(host_addr, 2);
+            return paddr_read(raddr, 2);
             break;
         case 1:
-            return paddr_read(host_addr, 1);
+            return paddr_read(raddr, 1);
             break;
         default:
             // Assert(0, "Invalid mask = %02x", wmask);
@@ -143,7 +143,8 @@ extern "C" int npc_read(int raddr, int wmask) {
     return 0;
 }
 
-extern "C" void pmem_write_(int waddr, int wdata, int wmask) {
+extern "C" void npc_write(int waddr, int wdata, int wmask) {
+    /*
     #ifdef CONFIG_SOFT_MMIO
         if (waddr == SERIAL_PORT) {
             putchar(wdata);
@@ -151,11 +152,13 @@ extern "C" void pmem_write_(int waddr, int wdata, int wmask) {
             return;
         }
     #endif
+    */
     // printf("pmem_write: addr = %d, data = %d, mask = %d\n", waddr, wdata, wmask);
     // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
     // `wmask`中每比特表示`wdata`中1个字节的掩码,
     // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
     // printf("pmem_write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x\n", waddr, wdata, wmask & 0xff);
+    /*
     uint8_t *host_addr = guest_to_host(waddr);
     if (host_addr == NULL) {
         //Log(FMT_RED("Invalid write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x"),
@@ -163,18 +166,19 @@ extern "C" void pmem_write_(int waddr, int wdata, int wmask) {
         // npc_abort();
         return;
     }
+    */
     switch (wmask) {
         case 1:
-            host_write(host_addr, 1, wdata);
+            paddr_write(waddr, 1, wdata);
             break;
         case 3:
-            host_write(host_addr, 2, wdata);
+            paddr_write(waddr & ~0x3u, 2, wdata);
             break;
         case 15:
-            host_write(host_addr, 4, wdata);
+            paddr_write(waddr, 4, wdata);
             break;
         case 12:
-            host_write(host_addr, 2, wdata);
+            paddr_write(waddr, 2, wdata);
             break;
         /*
         case 0xff:

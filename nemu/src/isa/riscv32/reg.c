@@ -25,6 +25,7 @@ const char *regs[] = {
 
 void isa_reg_display() {
     bool success = false;
+    printf("%-16s0x%-16x%d\n", "pc", cpu.pc, cpu.pc); // 为了输出美观
     for (int i = 0; i < sizeof(regs) / sizeof(const char*); i++) {                                            
         word_t val = isa_reg_str2val(regs[i], &success);
         printf("%-16s0x%-16x%d\n", regs[i], val, val); // 为了输出美观
