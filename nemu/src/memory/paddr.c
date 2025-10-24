@@ -25,6 +25,8 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
+IFDEF(DIFFTEST_CONFIG_MEM, extern )
+
 uint8_t* guest_to_host(paddr_t paddr) {
   Assert(paddr - CONFIG_MBASE < CONFIG_MSIZE, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x, CONFIG_MBASE: 0x%x, CONFIG_MSIZE: 0x%x\n", pmem, paddr, CONFIG_MBASE, CONFIG_MSIZE);
    return pmem + paddr - CONFIG_MBASE; 
@@ -36,6 +38,11 @@ static word_t pmem_read(paddr_t addr, int len) {
 	void log_pread(paddr_t, int);
 	log_pread(addr, len);
   #endif
+  IFDEF(COFNIG_TARGET_SHARE, 
+    mem_flag.flag = 1;
+    mem_flag.addr = addr;
+    mem_flag.len = len;
+  )
   word_t ret = host_read(guest_to_host(addr), len);
   return ret;
 }
@@ -45,6 +52,11 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 	void log_pwrite(paddr_t, int, word_t);
 	log_pwrite(addr, len, data);
   #endif
+  IFDEF(COFNIG_TARGET_SHARE, 
+    mem_flag.flag = 1;
+    mem_flag.addr = addr;
+    mem_flag.len = len;
+  )
   host_write(guest_to_host(addr), len, data);
 }
 

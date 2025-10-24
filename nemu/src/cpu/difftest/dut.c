@@ -27,6 +27,7 @@ void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 word_t (*ref_difftest_paddr_read)(paddr_t addr, int len) = NULL;
+Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
 
 #ifdef CONFIG_DIFFTEST
 
@@ -61,24 +62,6 @@ void difftest_skip_dut(int nr_ref, int nr_dut) {
   }
 }
 
-static void checkmems(vaddr_t pc) {
-  paddr_t addr;
-  int flag = 0;
-  for (addr = CONFIG_MBASE; addr < CONFIG_MBASE + CONFIG_MSIZE; addr += 4) {
-      // printf("check at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
-      if (paddr_read(addr, 4) != ref_difftest_paddr_read(addr, 4)) {
-        flag = 1;
-        break;
-      }
-  }
-  if (flag != 0) {
-    printf("\nCan't pass checkmems!\n");
-    nemu_state.state = NEMU_ABORT;
-    nemu_state.halt_pc = pc;
-    printf("Unconsistent at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
-  }
-  return;
-}
 
 void init_difftest(char *ref_so_file, long img_size, int port) {
   assert(ref_so_file != NULL);
@@ -102,6 +85,9 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
   assert(ref_difftest_raise_intr);
 
+  ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
+  assert(difftest_mem_flag_to_dut);
+
   void (*ref_difftest_init)(int) = dlsym(handle, "difftest_init");
   assert(ref_difftest_init);
 
@@ -114,7 +100,6 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_init(port);
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
-  checkmems(0);
 }
 
 static void checkregs(CPU_state *ref, vaddr_t pc) {
@@ -126,6 +111,15 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
   }
 }
 
+static void checkmems(paddr_t addr, int len) {
+  if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
+    printf("\nCan't pass checkmems!\n");
+    nemu_state.state = NEMU_ABORT;
+    nemu_state.halt_pc = pc;
+    printf("Unconsistent at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
+  }
+  return;
+}
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
   CPU_state ref_r;
@@ -136,7 +130,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       skip_dut_nr_inst = 0;
       checkregs(&ref_r, npc);
       #ifdef CONFIG_DIFFTEST_MEM
-      checkmems(npc);
+      Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len);
       #endif
       return;
     }
@@ -158,7 +153,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
 
   checkregs(&ref_r, pc);
   #ifdef CONFIG_DIFFTEST_MEM
-  checkmems(pc);
+  Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len);
   #endif
 }
 #else

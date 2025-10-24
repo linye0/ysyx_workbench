@@ -64,8 +64,18 @@ __EXPORT void difftest_raise_intr(word_t NO) {
   assert(0);
 }
 
+__EXPORT Mem_flag difftest_mem_flag_to_dut() {
+  Mem_flag ret;
+  ret.flag = mem_flag.flag;
+  ret.addr = mem_flag.addr;
+  ret.len = mem_flag.len;
+  mem_flag.flag = 0;
+  return ret;
+}
+
 __EXPORT void difftest_init(int port) {
   void init_mem();
+  Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
   init_mem();
   /* Perform ISA dependent initialization. */
   init_isa();
