@@ -86,7 +86,7 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   assert(ref_difftest_raise_intr);
 
   ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
-  assert(difftest_mem_flag_to_dut);
+  assert(ref_difftest_mem_flag_to_dut);
 
   void (*ref_difftest_init)(int) = dlsym(handle, "difftest_init");
   assert(ref_difftest_init);
@@ -111,7 +111,7 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
   }
 }
 
-static void checkmems(paddr_t addr, int len) {
+static void checkmems(paddr_t addr, int len, vaddr_t pc) {
   if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
     printf("\nCan't pass checkmems!\n");
     nemu_state.state = NEMU_ABORT;
@@ -131,7 +131,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       checkregs(&ref_r, npc);
       #ifdef CONFIG_DIFFTEST_MEM
       Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len);
+      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
       #endif
       return;
     }
@@ -154,7 +154,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   checkregs(&ref_r, pc);
   #ifdef CONFIG_DIFFTEST_MEM
   Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len);
+  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
   #endif
 }
 #else
