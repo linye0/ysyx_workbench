@@ -38,7 +38,7 @@ static word_t pmem_read(paddr_t addr, int len) {
 	void log_pread(paddr_t, int);
 	log_pread(addr, len);
   #endif
-  IFDEF(COFNIG_TARGET_SHARE, 
+  IFDEF(CONFIG_TARGET_SHARE, 
     mem_flag.flag = 1;
     mem_flag.addr = addr;
     mem_flag.len = len;
@@ -52,7 +52,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 	void log_pwrite(paddr_t, int, word_t);
 	log_pwrite(addr, len, data);
   #endif
-  IFDEF(COFNIG_TARGET_SHARE, 
+  IFDEF(CONFIG_TARGET_SHARE, 
     mem_flag.flag = 1;
     mem_flag.addr = addr;
     mem_flag.len = len;
