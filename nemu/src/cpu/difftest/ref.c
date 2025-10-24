@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <npc/npc_verilog.h>
 
-#ifdef CONFIG_TARGET_SHARE
 
 __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
   return paddr_read(addr, len);
@@ -66,6 +65,7 @@ __EXPORT void difftest_raise_intr(word_t NO) {
   assert(0);
 }
 
+#ifdef CONFIG_TARGET_SHARE
 __EXPORT Mem_flag difftest_mem_flag_to_dut() {
   Mem_flag ret;
   ret.flag = mem_flag.flag;
@@ -74,6 +74,7 @@ __EXPORT Mem_flag difftest_mem_flag_to_dut() {
   mem_flag.flag = 0;
   return ret;
 }
+#endif
 
 __EXPORT void difftest_init(int port) {
   void init_mem();
@@ -82,5 +83,3 @@ __EXPORT void difftest_init(int port) {
   /* Perform ISA dependent initialization. */
   init_isa();
 }
-
-#endif
