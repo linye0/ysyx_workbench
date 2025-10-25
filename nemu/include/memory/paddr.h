@@ -29,7 +29,7 @@ typedef struct {
   int len;
 } Mem_flag;
 
-IFDEF(CONFIG_TARGET_SHARE, extern Mem_flag mem_flag);
+IFDEF(CONFIG_TARGET_SHARE, extern Mem_flag mem_flag;)
 
 /* convert the guest physical address in the guest program to host virtual address in NEMU */
 uint8_t* guest_to_host(paddr_t paddr);
