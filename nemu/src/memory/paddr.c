@@ -40,9 +40,9 @@ static word_t pmem_read(paddr_t addr, int len) {
 	log_pread(addr, len);
   #endif
   #ifdef CONFIG_TARGET_SHARE
-    mem_flag.flag = 1;
-    mem_flag.addr = addr;
-    mem_flag.len = len;
+  mem_flag.flag = 1;
+  mem_flag.addr = addr;
+  mem_flag.len = len;
   #endif
   word_t ret = host_read(guest_to_host(addr), len);
   return ret;
@@ -54,9 +54,9 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 	log_pwrite(addr, len, data);
   #endif
   #ifdef CONFIG_TARGET_SHARE
-    mem_flag.flag = 1;
-    mem_flag.addr = addr;
-    mem_flag.len = len;
+  mem_flag.flag = 1;
+  mem_flag.addr = addr;
+  mem_flag.len = len;
   #endif
   host_write(guest_to_host(addr), len, data);
 }

@@ -27,7 +27,7 @@ void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 word_t (*ref_difftest_paddr_read)(paddr_t addr, int len) = NULL;
-// Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
+Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
 
 #ifdef CONFIG_DIFFTEST
 
@@ -86,8 +86,8 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
   assert(ref_difftest_raise_intr);
 
-  // ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
-  // assert(ref_difftest_mem_flag_to_dut);
+  ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
+  assert(ref_difftest_mem_flag_to_dut);
 
   void (*ref_difftest_init)(int) = dlsym(handle, "difftest_init");
   assert(ref_difftest_init);
@@ -131,8 +131,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       skip_dut_nr_inst = 0;
       checkregs(&ref_r, npc);
       #ifdef CONFIG_DIFFTEST_MEM
-      // Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-      // if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
+      Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
       #endif
       return;
     }
@@ -154,8 +154,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
 
   checkregs(&ref_r, pc);
   #ifdef CONFIG_DIFFTEST_MEM
-  // Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-  // if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
+  Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
   #endif
 }
 #else
