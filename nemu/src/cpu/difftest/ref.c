@@ -65,7 +65,6 @@ __EXPORT void difftest_raise_intr(word_t NO) {
   assert(0);
 }
 
-/*
 #ifdef CONFIG_TARGET_SHARE
 __EXPORT Mem_flag difftest_mem_flag_to_dut() {
   Mem_flag ret;
@@ -76,7 +75,6 @@ __EXPORT Mem_flag difftest_mem_flag_to_dut() {
   return ret;
 }
 #endif
-*/
 
 __EXPORT void difftest_init(int port) {
   void init_mem();
