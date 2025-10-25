@@ -23,7 +23,6 @@
 #define RESET_VECTOR (PMEM_LEFT + CONFIG_PC_RESET_OFFSET)
 
 
-/*
 typedef struct {
   int flag; // 是否有读写操作
   paddr_t addr; // 读写的地址
@@ -31,7 +30,6 @@ typedef struct {
 } Mem_flag;
 
 IFDEF(CONFIG_TARGET_SHARE, extern Mem_flag mem_flag);
-*/
 
 /* convert the guest physical address in the guest program to host virtual address in NEMU */
 uint8_t* guest_to_host(paddr_t paddr);
