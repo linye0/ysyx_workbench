@@ -118,6 +118,7 @@ static void checkmems(paddr_t addr, int len, vaddr_t pc) {
     nemu_state.state = NEMU_ABORT;
     nemu_state.halt_pc = pc;
     printf("Unconsistent at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
+    isa_reg_display();
   }
   return;
 }

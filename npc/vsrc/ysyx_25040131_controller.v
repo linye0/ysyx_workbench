@@ -2,6 +2,7 @@ module ysyx_25040131_controller(
     input [6: 0] opcode,
     input [2: 0] func3,
     input [6: 0] func7,
+    input [31:0] instr,
 
     output reg [4: 0] aluc,
     output reg aluOut_WB_memOut, rs1Data_EX_PC, 
@@ -10,10 +11,43 @@ module ysyx_25040131_controller(
     output reg [1: 0] write_mem, 
     output reg [2: 0] read_mem,
     output reg [2: 0] extOP,
-    output reg [1: 0] pcImm_NEXTPC_rs1Imm
+    output reg [1: 0] pcImm_NEXTPC_rs1Imm,
+
+    // csr相关
+    output reg csr_we,
+    output reg [11:0] csr_addr,
+    output reg csr_use_imm,
+
+    // 异常信号(给CSR模块)
+    output reg exc_valid,
+    output reg [31:0] exc_cause,
+    output reg [31:0] exc_tval,
+
+    // mret控制信号
+    output reg is_mret
 );
 
 always @(*) begin
+    // 默认值（关键！）
+    write_reg = 0;
+    aluc = 5'b00000;
+    aluOut_WB_memOut = 0;
+    rs1Data_EX_PC = 0;
+    rs2Data_EX_imm32_4 = 2'b00;
+    write_mem = 2'b00;
+    read_mem = 3'b000;
+    extOP = 3'b000;
+    pcImm_NEXTPC_rs1Imm = 2'b00;
+    
+    // CSR 信号默认值
+    csr_we = 0;
+    csr_addr = 12'h0;
+    csr_use_imm = 0;
+    
+    exc_valid = 0;
+    exc_cause = 32'h0;
+    exc_tval = 32'h0;
+    is_mret = 0;
     case (opcode)
         // lui
         7'b0110111:begin
@@ -275,8 +309,41 @@ always @(*) begin
                 end
             endcase
         end
+        // CSR指令: opcode = 7'b1110011
+        7'b1110011: begin
+            if (instr == 32'h00000073) begin
+                exc_valid = 1;
+                exc_cause = 32'd11;
+                exc_tval = 32'h0;
+                write_reg = 0;
+            end 
+            else if (instr == 32'h30200073) begin
+                is_mret = 1;
+                write_reg = 0;
+            end
+            else begin
+            write_reg = 1;
+            aluOut_WB_memOut = 0;
+            rs1Data_EX_PC = 0;
+            rs2Data_EX_imm32_4 = 2'b00;
+            write_mem = 2'b00;
+            read_mem = 3'b000;
+            aluc = 5'b00000;
+            pcImm_NEXTPC_rs1Imm = 2'b00;
+            extOP = 3'b000;
+
+            // 提取CSR地址
+            csr_addr = instr[31:20];
+
+            // 判断是否为立即数版本(funct3[2] == 1)
+            csr_use_imm = func3[2];
+
+            // 都判断为写CSR
+            // 即使rs1 = x0 或 uimm = 0, 也视为写操作(RISCV规范)
+            csr_we = 1;
+            end 
+        end
         default: begin
-            
         end
     endcase
 end
