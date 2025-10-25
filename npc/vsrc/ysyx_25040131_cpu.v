@@ -34,11 +34,23 @@ wire [1: 0] write_mem; // 写内存信号
 wire [2: 0] read_mem; // 读内存信号
 wire [2: 0] extOP; // 立即数产生信号
 wire[1: 0] pcImm_NEXTPC_rs1Imm; // 无条件跳转
+wire csr_we;
+wire [11:0] csr_addr;
+wire [11:0] csr_wdata;
+wire [31:0] csr_rdata;
+wire csr_use_imm;
 wire condition_branch; // 条件跳转
 wire equal;
+wire [31:0] exc_cause;
+wire [31:0] exc_tval;
+wire is_mret;
+wire exc_valid;
+wire [31:0] mepc;
+wire [31:0] mtvec;
 wire [31:0] write_aluormem_rd_data;
 
 wire[6:0] lui_opcode = 7'b0110111;
+wire [31:0] gpr_rs = (csr_use_imm) ? {27'h0, inst[19:15]} : read_rs1_data;
 
 ysyx_25040131_pc PC(
     .rst(rst),
@@ -61,16 +73,21 @@ ysyx_25040131_next_pc NEXT_PC(
     .pcImm_NEXTPC_rs1Imm(pcImm_NEXTPC_rs1Imm),
     .condition_branch(condition_branch),
     .pc(pc),
+    .is_mret(is_mret),
+    .mepc(mepc),
+    .mtvec(mtvec),
+    .exc_valid(exc_valid),
     .offset(imm_32),
     .rs1Data(read_rs1_data),
 
     .next_pc(next_pc)
 );
 
-ysyx_25040131_controller CONTROLLER(
+ysyx_25040131_controller controller(
     .opcode(opcode),
     .func3(func3),
     .func7(func7),
+    .instr(inst),
 
     .aluc(aluc),
     .aluOut_WB_memOut(aluOut_WB_memOut),
@@ -80,7 +97,15 @@ ysyx_25040131_controller CONTROLLER(
     .write_mem(write_mem),
     .read_mem(read_mem),
     .extOP(extOP),
-    .pcImm_NEXTPC_rs1Imm(pcImm_NEXTPC_rs1Imm)
+    .pcImm_NEXTPC_rs1Imm(pcImm_NEXTPC_rs1Imm),
+    .csr_we(csr_we),
+    .csr_addr(csr_addr),
+    .csr_use_imm(csr_use_imm),
+    .exc_valid(exc_valid),
+    .exc_cause(exc_cause),
+    .exc_tval(exc_tval),
+
+    .is_mret(is_mret)
 );
 
 ysyx_25040131_imm IMM(
@@ -111,6 +136,22 @@ ysyx_25040131_gpr REG_FILE(
 
     .read_rs1_data(read_rs1_data),
     .read_rs2_data(read_rs2_data)
+);
+
+ysyx_25040131_csr u_csr (
+    .clk(clk),
+    .rst(rst),
+
+    .csr_we(csr_we),
+    .csr_addr(csr_addr),
+    .csr_wdata(gpr_rs),
+    .csr_rdata(csr_rdata),
+    .exc_valid(exc_valid),
+    .exc_pc(pc),
+    .exc_cause(exc_cause),
+    .exc_tval(exc_tval),
+    .mepc_out(mepc),
+    .mtvec_out(mtvec)
 );
 
 ysyx_25040131_comparator_7bit lui_judge(

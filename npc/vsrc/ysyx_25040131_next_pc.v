@@ -1,7 +1,7 @@
 module ysyx_25040131_next_pc(
     input [1: 0] pcImm_NEXTPC_rs1Imm,
-    input condition_branch,
-    input [31: 0] pc, offset, rs1Data,
+    input condition_branch, is_mret, exc_valid,
+    input [31: 0] pc, offset, rs1Data, mepc, mtvec,
     output reg [31: 0] next_pc
 );
 
@@ -27,6 +27,12 @@ always @(*) begin
     end
     else if(pc == 32'h94) begin
         next_pc = 32'h94;
+    end
+    else if (is_mret) begin
+        next_pc = mepc + 4;
+    end
+    else if (exc_valid) begin
+        next_pc = mtvec;
     end
     else begin
         next_pc = pc + 4;
