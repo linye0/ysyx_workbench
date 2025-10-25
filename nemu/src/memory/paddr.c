@@ -25,7 +25,6 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
-IFDEF(DIFFTEST_CONFIG_MEM, extern )
 
 uint8_t* guest_to_host(paddr_t paddr) {
   Assert(paddr - CONFIG_MBASE < CONFIG_MSIZE, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x, CONFIG_MBASE: 0x%x, CONFIG_MSIZE: 0x%x\n", pmem, paddr, CONFIG_MBASE, CONFIG_MSIZE);
