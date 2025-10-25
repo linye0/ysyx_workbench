@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <difftest-def.h>
@@ -20,6 +21,10 @@
 #include <sys/types.h>
 #include <npc/npc_verilog.h>
 
+
+__EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
+  return paddr_read(addr, len);
+}
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
@@ -59,6 +64,17 @@ __EXPORT void difftest_exec(uint64_t n) {
 __EXPORT void difftest_raise_intr(word_t NO) {
   assert(0);
 }
+
+#ifdef CONFIG_TARGET_SHARE
+__EXPORT Mem_flag difftest_mem_flag_to_dut() {
+  Mem_flag ret;
+  ret.flag = mem_flag.flag;
+  ret.addr = mem_flag.addr;
+  ret.len = mem_flag.len;
+  mem_flag.flag = 0;
+  return ret;
+}
+#endif
 
 __EXPORT void difftest_init(int port) {
   void init_mem();

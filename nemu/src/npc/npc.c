@@ -172,7 +172,7 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
             paddr_write(waddr, 1, wdata);
             break;
         case 3:
-            paddr_write(waddr & ~0x3u, 2, wdata);
+            paddr_write(waddr & ~0x1u, 2, wdata);
             break;
         case 15:
             paddr_write(waddr, 4, wdata);

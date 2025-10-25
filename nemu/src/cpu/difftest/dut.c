@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include <dlfcn.h>
 
 #include <isa.h>
@@ -25,6 +26,8 @@ void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) =
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
+word_t (*ref_difftest_paddr_read)(paddr_t addr, int len) = NULL;
+Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
 
 #ifdef CONFIG_DIFFTEST
 
@@ -59,11 +62,13 @@ void difftest_skip_dut(int nr_ref, int nr_dut) {
   }
 }
 
+
 void init_difftest(char *ref_so_file, long img_size, int port) {
   assert(ref_so_file != NULL);
 
   void *handle;
   handle = dlopen(ref_so_file, RTLD_LAZY);
+  // printf("%s\n", ref_so_file);
   assert(handle);
 
   ref_difftest_memcpy = dlsym(handle, "difftest_memcpy");
@@ -78,8 +83,15 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_raise_intr = dlsym(handle, "difftest_raise_intr");
   assert(ref_difftest_raise_intr);
 
+  ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
+  assert(ref_difftest_raise_intr);
+
+  ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
+  assert(ref_difftest_mem_flag_to_dut);
+
   void (*ref_difftest_init)(int) = dlsym(handle, "difftest_init");
   assert(ref_difftest_init);
+
 
   Log("Differential testing: %s", ANSI_FMT("ON", ANSI_FG_GREEN));
   Log("The result of every instruction will be compared with %s. "
@@ -93,13 +105,22 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
 
 static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
+    printf("\nCan't pass checkregs!\n");
     nemu_state.state = NEMU_ABORT;
     nemu_state.halt_pc = pc;
     isa_reg_display();
   }
-  #ifdef CONFIG_DEBUG
+}
+
+static void checkmems(paddr_t addr, int len, vaddr_t pc) {
+  if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
+    printf("\nCan't pass checkmems!\n");
+    nemu_state.state = NEMU_ABORT;
+    nemu_state.halt_pc = pc;
+    printf("Unconsistent at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
     isa_reg_display();
-  #endif
+  }
+  return;
 }
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
@@ -110,6 +131,10 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     if (ref_r.pc == npc) {
       skip_dut_nr_inst = 0;
       checkregs(&ref_r, npc);
+      #ifdef CONFIG_DIFFTEST_MEM
+      Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
+      #endif
       return;
     }
     skip_dut_nr_inst --;
@@ -129,6 +154,10 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
+  #ifdef CONFIG_DIFFTEST_MEM
+  Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
+  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
+  #endif
 }
 #else
 void init_difftest(char *ref_so_file, long img_size, int port) { }
