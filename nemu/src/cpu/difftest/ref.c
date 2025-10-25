@@ -80,7 +80,6 @@ __EXPORT Mem_flag difftest_mem_flag_to_dut() {
 
 __EXPORT void difftest_init(int port) {
   void init_mem();
-  Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
   init_mem();
   /* Perform ISA dependent initialization. */
   init_isa();
