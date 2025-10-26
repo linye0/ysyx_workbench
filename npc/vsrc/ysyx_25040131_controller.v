@@ -266,6 +266,7 @@ always @(*) begin
             read_mem = 3'b000;
             pcImm_NEXTPC_rs1Imm = 2'b00;
             extOP = 3'b111;
+            // 先判断是否是 M 扩展指令（funct7[6:0] == 7'b0000001）
             case (func3)
                 // sub, add
                 3'b000:begin
