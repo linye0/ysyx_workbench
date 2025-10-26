@@ -17,8 +17,10 @@
 #include CONCAT_HEAD(CONCAT(TOP_NAME, ___024root))
 #include CONCAT_HEAD(CONCAT(TOP_NAME, __Dpi))
 
+
 #define VERILOG_PREFIX top->rootp->ysyxSoC__DOT__cpu__DOT__
 #define VERILOG_RESET top->reset
+
 
 void verilog_connect(TOP_NAME *top, NPCState *npc);
 
