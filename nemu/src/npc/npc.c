@@ -57,6 +57,11 @@ void update_cpu_state(NPCState npc) {
         // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
     }
     // TODO: fill in sr, priv and last_inst_priv.
+    cpu.sr[CSR_MTVEC] = *(npc.mepc);
+    cpu.sr[CSR_MSTATUS] = *(npc.mstatus);
+    cpu.sr[CSR_MEPC] = *(npc.mepc);
+    cpu.sr[CSR_MCAUSE] = *(npc.mcause);
+    cpu.sr[CSR_MTVAL] = *(npc.mtval);
     return;
 }
 

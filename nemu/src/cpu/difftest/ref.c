@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include "common.h"
+#include "isa/isa-def.h"
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <difftest-def.h>
@@ -49,11 +50,22 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
     for (int i = 0; i < 32; i++) {
       cpu.gpr[i] = npc->gpr[i];
     } 
+    cpu.sr[CSR_MTVEC] = npc->sr[CSR_MTVEC];
+    cpu.sr[CSR_MCAUSE] = npc->sr[CSR_MCAUSE];
+    cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
+    cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
+    cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+
   } else if (direction == DIFFTEST_TO_DUT) {
     npc->pc = cpu.pc;
     for (int i = 0; i < 32; i++) {
       npc->gpr[i] = cpu.gpr[i];
     }
+    npc->sr[CSR_MTVEC] = cpu.sr[CSR_MTVEC];
+    npc->sr[CSR_MCAUSE] = cpu.sr[CSR_MCAUSE];
+    npc->sr[CSR_MEPC] = cpu.sr[CSR_MEPC];
+    npc->sr[CSR_MSTATUS] = cpu.sr[CSR_MSTATUS];
+    npc->sr[CSR_MTVAL] = cpu.sr[CSR_MTVAL];
   }
 }
 

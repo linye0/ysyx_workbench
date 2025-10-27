@@ -91,7 +91,7 @@ test: $(BIN)
 	@cd $(AK_HOME)/tests/cpu-tests && \
 	count=0; \
 	for file in tests/*.c; do \
-		make ALL=$$(basename $$file .c) ARCH=riscv32e-npc test-npc; \
+		make ALL=$$(basename $$file .c) ARCH=riscv32-npc test-npc; \
 		count=$$((count+1)); \
 	done; \
 	echo "Passed all $$count tests!"
