@@ -18,7 +18,8 @@
 #include "../../include/common.h"
 #include <difftest-def.h>
 
-#define NR_GPR MUXDEF(CONFIG_RVE, 16, 32)
+// #define NR_GPR MUXDEF(CONFIG_RVE, 16, 32)
+#define NR_GPR 32
 
 static std::vector<std::pair<reg_t, abstract_device_t*>> difftest_plugin_devices;
 static std::vector<std::string> difftest_htif_args;
