@@ -15,7 +15,7 @@
 
 // from NEMU
 #include <memory/paddr.h>
-#include <isa-def.h>
+#include <isa/isa-def.h>
 #include <difftest-def.h>
 
 #include <fcntl.h>

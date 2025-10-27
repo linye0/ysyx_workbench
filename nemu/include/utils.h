@@ -40,6 +40,17 @@ typedef struct
   //uint32_t *ret;
   uint32_t *pc;
 
+  // for itrace
+  uint32_t *inst;
+  uint32_t *cpc;
+  uint32_t last_inst;
+
+  uint32_t* mtvec;
+  uint32_t* mstatus;
+  uint32_t* mepc;
+  uint32_t* mcause;
+  uint32_t* mtval;
+
   // csr
   /*
   uint32_t *sstatus;
@@ -84,10 +95,6 @@ typedef struct
   uint32_t len;
   */
 
-  // for itrace
-  uint32_t *inst;
-  uint32_t *cpc;
-  uint32_t last_inst;
 
   // for soc
   // uint8_t *soc_sram;

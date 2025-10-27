@@ -17,7 +17,7 @@
 #define __ISA_H__
 
 // Located at src/isa/$(GUEST_ISA)/include/isa-def.h
-#include <isa-def.h>
+#include <isa/isa-def.h>
 
 #ifdef CONFIG_NPC
 #include <npc/npc_verilog.h>

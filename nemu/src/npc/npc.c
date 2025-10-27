@@ -76,6 +76,11 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs);
   npc->cpc = (uint32_t *)&(top->rootp->pc);
   npc->pc = (uint32_t *)&(top->rootp->next_pc);
+  npc->mtvec = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtvec);
+  npc->mstatus = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mstatus);
+  npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mepc);
+  npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mcause);
+  npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtval);
   npc->state = NEMU_RUNNING;
 }
 
