@@ -179,7 +179,7 @@ enum MCAUSE
 };
 
 typedef struct {
-  word_t gpr[MUXDEF(CONFIG_RVE, 32, 16)];
+  word_t gpr[MUXDEF(CONFIG_RVE, 16, 32)];
   vaddr_t pc;
   word_t sr[4096];
   uint32_t priv;
