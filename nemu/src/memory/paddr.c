@@ -45,6 +45,7 @@ static word_t pmem_read(paddr_t addr, int len) {
   mem_flag.len = len;
   #endif
   printf("error4\n");
+  printf("CPU.pc=0x%x\n", cpu.pc);
   word_t ret = host_read(guest_to_host(addr), len);
   return ret;
 }
