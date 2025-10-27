@@ -66,7 +66,6 @@ static long load_img() {
   Log("The image is %s, size = %ld", img_file, size);
 
   fseek(fp, 0, SEEK_SET);
-  printf("error1\n");
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
   assert(ret == 1);
 
@@ -157,7 +156,6 @@ static long load_img() {
   extern char bin_start, bin_end;
   size_t size = &bin_end - &bin_start;
   Log("img size = %ld", size);
-  printf("error2\n");
   memcpy(guest_to_host(RESET_VECTOR), &bin_start, size);
   return size;
 }

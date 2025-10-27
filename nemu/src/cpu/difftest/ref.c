@@ -29,14 +29,12 @@ __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
     if (in_pmem(addr)) {
-      printf("error7\n");
       memcpy(guest_to_host(addr), buf, n);
       return;
     }
     Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
   } else {
     if (in_pmem(addr)) {
-      printf("error6\n");
       memcpy(buf, guest_to_host(addr), n);
       return;
     }
