@@ -18,7 +18,7 @@
 
 #include "macro.h"
 #include <common.h>
-#include <isa-def.h>
+#include <isa/isa-def.h>
 
 
 static inline int check_reg_idx(int idx) {
