@@ -23,6 +23,7 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
 		if (ref_r->gpr[i] != cpu.gpr[i]) {
 			printf("\ndifftest error: regs aren't consistent\nref.gpr[%d] = 0x%x, dut.gpr[%d] = 0x%x\n", i, ref_r->gpr[i], i, cpu.gpr[i]);
 			printf("ref_regs:\n");
+			printf("%d\n", reg_num);
 			for (int i = 0; i < reg_num; i++) {
 				printf("%-16d0x%-16x%d\n", i, ref_r->gpr[i], ref_r->gpr[i]); // 为了输出美观
 			}
