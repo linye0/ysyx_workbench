@@ -12,7 +12,7 @@ config MSIZE
 config PC_RESET_OFFSET
   hex "Offset of reset vector from the base of memory"
   default 0x100000 if ISA_x86
-  default 0
+  default 0x80000000
 
 choice
   prompt "Physical memory definition"
