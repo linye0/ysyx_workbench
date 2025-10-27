@@ -33,6 +33,7 @@ static void restart() {
 
   /* The zero register is always 0. */
   cpu.gpr[0] = 0;
+  printf("cpu.pc=0x%x\n", cpu.pc);
 }
 
 void init_isa() {
