@@ -30,6 +30,7 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
 		}
 	}
 	if (ref_r->pc != cpu.pc) {
+		printf("pc not equal!\n");
 		return false;
 	}
 	return true;
