@@ -44,6 +44,7 @@ static word_t pmem_read(paddr_t addr, int len) {
   mem_flag.addr = addr;
   mem_flag.len = len;
   #endif
+  printf("error4\n");
   word_t ret = host_read(guest_to_host(addr), len);
   return ret;
 }
@@ -58,6 +59,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
   mem_flag.addr = addr;
   mem_flag.len = len;
   #endif
+  printf("error3\n");
   host_write(guest_to_host(addr), len, data);
 }
 
