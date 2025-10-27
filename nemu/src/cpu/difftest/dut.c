@@ -26,8 +26,10 @@ void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) =
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
+#ifdef CONFIG_NPC
 word_t (*ref_difftest_paddr_read)(paddr_t addr, int len) = NULL;
 Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
+#endif
 
 #ifdef CONFIG_DIFFTEST
 
@@ -83,11 +85,13 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_raise_intr = dlsym(handle, "difftest_raise_intr");
   assert(ref_difftest_raise_intr);
 
+  #ifdef CONFIG_NPC
   ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
   assert(ref_difftest_raise_intr);
 
   ref_difftest_mem_flag_to_dut = dlsym(handle, "difftest_mem_flag_to_dut");
   assert(ref_difftest_mem_flag_to_dut);
+  #endif
 
   void (*ref_difftest_init)(int) = dlsym(handle, "difftest_init");
   assert(ref_difftest_init);
@@ -112,6 +116,7 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
   }
 }
 
+#ifdef CONFIG_NPC
 static void checkmems(paddr_t addr, int len, vaddr_t pc) {
   if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
     printf("\nCan't pass checkmems!\n");
@@ -122,6 +127,7 @@ static void checkmems(paddr_t addr, int len, vaddr_t pc) {
   }
   return;
 }
+#endif
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
   CPU_state ref_r;
@@ -131,9 +137,11 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     if (ref_r.pc == npc) {
       skip_dut_nr_inst = 0;
       checkregs(&ref_r, npc);
+      #ifdef CONFIG_NPC
       #ifdef CONFIG_DIFFTEST_MEM
       Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
       if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
+      #endif
       #endif
       return;
     }
@@ -154,9 +162,11 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
+  #ifdef CONFIG_NPC
   #ifdef CONFIG_DIFFTEST_MEM
   Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
   if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
+  #endif
   #endif
 }
 #else
