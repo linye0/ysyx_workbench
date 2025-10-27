@@ -44,7 +44,7 @@ INC_PATH += $(AM_HOME)/am/src/riscv/npc/include
 $(info INC_PATH: $(INC_PATH))
 
 INCFLAGS = $(addprefix -I, $(INC_PATH))
-CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -DCONFIG_NPC -D__GUEST_ISA__=$(GUEST_ISA) -DCONFIG_RVE
+CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -DCONFIG_NPC -D__GUEST_ISA__=$(GUEST_ISA) 
 GDBFLAGS = $(CXXFLAGS) -g -O0
 LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
