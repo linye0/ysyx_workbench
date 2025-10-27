@@ -314,7 +314,7 @@ always @(*) begin
         7'b1110011: begin
             if (instr == 32'h00000073) begin
                 exc_valid = 1;
-                exc_cause = 32'd11;
+                exc_cause = 32'd8;
                 exc_tval = 32'h0;
                 write_reg = 0;
             end 

@@ -37,9 +37,15 @@ end
 // --- 异常处理：当异常发生时，自动更新 CSR ---
 always @(posedge clk or posedge rst) begin
     if (rst) begin
+        mtvec   <= 32'h0;
         mepc    <= 32'h0;
         mcause  <= 32'h0;
         mtval   <= 32'h0;
+    end else if (csr_we) begin
+        case (csr_addr)
+            12'h305: mtvec   <= csr_wdata;
+            default: ;
+        endcase
     end else if (exc_valid) begin
         mepc    <= exc_pc;
         mcause  <= exc_cause;
@@ -48,6 +54,7 @@ always @(posedge clk or posedge rst) begin
 end
 
 // --- CSR 写操作（仅允许写合法 CSR）---
+/*
 always @(posedge clk) begin
     if (csr_we) begin
         case (csr_addr)
@@ -56,6 +63,7 @@ always @(posedge clk) begin
         endcase
     end
 end
+*/
 
 // --- CSR 读操作（组合逻辑）---
 always @(*) begin
