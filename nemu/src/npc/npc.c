@@ -57,6 +57,11 @@ void update_cpu_state(NPCState npc) {
         // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
     }
     // TODO: fill in sr, priv and last_inst_priv.
+    cpu.sr[CSR_MTVEC] = *(npc.mtvec);
+    cpu.sr[CSR_MSTATUS] = *(npc.mstatus);
+    cpu.sr[CSR_MEPC] = *(npc.mepc);
+    cpu.sr[CSR_MCAUSE] = *(npc.mcause);
+    cpu.sr[CSR_MTVAL] = *(npc.mtval);
     return;
 }
 
@@ -64,9 +69,9 @@ extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
 	// printf("EBREAK at pc = 0x%x\n", *(nemu_state.pc));
-	printf("HIT GOOD TRAP!\n");
     nemu_state.halt_pc = *(nemu_state.pc) - 8;
 	nemu_state.state = NEMU_END;
+    nemu_state.halt_ret = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs)[10];
 }
 
 void verilog_connect(TOP_NAME *top, NPCState *npc)

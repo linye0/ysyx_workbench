@@ -36,7 +36,7 @@ static void welcome() {
   #ifndef CONFIG_NPC
   printf("Welcome to %s-NEMU!\n", ANSI_FMT(m_str(__GUEST_ISA__), ANSI_FG_YELLOW ANSI_BG_RED));
   #else
-  printf("Welcome to riscv32e-NPC!\n");
+  printf("Welcome to riscv32-NPC!\n");
   #endif
   printf("For help, type \"help\"\n");
 }

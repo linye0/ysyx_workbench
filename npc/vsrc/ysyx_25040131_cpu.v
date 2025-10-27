@@ -10,7 +10,9 @@ module ysyx_25040131_cpu(
 // 指令
 
 // 数据
+wire [31: 0] write_is_imm_data;
 wire [31: 0] write_rd_data; // 寄存器 rd数据
+
 wire [31: 0] read_rs1_data; // 寄存器 rs1的数据
 wire [31: 0] read_rs2_data; // 寄存器 rs2的数据
 // wire [31: 0] imm_32; // 32位立即数
@@ -45,12 +47,14 @@ wire [31:0] exc_cause;
 wire [31:0] exc_tval;
 wire is_mret;
 wire exc_valid;
+wire is_csr;
 wire [31:0] mepc;
 wire [31:0] mtvec;
 wire [31:0] write_aluormem_rd_data;
 
 wire[6:0] lui_opcode = 7'b0110111;
 wire [31:0] gpr_rs = (csr_use_imm) ? {27'h0, inst[19:15]} : read_rs1_data;
+wire [31:0] write_rd_data = (is_csr) ? csr_rdata : write_is_imm_data;
 
 ysyx_25040131_pc PC(
     .rst(rst),
@@ -89,6 +93,7 @@ ysyx_25040131_controller controller(
     .func7(func7),
     .instr(inst),
 
+    .is_csr(is_csr),
     .aluc(aluc),
     .aluOut_WB_memOut(aluOut_WB_memOut),
     .rs1Data_EX_PC(rs1Data_EX_PC),
@@ -173,9 +178,8 @@ ysyx_25040131_mux_2 MUX_WB(
     .a(write_aluormem_rd_data),
     .b(imm_32),
 
-    .out(write_rd_data)
+    .out(write_is_imm_data)
 );
-
 
 ysyx_25040131_mux_3 MUX_EX_B(
     .signal(rs2Data_EX_imm32_4),

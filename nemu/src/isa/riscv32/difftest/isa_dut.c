@@ -16,8 +16,18 @@
 #include <isa.h>
 #include <cpu/difftest.h>
 #include "../local-include/reg.h"
+#include "isa/isa-def.h"
+
+#define CHECK_CSR(name)                                                                \
+  if (cpu.sr[name] != ref_r->sr[name])                                                 \
+  {                                                                                    \
+    printf(ANSI_FMT("Difftest: %12s: " FMT_WORD ", ref: " FMT_WORD "\n", ANSI_FG_RED), \
+           #name, cpu.sr[name], ref_r->sr[name]);                                      \
+    is_same = false;                                                                   \
+  }
 
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
+	bool is_same = true;
 	int reg_num = ARRLEN(cpu.gpr);
 	for (int i = 0; i < reg_num; i++) {
 		if (ref_r->gpr[i] != cpu.gpr[i]) {
@@ -26,14 +36,20 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
 			for (int i = 0; i < reg_num; i++) {
 				printf("%-16d0x%-16x%d\n", i, ref_r->gpr[i], ref_r->gpr[i]); // 为了输出美观
 			}
-			return false;
+			is_same = false;
 		}
 	}
 	if (ref_r->pc != cpu.pc) {
 		printf("pc not equal! ref->pc: 0x%x, cpu.pc: 0x%x\n", ref_r->pc, cpu.pc);
-		return false;
+		is_same = false;
 	}
-	return true;
+	CHECK_CSR(CSR_MTVEC);
+	CHECK_CSR(CSR_MCAUSE);
+	CHECK_CSR(CSR_MEPC);
+	// 有些MSTATUS的功能还没实现
+	// CHECK_CSR(CSR_MSTATUS);
+	CHECK_CSR(CSR_MTVAL);
+	return is_same;
 }
 
 void isa_difftest_attach() {
