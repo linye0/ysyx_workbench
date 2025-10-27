@@ -29,7 +29,11 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
 			return false;
 		}
 	}
+	#ifdef NPC_CONIG
 	if (ref_r->pc != cpu.pc) {
+	#else
+	if (ref_r->pc != pc) {
+	#endif
 		printf("pc not equal! ref->pc: 0x%x, cpu.pc: 0x%x\n", ref_r->pc, cpu.pc);
 		return false;
 	}
