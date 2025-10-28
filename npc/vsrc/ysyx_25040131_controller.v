@@ -12,6 +12,7 @@ module ysyx_25040131_controller(
     output reg [2: 0] read_mem,
     output reg [2: 0] extOP,
     output reg [1: 0] pcImm_NEXTPC_rs1Imm,
+    output reg is_csr,
 
     // csr相关
     output reg csr_we,
@@ -29,6 +30,7 @@ module ysyx_25040131_controller(
 
 always @(*) begin
     // 默认值（关键！）
+    is_csr = 0;
     write_reg = 0;
     aluc = 5'b00000;
     aluOut_WB_memOut = 0;
@@ -312,6 +314,7 @@ always @(*) begin
         end
         // CSR指令: opcode = 7'b1110011
         7'b1110011: begin
+            is_csr = 1;
             if (instr == 32'h00000073) begin
                 exc_valid = 1;
                 exc_cause = 32'd8;
@@ -341,8 +344,26 @@ always @(*) begin
 
             // 都判断为写CSR
             // 即使rs1 = x0 或 uimm = 0, 也视为写操作(RISCV规范)
-            csr_we = 1;
+
             end 
+        // ------------------- 关键修正：根据指令类型设置csr_we -------------------
+        // funct3编码对应CSR指令类型：
+        // 001: csrrw; 010: csrrs; 011: csrrc
+        // 101: csrrwi; 110: csrrsi; 111: csrrci
+            case (func3)
+                3'b010: begin  // csrrs（寄存器版本）：仅当rs1≠x0时才修改CSR
+                    csr_we = (instr[19:15] != 5'b00000);  // rs1=x0则不写CSR
+                end
+                3'b110: begin  // csrrsi（立即数版本）：仅当imm≠0时才修改CSR
+                    csr_we = (instr[19:15] != 5'b00000);  // imm是instr[19:15]，为0则不写
+                end
+                3'b001, 3'b011, 3'b101, 3'b111: begin  // 其他指令（csrrw/csrrc及其立即数版本）
+                    csr_we = 1;  // 这些指令无论rs1/imm是否为0，都需要修改CSR
+                end
+                default: begin
+                    csr_we = 0;  // 无效指令默认不写
+                end
+            endcase
         end
         default: begin
         end

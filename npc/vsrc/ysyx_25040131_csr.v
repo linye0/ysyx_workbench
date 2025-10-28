@@ -43,8 +43,12 @@ always @(posedge clk or posedge rst) begin
         mtval   <= 32'h0;
     end else if (csr_we) begin
         case (csr_addr)
+            12'h300: mstatus <= csr_wdata;
             12'h305: mtvec   <= csr_wdata;
-            default: ;
+            12'h341: mepc    <= csr_wdata;
+            12'h342: mcause  <= csr_wdata;
+            12'h343: mtval   <= csr_wdata;
+        default: csr_rdata = 32'h0; // 未实现 CSR 返回 0
         endcase
     end else if (exc_valid) begin
         mepc    <= exc_pc;

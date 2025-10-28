@@ -29,7 +29,7 @@ always @(*) begin
         next_pc = 32'h94;
     end
     else if (is_mret) begin
-        next_pc = mepc + 4;
+        next_pc = mepc;
     end
     else if (exc_valid) begin
         next_pc = mtvec;
