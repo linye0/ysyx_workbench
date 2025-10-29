@@ -53,7 +53,9 @@ void sim_t::diff_init(int port) {
 }
 
 void sim_t::diff_step(uint64_t n) {
+  printf("before step: spike pc = 0x%x\n", state->pc);
   step(n);
+  printf("after step: spike pc = 0x%x\n", state->pc);
 }
 
 void sim_t::diff_get_regs(void* diff_context) {
