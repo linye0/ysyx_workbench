@@ -72,7 +72,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 #ifdef CONFIG_ISA64
   p->mstatus = 0xa00001808;
 #else // __risv32
-  p->mstatus = 0x1808;
+  p->mstatus = 0x1800;
 #endif
   p->np = PRV_M;
   return p;

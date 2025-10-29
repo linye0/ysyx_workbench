@@ -71,7 +71,7 @@ extern "C" void npc_exu_ebreak()
 	// printf("EBREAK at pc = 0x%x\n", *(nemu_state.pc));
     nemu_state.halt_pc = *(nemu_state.pc) - 8;
 	nemu_state.state = NEMU_END;
-    nemu_state.halt_ret = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs)[10];
+    nemu_state.halt_ret = (nemu_state.gpr)[10];
 }
 
 void verilog_connect(TOP_NAME *top, NPCState *npc)
