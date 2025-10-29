@@ -49,13 +49,10 @@ static state_t *state = NULL;
 void sim_t::diff_init(int port) {
   p = get_core("0");
   state = p->get_state();
-  printf("diff_init: spike pc = 0x%x\n", state->pc);
 }
 
 void sim_t::diff_step(uint64_t n) {
-  printf("before step: spike pc = 0x%x\n", state->pc);
   step(n);
-  printf("after step: spike pc = 0x%x\n", state->pc);
 }
 
 void sim_t::diff_get_regs(void* diff_context) {
@@ -73,10 +70,7 @@ void sim_t::diff_get_regs(void* diff_context) {
 
 void sim_t::diff_set_regs(void* diff_context) {
   struct diff_context_t* ctx = (struct diff_context_t*)diff_context;
-  printf("pc: 0x%x\n", state->pc);
   state->pc = ctx->pc;
-  printf("pc: 0x%x\n", state->pc);
-  printf("NR_GPR: %d\n", NR_GPR);
   for (int i = 0; i < NR_GPR; i++) {
     state->XPR.write(i, (sword_t)ctx->gpr[i]);
   }
@@ -106,9 +100,7 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
 
 __EXPORT void difftest_regcpy(void* dut, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
-    printf("before cpy: spike pc = 0x%x\n", state->pc);
     s->diff_set_regs(dut);
-    printf("after cpy: spike pc = 0x%x\n", state->pc);
   } else {
     s->diff_get_regs(dut);
   }
