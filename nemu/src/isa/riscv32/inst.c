@@ -186,7 +186,8 @@ static int decode_exec(Decode *s) {
   // ecall
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall, N,
             s->dnpc = isa_raise_intr(
-                ((cpu.priv == PRV_U) ? MCA_ENV_CAL_UMO : ((cpu.priv == PRV_S) ? MCA_ENV_CAL_SMO : MCA_ENV_CAL_MMO)),
+                //((cpu.priv == PRV_U) ? MCA_ENV_CAL_UMO : ((cpu.priv == PRV_S) ? MCA_ENV_CAL_SMO : MCA_ENV_CAL_MMO)),
+                MCA_ENV_CAL_MMO,
                 s->pc));
   // ebreak
   // #if defined(CONFIG_DEBUG)

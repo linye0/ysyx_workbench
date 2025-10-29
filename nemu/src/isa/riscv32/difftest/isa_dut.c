@@ -43,12 +43,14 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
 		printf("pc not equal! ref->pc: 0x%x, cpu.pc: 0x%x\n", ref_r->pc, cpu.pc);
 		is_same = false;
 	}
+	#ifdef CONFIG_NPC
 	CHECK_CSR(CSR_MTVEC);
 	CHECK_CSR(CSR_MCAUSE);
 	CHECK_CSR(CSR_MEPC);
 	// 有些MSTATUS的功能还没实现
-	// CHECK_CSR(CSR_MSTATUS);
+	CHECK_CSR(CSR_MSTATUS);
 	CHECK_CSR(CSR_MTVAL);
+	#endif
 	return is_same;
 }
 
