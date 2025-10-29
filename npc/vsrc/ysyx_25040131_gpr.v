@@ -10,8 +10,8 @@ module ysyx_25040131_gpr(
 reg [31: 0] regs[31: 0];
 
 always @(posedge clk) begin
+    // $display("reg[10] = %d", regs[10]);
 	if(write_reg && target_reg != 5'h0) begin 
-        // $display("write_reg = %d, target_reg = %d, write_rd_data = %d", write_reg, target_reg, write_rd_data);
 		regs[target_reg] <= write_rd_data;
 	end
 end
