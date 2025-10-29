@@ -74,6 +74,7 @@ void sim_t::diff_get_regs(void* diff_context) {
 void sim_t::diff_set_regs(void* diff_context) {
   struct diff_context_t* ctx = (struct diff_context_t*)diff_context;
   state->pc = ctx->pc;
+  printf("pc: 0x%x\n", state->pc);
   printf("NR_GPR: %d\n", NR_GPR);
   for (int i = 0; i < NR_GPR; i++) {
     state->XPR.write(i, (sword_t)ctx->gpr[i]);
