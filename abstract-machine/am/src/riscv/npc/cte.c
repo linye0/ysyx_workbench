@@ -1,6 +1,7 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
+#include <stdint.h>
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
@@ -58,7 +59,19 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 }
 
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  return NULL;
+  Context *p = (Context *)(kstack.end - sizeof(Context));
+
+  p->mepc = (uintptr_t)entry;
+  p->gpr[r_a0] = (uintptr_t)arg;
+
+
+  #ifdef CONFIG_ISA64
+    p->mstatus = 0xa00001808;
+  #else // __risv32
+    p->mstatus = 0x1800;
+  #endif
+    p->np = PRV_M;
+  return p;
 }
 
 void yield() {
