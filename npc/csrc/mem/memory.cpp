@@ -137,3 +137,12 @@ extern "C" void pmem_write(word_t waddr, word_t wdata, char wmask) {
             break;
     }
 }
+
+// DPI-C function aliases for SystemVerilog
+extern "C" int npc_read(word_t raddr, char wmask) {
+    return pmem_read(raddr, wmask);
+}
+
+extern "C" void npc_write(word_t waddr, word_t wdata, char wmask) {
+    pmem_write(waddr, wdata, wmask);
+}

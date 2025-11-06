@@ -1,88 +1,113 @@
-# Chisel CPU 重构项目
+Chisel Project Template
+=======================
 
-本目录包含使用 Chisel 重构的 CPU 设计代码。
+You've done the [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), and now you
+are ready to start your own Chisel project.  The following procedure should get you started
+with a clean running [Chisel3](https://www.chisel-lang.org/) project.
 
-## 目录结构
+## Make your own Chisel3 project
 
+### Dependencies
+
+#### JDK 11 or newer
+
+We recommend using Java 11 or later LTS releases. While Chisel itself works with Java 8, our preferred build tool Mill requires Java 11. You can install the JDK as your operating system recommends, or use the prebuilt binaries from [Adoptium](https://adoptium.net/) (formerly AdoptOpenJDK).
+
+#### SBT or mill
+
+SBT is the most common build tool in the Scala community. You can download it [here](https://www.scala-sbt.org/download.html).
+Mill is another Scala/Java build tool preferred by Chisel's developers.
+This repository includes a bootstrap script `./mill` so that no installation is necessary.
+You can read more about Mill on its website: https://mill-build.org.
+
+#### Verilator
+
+The test with `svsim` needs Verilator installed.
+See Verilator installation instructions [here](https://verilator.org/guide/latest/install.html).
+
+### How to get started
+
+#### Create a repository from the template
+
+This repository is a Github template. You can create your own repository from it by clicking the green `Use this template` in the top right.
+Please leave `Include all branches` **unchecked**; checking it will pollute the history of your new repository.
+For more information, see ["Creating a repository from a template"](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+
+#### Wait for the template cleanup workflow to complete
+
+After using the template to create your own blank project, please wait a minute or two for the `Template cleanup` workflow to run which will removes some template-specific stuff from the repository (like the LICENSE).
+Refresh the repository page in your browser until you see a 2nd commit by `actions-user` titled `Template cleanup`.
+
+
+#### Clone your repository
+
+Once you have created a repository from this template and the `Template cleanup` workflow has completed, you can click the green button to get a link for cloning your repository.
+Note that it is easiest to push to a repository if you set up SSH with Github, please see the [related documentation](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/connecting-to-github-with-ssh). SSH is required for pushing to a Github repository when using two-factor authentication.
+
+```sh
+git clone git@github.com:%REPOSITORY%.git
+cd %NAME%
 ```
-chisel/
-├── build.sc              # Mill 构建配置文件
-├── .mill-version         # Mill 版本配置
-├── src/
-│   ├── main/
-│   │   └── scala/
-│   │       └── ysyx/     # 主包
-│   │           ├── GenerateVerilog.scala  # Verilog 生成主类
-│   │           ├── Ysyx25040131Cpu.scala  # 顶层 CPU 模块
-│   │           ├── alu/                   # ALU 相关模块
-│   │           ├── pc/                    # PC 相关模块
-│   │           └── ...                    # 其他模块
-│   └── test/
-│       └── scala/
-│           └── ysyx/      # 测试代码
-└── README.md
+(The variables wrapped in `%` will be filled in by the template cleanup) <!-- #REMOVE-ON-CLEANUP# -->
+
+#### Set project organization and name in build.sbt
+
+The cleanup workflow will have attempted to provide sensible defaults for `ThisBuild / organization` and `name` in the `build.sbt`.
+Feel free to use your text editor of choice to change them as you see fit.
+
+#### Clean up the README.md file
+
+Again, use you editor of choice to make the README specific to your project.
+
+#### Add a LICENSE file
+
+It is important to have a LICENSE for open source (or closed source) code.
+This template repository has the Unlicense in order to allow users to add any license they want to derivative code.
+The Unlicense is stripped when creating a repository from this template so that users do not accidentally unlicense their own work.
+
+For more information about a license, check out the [Github Docs](https://docs.github.com/en/free-pro-team@latest/github/building-a-strong-community/adding-a-license-to-a-repository).
+
+#### Commit your changes
+```sh
+git commit -m 'Starting %NAME%'
+git push origin main
 ```
 
-## 使用方法
+### Did it work?
 
-### 1. 安装 Mill
+You should now have a working Chisel3 project.
 
-```bash
-# 使用 coursier 安装（推荐）
-curl -L https://github.com/com-lihaoyi/mill/releases/download/0.11.5/0.11.5 > mill && chmod +x mill
-
-# 或使用包管理器
-# Ubuntu/Debian
-sudo apt install mill
+You can run the included test with:
+```sh
+sbt test
 ```
 
-### 2. 编译项目
-
-在 `chisel/` 目录下执行：
-
-```bash
-mill cpu.compile
+Alternatively, if you use Mill:
+```sh
+./mill %NAME%.test
 ```
 
-### 3. 生成 Verilog
-
-生成 Verilog 文件到项目根目录的 `vsrc/` 文件夹：
-
-```bash
-mill cpu.verilog
+You should see a whole bunch of output that ends with something like the following lines
 ```
-
-或者直接运行主类：
-
-```bash
-mill cpu.runMain ysyx.GenerateVerilog
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 5 s, completed Dec 16, 2020 12:18:44 PM
 ```
+If you see the above then...
 
-### 4. 运行测试
+### It worked!
 
-```bash
-mill test.test
-```
+You are ready to go. We have a few recommended practices and things to do.
 
-## 模块映射
+* Use packages and following conventions for [structure](https://www.scala-sbt.org/1.x/docs/Directories.html) and [naming](http://docs.scala-lang.org/style/naming-conventions.html)
+* Package names should be clearly reflected in the testing hierarchy
+* Build tests for all your work
+* Read more about testing in SBT in the [SBT docs](https://www.scala-sbt.org/1.x/docs/Testing.html)
+* This template includes a [test dependency](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html#Per-configuration+dependencies) on [ScalaTest](https://www.scalatest.org/). This, coupled with `svsim` (included with Chisel) and `verilator`, are a starting point for testing Chisel generators.
+  * You can remove this dependency in the build.sbt file if you want to
+* Change the name of your project in the build.sbt file
+* Change your README.md
 
-| Verilog 模块 | Chisel 模块 | 路径 |
-|------------|------------|------|
-| ysyx_25040131_cpu | Ysyx25040131Cpu | `ysyx/Ysyx25040131Cpu.scala` |
-| ysyx_25040131_alu | Ysyx25040131Alu | `ysyx/alu/Ysyx25040131Alu.scala` |
-| ysyx_25040131_pc | Ysyx25040131Pc | `ysyx/pc/Ysyx25040131Pc.scala` |
-| ... | ... | ... |
+## Problems? Questions?
 
-## 重构思路
-
-1. **模块化设计**：保持与原有 Verilog 模块的一一对应关系，便于验证和调试
-2. **类型安全**：利用 Scala 的类型系统，减少运行时错误
-3. **参数化设计**：使用 Chisel 的参数化特性，便于配置和扩展
-4. **测试驱动**：使用 ChiselTest 进行单元测试和集成测试
-
-## 注意事项
-
-- 生成的 Verilog 文件会输出到项目根目录的 `vsrc/` 文件夹
-- 确保生成的模块名与原有 Verilog 模块名一致，以便与现有 C++ 代码集成
-- 使用 DPI-C 接口时，需要确保函数签名匹配
-
+Check out the [Chisel Users Community](https://www.chisel-lang.org/community.html) page for links to get in contact!
