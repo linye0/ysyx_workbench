@@ -37,7 +37,7 @@ INC_PATH += $(OBJ_DIR)
 $(shell mkdir -p $(BUILD_DIR))
 
 ## VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
-VSRCS = $(shell find $(abspath ./vsrc) -name "*.sv")
+VSRCS = $(shell find -L ./vsrc -type f -name "*.sv")
 INC_PATH += $(shell find $(NPC_HOME)/vsrc/include -type d)
 INC_PATH += $(NEMU_HOME)/include
 #device
