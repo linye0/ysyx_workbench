@@ -50,6 +50,9 @@ typedef struct
   uint32_t* mepc;
   uint32_t* mcause;
   uint32_t* mtval;
+  
+  // difftest signal
+  uint32_t* finish_signal;
 
   // csr
   /*

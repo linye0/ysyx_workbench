@@ -231,7 +231,7 @@ static int decode_exec(Decode *s) {
 
 #ifdef CONFIG_NPC
 static int npc_exec(Decode *s) {
-  top->inst = s->isa.inst;
+  // top->inst = s->isa.inst;
   cpu_exec_once();
   update_cpu_state(nemu_state);
   return 0;
@@ -241,51 +241,54 @@ static int npc_exec(Decode *s) {
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
   #ifdef CONFIG_NPC
-  uint32_t inst = s->isa.inst;
-  IFDEF(CONFIG_ITRACE, {
-    // --- JAL: opcode = 0x6f ---
-    if ((inst & 0x7f) == 0x6f) {
-      int rd = (inst >> 7) & 0x1f;
-      if (rd == 1) {
-        // Decode J-type immediate (same as NEMU's immJ)
-        sword_t imm = (
-          ((inst >> 31) & 1 ? 0xfffffffffffff000ULL : 0) |   // sign bit (bit 20)
-          ((inst >> 21) & 0x3ff) << 1 |                      // bits 10:1
-          ((inst >> 20) & 1) << 11 |                         // bit 11
-          ((inst >> 12) & 0xff) << 12                        // bits 19:12
-        );
-        paddr_t target = s->pc + imm;
-        void trace_func_call(paddr_t, paddr_t, bool);
-        trace_func_call(s->pc, target, false);
+  if (*(nemu_state.finish_signal) == 0) {
+   // uint32_t inst = s->isa.inst;
+    uint32_t inst = *(nemu_state.inst);
+    IFDEF(CONFIG_ITRACE, {
+      // --- JAL: opcode = 0x6f ---
+      if ((inst & 0x7f) == 0x6f) {
+        int rd = (inst >> 7) & 0x1f;
+        if (rd == 1) {
+          // Decode J-type immediate (same as NEMU's immJ)
+          sword_t imm = (
+            ((inst >> 31) & 1 ? 0xfffffffffffff000ULL : 0) |   // sign bit (bit 20)
+            ((inst >> 21) & 0x3ff) << 1 |                      // bits 10:1
+            ((inst >> 20) & 1) << 11 |                         // bit 11
+            ((inst >> 12) & 0xff) << 12                        // bits 19:12
+          );
+          paddr_t target = s->pc + imm;
+          void trace_func_call(paddr_t, paddr_t, bool);
+          trace_func_call(s->pc, target, false);
+        }
       }
-    }
-    // --- JALR: opcode = 0x67, funct3 = 000 ---
-    else if ((inst & 0x707f) == 0x67) {
-      int rd  = (inst >> 7) & 0x1f;
-      int rs1 = (inst >> 15) & 0x1f;
-      sword_t imm = (sword_t)(int32_t)(inst >> 20); // sign-extended imm[11:0]
+      // --- JALR: opcode = 0x67, funct3 = 000 ---
+      else if ((inst & 0x707f) == 0x67) {
+        int rd  = (inst >> 7) & 0x1f;
+        int rs1 = (inst >> 15) & 0x1f;
+        sword_t imm = (sword_t)(int32_t)(inst >> 20); // sign-extended imm[11:0]
 
-      // Compute actual jump target: (gpr[rs1] + imm) & ~1
-      word_t src1_val = nemu_state.gpr[rs1]; // ✅ 从 nemu_state 读取寄存器值
-      paddr_t target = (src1_val + imm) & ~1ULL;
+        // Compute actual jump target: (gpr[rs1] + imm) & ~1
+        word_t src1_val = nemu_state.gpr[rs1]; // ✅ 从 nemu_state 读取寄存器值
+        paddr_t target = (src1_val + imm) & ~1ULL;
 
-      if (inst == 0x00008067) {
-        // jalr x0, 0(x1) — conventional function return
-        void trace_func_ret(paddr_t);
-        trace_func_ret(s->pc);
+        if (inst == 0x00008067) {
+          // jalr x0, 0(x1) — conventional function return
+          void trace_func_ret(paddr_t);
+          trace_func_ret(s->pc);
+        }
+        else if (rd == 1) {
+          // Function call: link register is x1 (ra)
+          void trace_func_call(paddr_t, paddr_t, bool);
+          trace_func_call(s->pc, target, false);
+        }
+        else if (rd == 0 && imm == 0) {
+          // Indirect jump: jalr x0, 0(rs1) — e.g., goto, switch, tail call
+          void trace_func_call(paddr_t, paddr_t, bool);
+          trace_func_call(s->pc, target, true); // mark as indirect
+        }
       }
-      else if (rd == 1) {
-        // Function call: link register is x1 (ra)
-        void trace_func_call(paddr_t, paddr_t, bool);
-        trace_func_call(s->pc, target, false);
-      }
-      else if (rd == 0 && imm == 0) {
-        // Indirect jump: jalr x0, 0(rs1) — e.g., goto, switch, tail call
-        void trace_func_call(paddr_t, paddr_t, bool);
-        trace_func_call(s->pc, target, true); // mark as indirect
-      }
-    }
-  });
+    });
+  }
   return npc_exec(s);
   #else
   return decode_exec(s);

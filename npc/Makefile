@@ -4,7 +4,7 @@ INC_PATH += $(NPC_HOME)/include/generated
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc -trace --top-module $(TOPNAME)  --Wno-LATCH\
-				-O3 --x-assign fast --x-initial fast --noassert
+				-O3 --x-assign fast --x-initial fast --noassert -sv
 
 BUILD_DIR = $(abspath build)
 OBJ_DIR = $(BUILD_DIR)
@@ -36,7 +36,9 @@ INC_PATH += $(OBJ_DIR)
 
 $(shell mkdir -p $(BUILD_DIR))
 
-VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
+## VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
+VSRCS = $(shell find -L ./vsrc -type f -name "*.sv")
+INC_PATH += $(shell find $(NPC_HOME)/vsrc/include -type d)
 INC_PATH += $(NEMU_HOME)/include
 #device
 INC_PATH += $(AM_HOME)/am/src/riscv/npc/include
@@ -53,9 +55,9 @@ all: default
 $(BIN): $(VSRCS) $(SRCS)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
-		$(addprefix -I, $(INC_PATH)) \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) \
 		$(addprefix -LDFLAGS , $(LDFLAGS)) \
+		$(addprefix -I, $(INC_PATH)) \
 		$^ \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
 
