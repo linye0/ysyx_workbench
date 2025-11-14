@@ -7,6 +7,7 @@
 #include <debug.h>
 #include <utils.h>
 #include <difftest-def.h>
+#include <cpu/difftest.h>
 
 #ifdef CONFIG_NPC
 
@@ -77,7 +78,7 @@ extern "C" void npc_exu_ebreak()
 void verilog_connect(TOP_NAME *top, NPCState *npc)
 {
   // for difftest
-  npc->inst = (uint32_t *)&(top->rootp->inst);
+  npc->inst = (uint32_t *)&(top->rootp->out_inst);
   npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs);
   npc->cpc = (uint32_t *)&(top->rootp->pc);
   npc->pc = (uint32_t *)&(top->rootp->next_pc);
@@ -86,6 +87,7 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mepc);
   npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mcause);
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtval);
+  npc->finish_signal = (uint32_t*)&(top->rootp->out_valid);
   npc->state = NEMU_RUNNING;
 }
 
@@ -98,6 +100,15 @@ extern "C" void npc_illegal_inst() {
 	contextp->gotFinish(true);
 	printf("Illegal instruction at pc = " FMT_WORD_NO_PREFIX "", *(nemu_state.pc));
 	npc_abort();
+}
+
+extern "C" void npc_difftest_skip_ref() {
+    difftest_skip_ref();
+}
+
+extern "C" void npc_difftest_mem_diff(int waddr, int wdata, int wstrb) {
+    // TO DO
+    
 }
 
 extern "C" int npc_read(int raddr, int wmask) {
