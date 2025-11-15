@@ -80,8 +80,9 @@ gdb: $(BIN_GDB)
 	@cd $(OBJ_DIR) && gdb --args ./V$(TOPNAME)_gdb $(ARGS) $(IMG)
 
 batch-run: $(BIN)
-	@echo "executing $(IMG).bin..."
-	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(ARGS) -b
+	@echo "Running simulation..."
+	@echo "executing $(IMG)..."
+	@cd $(OBJ_DIR) && ./V$(TOPNAME) $(ARGS) -b $(IMG)
 
 clean:
 	rm -rf $(BUILD_DIR)
