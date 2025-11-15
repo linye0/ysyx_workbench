@@ -40,4 +40,4 @@ run: insert-arg
 gdb: insert-arg
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 
-.PHONY: insert-arg
+.PHONY: insert-arg, sun
