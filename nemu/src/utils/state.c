@@ -14,10 +14,18 @@
 ***************************************************************************************/
 
 #include <utils.h>
+#ifdef CONFIG_NPC
+#include <npc/npc_verilog.h>
+#endif
 
 MUXDEF(CONFIG_NPC, NPCState, NEMUState) nemu_state = { .state = NEMU_STOP };
 
 int is_exit_status_bad() {
+  #ifdef CONFIG_NPC
+  if (tfp) {
+    tfp->close();
+  }
+  #endif
   int good = (nemu_state.state == NEMU_END && nemu_state.halt_ret == 0) ||
     (nemu_state.state == NEMU_QUIT);
   return !good;

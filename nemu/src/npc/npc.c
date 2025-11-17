@@ -26,6 +26,11 @@ void init_verilog(int argc, char* argv[]) {
 	top = new TOP_NAME{contextp};
 	verilog_connect(top, &nemu_state);
 
+    tfp = new VerilatedVcdC;
+    contextp->traceEverOn(true);
+    top->trace(tfp, 0);
+    tfp->open("wave.vcd");
+
 	reset(top, 16);
 }
 
@@ -52,7 +57,8 @@ void cpu_exec_once() {
 
 void update_cpu_state(NPCState npc) {
     // cpu.pc = *(npc.pc);
-    cpu.pc = top->pc;
+    // cpu.pc = top->pc;
+    cpu.pc = *(nemu_state.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];
         // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
@@ -70,7 +76,7 @@ extern "C" void npc_exu_ebreak()
 {
 	contextp->gotFinish(true);
 	// printf("EBREAK at pc = 0x%x\n", *(nemu_state.pc));
-    nemu_state.halt_pc = *(nemu_state.pc) - 8;
+    nemu_state.halt_pc = *(nemu_state.pc) - 4;
 	nemu_state.state = NEMU_END;
     nemu_state.halt_ret = (nemu_state.gpr)[10];
 }
@@ -87,7 +93,7 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mepc);
   npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mcause);
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtval);
-  npc->finish_signal = (uint32_t*)&(top->rootp->out_valid);
+  npc->finish_signal = (uint32_t*)&(top->rootp->difftest_signal);
   npc->state = NEMU_RUNNING;
 }
 

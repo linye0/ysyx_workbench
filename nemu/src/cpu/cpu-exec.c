@@ -34,13 +34,15 @@ CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
+// 用于特判的bool
+static bool g_first_exec = true;
 
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, 
-    difftest_step(_this->pc, dnpc)
+    IFDEF(CONFIG_NPC, if (*(nemu_state.finish_signal) == 1)) difftest_step(_this->pc, dnpc)
   );
   int wp_difftest(void);
   if (wp_difftest() > 0) nemu_state.state = NEMU_STOP;
@@ -85,7 +87,13 @@ static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     #ifdef CONFIG_NPC
-    exec_once(&s, top->pc);
+    // HAVE BUG: 因为IDU和WBU没有分开，所以这边第一个指令会被打印两次，目前可以通过加特判解决。等阶段完整之后解决。
+    if (g_first_exec) {
+      exec_once(&s, top->pc);
+      g_first_exec = false;
+    } else {
+      exec_once(&s, *(nemu_state.pc));
+    }
     #else
     exec_once(&s, cpu.pc);
     #endif
@@ -146,6 +154,9 @@ void cpu_exec(uint64_t n) {
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
       #else
+      if (tfp) {
+        tfp->close();
+      }
       Log("npc: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
@@ -153,6 +164,12 @@ void cpu_exec(uint64_t n) {
           nemu_state.halt_pc);
       #endif
       // fall through
-    case NEMU_QUIT: statistic();
+    case NEMU_QUIT:
+      #ifdef CONFIG_NPC
+      if (tfp) {
+        tfp->close();
+      }
+      #endif
+      statistic();
   }
 }

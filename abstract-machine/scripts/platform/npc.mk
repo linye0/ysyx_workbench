@@ -16,7 +16,7 @@ LDFLAGS   += --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   += --gc-sections -e _start
 NPCFLAGS  += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
 NPCFLAGS  += -e $(IMAGE).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
-### NPCFLAGS  += -b
+NPCFLAGS  += -b
 
 
 MAINARGS_MAX_LEN = 64
@@ -35,13 +35,9 @@ image: image-dep
 ## elf文件是由$(AM_HOME)/Makefile生成的
 run: insert-arg
 	# echo "TODO: add command here to run simulation"
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) batch-run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
-	
-single-run: insert-arg
-	# echo "TODO: add command here to run simulation"
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 	
 gdb: insert-arg
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 
-.PHONY: insert-arg
+.PHONY: insert-arg, sun
