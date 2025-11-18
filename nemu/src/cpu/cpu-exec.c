@@ -42,7 +42,14 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, 
-    difftest_step(_this->pc, dnpc)
+    IFDEF(CONFIG_NPC, 
+      printf("valid_signal: %d\n", *(nemu_state.valid_signal));
+      if (*(nemu_state.valid_signal) == 1) {
+        printf("difftest_step\n");
+        printf("_this->pc: 0x%x, dnpc: 0x%x\n", _this->pc, dnpc);
+        difftest_step(_this->pc, dnpc);
+      }
+    )
   );
   int wp_difftest(void);
   if (wp_difftest() > 0) nemu_state.state = NEMU_STOP;
@@ -92,7 +99,7 @@ static void execute(uint64_t n) {
       exec_once(&s, top->pc);
       g_first_exec = false;
     } else {
-      exec_once(&s, *(nemu_state.pc));
+      exec_once(&s, top->pc);
     }
     #else
     exec_once(&s, cpu.pc);
@@ -117,6 +124,11 @@ static void statistic() {
 void assert_fail_msg() {
   isa_reg_display();
   statistic();
+  #ifdef CONFIG_NPC
+  if (tfp) {
+    tfp->flush();
+  }
+  #endif
 }
 
 /* Simulate how the CPU works. */

@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include "isa.h"
 #include "local-include/reg.h"
 #include <cpu/cpu.h>
@@ -234,7 +235,6 @@ static int npc_exec(Decode *s) {
   // top->inst = s->isa.inst;
   // Change temporary. LY
   cpu_exec_once();
-  cpu_exec_once();
   update_cpu_state(nemu_state);
   return 0;
 }
@@ -243,7 +243,7 @@ static int npc_exec(Decode *s) {
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->snpc, 4);
   #ifdef CONFIG_NPC
-  if (*(nemu_state.finish_signal) == 0) {
+  if (*(nemu_state.valid_signal) == 1) {
    // uint32_t inst = s->isa.inst;
     uint32_t inst = *(nemu_state.inst);
     IFDEF(CONFIG_ITRACE, {
