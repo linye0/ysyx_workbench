@@ -234,6 +234,7 @@ static int npc_exec(Decode *s) {
   // top->inst = s->isa.inst;
   // Change temporary. LY
   cpu_exec_once();
+  cpu_exec_once();
   update_cpu_state(nemu_state);
   return 0;
 }
