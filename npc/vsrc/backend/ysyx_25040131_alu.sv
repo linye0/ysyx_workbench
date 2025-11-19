@@ -41,7 +41,7 @@ always @(*) begin
 end
 
 // 流水线握手：ALU是组合逻辑，直接传递valid信号
-assign out_valid = prev_valid && next_ready;
+assign out_valid = prev_valid;
 assign out_ready = next_ready;
 
 endmodule

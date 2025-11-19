@@ -92,8 +92,8 @@ module ysyx_25040131_ifu #(
   // 输出信号
   // 输出给下游：在WB阶段有效，表示指令已经准备好
   assign out_valid = (ifu_state == WB);
-  // 输出给上游：IDLE状态时可以接收新的取指请求
-  assign out_ready = (ifu_state == IDLE);
+  // 输出给上游：因为上游是wbu，所以这边的意思是IFU可以被写回，这是我的理解，不一定对
+  assign out_ready = (ifu_state == WB);
   // 输出指令数据：在WB阶段输出暂存的指令
   assign out_inst = inst_reg;
   // 输出给SRAM：IDLE状态且流水线允许时发送请求

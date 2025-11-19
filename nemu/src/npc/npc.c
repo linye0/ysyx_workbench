@@ -218,6 +218,11 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
             host_write(host_addr, 8, wdata);
             break;
         */
+        /*
+        case 0xff:
+            host_write(host_addr, 8, wdata);
+            break;
+        */
         default:
             // Log(FMT_RED("Invalid write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x"),
                 // waddr, wdata, wmask & 0xff);

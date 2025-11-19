@@ -92,12 +92,13 @@ function [7:0] gen_wstrb;
                 gen_wstrb = 8'hf;  // sw总是写入4字节
             end else begin
                 // sh和sb需要根据地址对齐调整
-                case (addr[1:0])
-                    2'b00: gen_wstrb = base_wstrb;      // 对齐到字节0
-                    2'b01: gen_wstrb = base_wstrb << 1; // 对齐到字节1
-                    2'b10: gen_wstrb = base_wstrb << 2; // 对齐到字节2
-                    2'b11: gen_wstrb = base_wstrb << 3; // 对齐到字节3
-                endcase
+                //case (addr[1:0])
+                    //2'b00: gen_wstrb = base_wstrb;      // 对齐到字节0
+                    //2'b01: gen_wstrb = base_wstrb << 1; // 对齐到字节1
+                    //2'b10: gen_wstrb = base_wstrb << 2; // 对齐到字节2
+                    //2'b11: gen_wstrb = base_wstrb << 3; // 对齐到字节3
+                //endcase
+                gen_wstrb = base_wstrb;
             end
         end else begin
             gen_wstrb = 8'h0;
@@ -116,14 +117,16 @@ function [XLEN - 1: 0] sign_extend;
         case (read_mem)
             3'b001: sign_extend = raw_data;  // lw: 不需要扩展
             3'b010: begin  // lhu: 无符号扩展
-                case (addr[1:0])
-                    2'b00: half_data = raw_data[15:0];
-                    2'b10: half_data = raw_data[31:16];
-                    default: half_data = 16'h0;
-                endcase
+                // case (addr[1:0])
+                    // 2'b00: half_data = raw_data[15:0];
+                    // 2'b10: half_data = raw_data[31:16];
+                    // default: half_data = 16'h0;
+                // endcase
+                half_data = raw_data[15:0];
                 sign_extend = {16'h0, half_data};
             end
             3'b011: begin  // lbu: 无符号扩展
+                /*
                 case (addr[1:0])
                     2'b00: byte_data = raw_data[7:0];
                     2'b01: byte_data = raw_data[15:8];
@@ -131,24 +134,28 @@ function [XLEN - 1: 0] sign_extend;
                     2'b11: byte_data = raw_data[31:24];
                     default: byte_data = 8'h0;
                 endcase
+                */
+                byte_data = raw_data[7:0];
                 sign_extend = {24'h0, byte_data};
             end
             3'b110: begin  // lh: 有符号扩展
-                case (addr[1:0])
-                    2'b00: half_data = raw_data[15:0];
-                    2'b10: half_data = raw_data[31:16];
-                    default: half_data = 16'h0;
-                endcase
+                // case (addr[1:0])
+                    // 2'b00: half_data = raw_data[15:0];
+                    // 2'b10: half_data = raw_data[31:16];
+                    // default: half_data = 16'h0;
+                // endcase
+                half_data = raw_data[15:0];
                 sign_extend = {{16{half_data[15]}}, half_data};
             end
             3'b111: begin  // lb: 有符号扩展
-                case (addr[1:0])
-                    2'b00: byte_data = raw_data[7:0];
-                    2'b01: byte_data = raw_data[15:8];
-                    2'b10: byte_data = raw_data[23:16];
-                    2'b11: byte_data = raw_data[31:24];
-                    default: byte_data = 8'h0;
-                endcase
+                // case (addr[1:0])
+                    // 2'b00: byte_data = raw_data[7:0];
+                    // 2'b01: byte_data = raw_data[15:8];
+                    // 2'b10: byte_data = raw_data[23:16];
+                    // 2'b11: byte_data = raw_data[31:24];
+                    // default: byte_data = 8'h0;
+                // endcase
+                byte_data = raw_data[7:0];
                 sign_extend = {{24{byte_data[7]}}, byte_data};
             end
             default: sign_extend = raw_data;
@@ -208,8 +215,11 @@ always @(posedge clock) begin
                 end
             end
             LD_VALID: begin
-                // 输出有效数据后回到空闲
-                state_load <= LD_IDLE;
+                // 输出有效数据后，等待prev_valid变为0后再回到空闲
+                // 这样可以确保同一条指令的读操作只执行一次
+                if (!prev_valid) begin
+                    state_load <= LD_IDLE;
+                end
             end
             default: begin
                 state_load <= LD_IDLE;
@@ -238,8 +248,11 @@ always @(posedge clock) begin
                 end
             end
             ST_RESPONSE: begin
-                // 写响应已返回，输出valid后回到空闲
-                state_store <= ST_IDLE;
+                // 写响应已返回，等待prev_valid变为0后再回到空闲
+                // 这样可以确保同一条指令的写操作只执行一次
+                if (!prev_valid) begin
+                    state_store <= ST_IDLE;
+                end
             end
             default: begin
                 state_store <= ST_IDLE;

@@ -43,10 +43,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, 
     IFDEF(CONFIG_NPC, 
-      printf("valid_signal: %d\n", *(nemu_state.valid_signal));
       if (*(nemu_state.valid_signal) == 1) {
-        printf("difftest_step\n");
-        printf("_this->pc: 0x%x, dnpc: 0x%x\n", _this->pc, dnpc);
+        // printf("difftest_step\n");
+        // printf("_this->pc: 0x%x, dnpc: 0x%x\n", _this->pc, dnpc);
         difftest_step(_this->pc, dnpc);
       }
     )

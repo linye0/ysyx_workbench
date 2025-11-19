@@ -164,7 +164,10 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   #ifdef CONFIG_NPC
   #ifdef CONFIG_DIFFTEST_MEM
   Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-  if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, pc);
+  if (dut_flag.flag != 0) {
+    // printf("memcheck at address 0x%x!\n", dut_flag.addr);
+    checkmems(dut_flag.addr, dut_flag.len, pc);
+  }
   #endif
   #endif
 }

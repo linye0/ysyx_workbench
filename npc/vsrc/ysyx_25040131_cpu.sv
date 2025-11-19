@@ -253,7 +253,7 @@ ysyx_25040131_gpr REG_FILE(
     .write_rd_data(write_rd_data),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(wbu_next_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
+    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
     .out_valid(wbu_gpr_valid),  // GPR写操作完成
     .out_ready(wbu_gpr_ready)   // GPR写通道ready
 );
@@ -275,7 +275,7 @@ ysyx_25040131_csr u_csr (
     .csr_wdata(gpr_rs),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(wbu_next_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
+    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
     .out_valid(wbu_csr_valid),  // CSR写操作完成
     .out_ready(wbu_csr_ready),  // CSR写通道ready
     // 异常/中断控制信号
@@ -371,7 +371,7 @@ ysyx_25040131_next_pc NEXT_PC(
     .next_pc(next_pc),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(wbu_next_ready),   // WBU阶段next_ready（总是1，在next_pc模块内使用）
+    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，在next_pc模块内使用）
     .out_valid(next_pc_valid),  // next_pc有效（组合逻辑，总是1）
     .out_ready(next_pc_ready)   // next_pc ready（组合逻辑，总是1）
 );
@@ -380,7 +380,7 @@ ysyx_25040131_next_pc NEXT_PC(
 // 注意：WBU是最后阶段，所以next_ready应该总是1
 // 但是为了遵循统一的握手协议，next_ready仍然作为input传入
 // 对于WBU阶段的子模块，next_ready在模块内部定义为1
-wire wbu_next_ready = 1'b1;  // WBU阶段是最后阶段，next_ready总是1
+// wire wbu_next_ready = 1'b1;  /// WBU阶段是最后阶段，next_ready总是1
 assign wbu_ready = wbu_gpr_ready && wbu_csr_ready && next_pc_ready;
 
 // WBU阶段valid：三个子模块都完成时，WBU才完成

@@ -83,7 +83,7 @@ end
 // 流水线握手信号
 // 如果write_reg = 1'b0，那么out_valid = prev_valid
 // 如果write_reg != 1'b0，那么out_valid = (gpr_wb_state == GPR_WB_DONE)
-assign out_valid = (write_reg == 1'b0) ? prev_valid : (gpr_wb_state == GPR_WB_DONE);
+assign out_valid = (write_reg == 1'b0) ? prev_valid && next_ready : (gpr_wb_state == GPR_WB_DONE);
 assign out_ready = (gpr_wb_state == GPR_WB_IDLE);
 
 // ------------------------------

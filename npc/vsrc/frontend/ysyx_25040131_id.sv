@@ -27,7 +27,7 @@ wire [11:0] instr3120 = instr[31:20]; // 使用wire和连续赋值
 
 // 流水线握手：ID是组合逻辑，直接传递valid信号
 // 当上游有效且下游ready时，输出有效
-assign out_valid = prev_valid && next_ready;
+assign out_valid = prev_valid;
 // ID总是ready（因为是组合逻辑，可以立即处理）
 assign out_ready = next_ready;
 

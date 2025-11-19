@@ -134,7 +134,7 @@ end
 // 流水线握手信号
 // 如果csr_we = 1'b0，那么out_valid = prev_valid
 // 如果csr_we != 1'b0，那么out_valid = (csr_wb_state == CSR_WB_DONE)
-assign out_valid = (csr_we == 1'b0) ? prev_valid : (csr_wb_state == CSR_WB_DONE);
+assign out_valid = (csr_we == 1'b0) ? prev_valid && next_ready : (csr_wb_state == CSR_WB_DONE);
 assign out_ready = (csr_wb_state == CSR_WB_IDLE);
 
 // --- CSR 写操作（仅允许写合法 CSR）---

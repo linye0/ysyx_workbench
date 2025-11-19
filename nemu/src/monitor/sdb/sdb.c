@@ -116,7 +116,7 @@ static int cmd_x(char *args){
 		return 0;
 	}
 	for (int i = 0;i < N;i ++){
-      printf("%x\n", paddr_read(startAddress,4));
+      printf("addr :%p, data: 0x%08x\n", startAddress, paddr_read(startAddress,4));
       //C语言会自动执行类型提升以匹配表达式的操作数的类型。所以，4 被转换为 uint32_t，
       startAddress += 4;
   
