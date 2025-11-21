@@ -18,6 +18,7 @@ module ysyx_25040131_controller(
     output reg csr_we,
     output reg [11:0] csr_addr,
     output reg csr_use_imm,
+    output reg is_ecall,
 
     // 异常信号(给CSR模块)
     output reg exc_valid,
@@ -56,6 +57,7 @@ always @(*) begin
     exc_cause = 32'h0;
     exc_tval = 32'h0;
     is_mret = 0;
+    is_ecall = 0;
     case (opcode)
         // lui
         7'b0110111:begin
@@ -325,9 +327,10 @@ always @(*) begin
             is_csr = 1;
             if (instr == 32'h00000073) begin
                 exc_valid = 1;
-                exc_cause = 32'd8;
+                exc_cause = 32'd11;  // ecall from U-mode: exception code 11 (0xb)
                 exc_tval = 32'h0;
                 write_reg = 0;
+                is_ecall = 1;
             end 
             else if (instr == 32'h30200073) begin
                 is_mret = 1;

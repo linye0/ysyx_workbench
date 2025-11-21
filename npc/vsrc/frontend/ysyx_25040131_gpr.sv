@@ -57,6 +57,8 @@ always @(posedge clk) begin
                     // end else begin
                         // 不需要写操作，直接进入DONE状态
                         // gpr_wb_state <= GPR_WB_DONE;
+                    end else if (target_reg == 5'h0) begin
+                        gpr_wb_state <= GPR_WB_DONE;
                     end
                 end
             end

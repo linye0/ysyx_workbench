@@ -24,7 +24,8 @@ module ysyx_25040131_csr (
     input exc_valid,       // 异常是否发生
     input [31:0] exc_pc,   // 异常发生时的pc
     input [31:0] exc_cause, // 异常原因
-    input [31:0] exc_tval  // 异常附加信息 
+    input [31:0] exc_tval, // 异常附加信息 
+    input is_ecall
 );
 
 // --- CSR 寄存器定义（仅实现需要的）---
@@ -57,10 +58,6 @@ typedef enum logic [1:0] {
 csr_wb_state_t csr_wb_state;
 reg [11:0] csr_addr_reg;
 reg [31:0] csr_wdata_reg;
-reg exc_valid_reg;
-reg [31:0] exc_pc_reg;
-reg [31:0] exc_cause_reg;
-reg [31:0] exc_tval_reg;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -72,27 +69,22 @@ always @(posedge clk) begin
         csr_wb_state <= CSR_WB_IDLE;
         csr_addr_reg <= 12'h0;
         csr_wdata_reg <= 32'h0;
-        exc_valid_reg <= 1'b0;
-        exc_pc_reg <= 32'h0;
-        exc_cause_reg <= 32'h0;
-        exc_tval_reg <= 32'h0;
     end else begin
+        // 异常处理优先级最高：立即更新 CSR，不等待状态机
         unique case (csr_wb_state)
             CSR_WB_IDLE: begin
                 // 等待MEM阶段有效
                 if (prev_valid && next_ready) begin
-                    if (csr_we || exc_valid) begin
+                    if (csr_we) begin
                         // 需要写操作，保存数据并进入WRITE状态
                         csr_addr_reg <= csr_addr;
                         csr_wdata_reg <= csr_wdata;
-                        exc_valid_reg <= exc_valid;
-                        exc_pc_reg <= exc_pc;
-                        exc_cause_reg <= exc_cause;
-                        exc_tval_reg <= exc_tval;
                         csr_wb_state <= CSR_WB_WRITE;
-                    // end else begin
-                        // 不需要写操作，直接进入DONE状态
-                        // csr_wb_state <= CSR_WB_DONE;
+                    end else if (is_ecall) begin
+                        mepc <= exc_pc;
+                        mcause <= exc_cause;
+                        mtval <= exc_tval;
+                        csr_wb_state <= CSR_WB_WRITE; 
                     end
                 end
             end
@@ -108,20 +100,14 @@ always @(posedge clk) begin
                         default: ; // 未实现 CSR 忽略
                     endcase
                 end
-                // 异常处理：当异常发生时，自动更新 CSR
-                if (exc_valid_reg) begin
-                    mepc    <= exc_pc_reg;
-                    mcause  <= exc_cause_reg;
-                    mtval   <= exc_tval_reg;
-                end
                 csr_wb_state <= CSR_WB_DONE;
             end
             CSR_WB_DONE: begin
                 // 写操作完成，等待prev_valid变为0后再回到IDLE状态
                 // 这样可以确保同一条指令的写操作只执行一次
-                if (!prev_valid) begin
+                // if (!prev_valid) begin
                     csr_wb_state <= CSR_WB_IDLE;
-                end
+                // end
             end
             default: begin
                 csr_wb_state <= CSR_WB_IDLE;
@@ -134,7 +120,7 @@ end
 // 流水线握手信号
 // 如果csr_we = 1'b0，那么out_valid = prev_valid
 // 如果csr_we != 1'b0，那么out_valid = (csr_wb_state == CSR_WB_DONE)
-assign out_valid = (csr_we == 1'b0) ? prev_valid && next_ready : (csr_wb_state == CSR_WB_DONE);
+assign out_valid = (csr_we == 1'b0 && is_ecall == 1'b0) ? prev_valid && next_ready : (csr_wb_state == CSR_WB_DONE);
 assign out_ready = (csr_wb_state == CSR_WB_IDLE);
 
 // --- CSR 写操作（仅允许写合法 CSR）---

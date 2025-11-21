@@ -38,6 +38,7 @@ wire [2: 0] read_mem; // 读内存信号
 wire [2: 0] extOP; // 立即数产生信号
 wire[1: 0] pcImm_NEXTPC_rs1Imm; // 无条件跳转
 wire csr_we;
+wire is_ecall;
 wire [11:0] csr_addr;
 wire [31:0] csr_wdata;
 wire [31:0] csr_rdata;
@@ -198,6 +199,7 @@ ysyx_25040131_controller controller(
     .exc_tval(exc_tval),
 
     .is_mret(is_mret),
+    .is_ecall(is_ecall),
     // 握手信号
     .prev_valid(ifu_valid),
     .next_ready(exu_ready),
@@ -282,7 +284,8 @@ ysyx_25040131_csr u_csr (
     .exc_valid(exc_valid),
     .exc_pc(ifu_pc),
     .exc_cause(exc_cause),
-    .exc_tval(exc_tval)
+    .exc_tval(exc_tval),
+    .is_ecall(is_ecall)
 );
 
 // EXU阶段输出有效：所有子模块都有效
