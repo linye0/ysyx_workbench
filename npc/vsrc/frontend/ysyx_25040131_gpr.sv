@@ -71,7 +71,7 @@ always @(posedge clk) begin
                 // 写操作完成，等待prev_valid变为0后再回到IDLE状态
                 // 这样可以确保同一条指令的写操作只执行一次
                 // if (!prev_valid) begin
-                    gpr_wb_state <= GPR_WB_IDLE;
+                gpr_wb_state <= GPR_WB_IDLE;
                 // end
             end
             default: begin

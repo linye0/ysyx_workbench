@@ -55,32 +55,39 @@ wire [31:0] mtvec;
 wire [31:0] write_aluormem_rd_data;
 
 // ------------------------------
-// IFU和SRAM相关信号
+// IFU相关信号
 wire [31:0] ifu_inst;      // IFU输出的指令
 wire [31:0] ifu_pc;        // IFU输出的PC
 wire ifu_valid;            // IFU输出有效
 wire ifu_ready;            // IFU可以接收新请求
-wire ifu_sram_arvalid;     // IFU发送给SRAM的读请求有效
-wire [31:0] ifu_sram_araddr; // IFU发送给SRAM的读地址
-wire ifu_sram_aready;      // SRAM对IFU读请求的ready
-wire [31:0] ifu_sram_rdata; // SRAM返回给IFU的数据
+// IFU 与 BUS 的接口
+wire [31:0] ifu_araddr;     // IFU发送给BUS的读地址
+wire ifu_arvalid;          // IFU读地址有效
+wire ifu_arready;          // BUS准备好接收读地址
+wire [31:0] ifu_rdata;     // BUS返回给IFU的数据
+wire ifu_rvalid;           // BUS返回给IFU的数据有效
+wire ifu_rready;           // IFU准备好接收读数据
 
 // ------------------------------
-// LSU和SRAM相关信号
+// LSU相关信号
 wire [31:0] lsu_read_data; // LSU输出的读数据
-wire lsu_sram_arvalid;     // LSU发送给SRAM的读请求有效
-wire [31:0] lsu_sram_araddr; // LSU发送给SRAM的读地址
-wire lsu_sram_aready;      // SRAM对LSU读请求的ready
-wire [31:0] lsu_sram_rdata; // SRAM返回给LSU的数据
-wire lsu_sram_awvalid;     // LSU发送给SRAM的写地址有效
-wire lsu_sram_wvalid;      // LSU发送给SRAM的写数据有效
-wire [31:0] lsu_sram_awaddr; // LSU发送给SRAM的写地址
-wire [31:0] lsu_sram_wdata; // LSU发送给SRAM的写数据
-wire [7:0] lsu_sram_wstrb;  // LSU发送给SRAM的写字节掩码
-wire lsu_sram_awready;     // SRAM对LSU写地址的ready
-wire lsu_sram_wready;      // SRAM对LSU写数据的ready
-wire lsu_sram_bvalid;      // SRAM对LSU写完成的valid
-wire lsu_sram_bready;      // LSU对SRAM写完成的ready
+// LSU 与 BUS 的接口（读通道）
+wire [31:0] lsu_araddr;     // LSU发送给BUS的读地址
+wire lsu_arvalid;           // LSU读地址有效
+wire lsu_arready;           // BUS准备好接收LSU读地址
+wire [31:0] lsu_rdata;      // BUS返回给LSU的数据
+wire lsu_rvalid;            // BUS返回给LSU的数据有效
+wire lsu_rready;            // LSU准备好接收读数据
+// LSU 与 BUS 的接口（写通道）
+wire [31:0] lsu_awaddr;     // LSU发送给BUS的写地址
+wire lsu_awvalid;           // LSU写地址有效
+wire lsu_awready;           // BUS准备好接收LSU写地址
+wire [31:0] lsu_wdata;      // LSU发送给BUS的写数据
+wire [7:0] lsu_wstrb;       // LSU发送给BUS的写字节掩码
+wire lsu_wvalid;            // LSU写数据有效
+wire lsu_wready;            // BUS准备好接收LSU写数据
+wire lsu_bvalid;            // BUS写响应有效
+wire lsu_bready;            // LSU准备好接收写响应
 
 // ------------------------------
 // 流水线握手信号链：IFU -> IDU -> EXU -> MEM -> WBU
@@ -146,10 +153,13 @@ ysyx_25040131_ifu IFU(
     .next_pc(next_pc),
     .out_inst(ifu_inst),
     .out_pc(ifu_pc),
-    .ready(ifu_sram_aready),      // SRAM对IFU读请求的ready
-    .valid(ifu_sram_arvalid),     // IFU发送给SRAM的读请求valid
-    .out_ifu_araddr(ifu_sram_araddr), // IFU发送给SRAM的读地址
-    .ifu_rdata(ifu_sram_rdata),    // SRAM返回给IFU的数据
+    // 与 BUS 的接口
+    .ifu_araddr(ifu_araddr),
+    .ifu_arvalid(ifu_arvalid),
+    .ifu_arready(ifu_arready),
+    .ifu_rdata(ifu_rdata),
+    .ifu_rvalid(ifu_rvalid),
+    .ifu_rready(ifu_rready),
     .prev_valid(ifu_prev_valid),   // 来自WBU的valid，实现多周期执行
     .next_ready(idu_ready),        // IDU可以接收时，IFU才能发送
     .out_valid(ifu_valid),
@@ -308,28 +318,30 @@ ysyx_25040131_lsu LSU(
     .next_ready(wbu_ready),
     .out_valid(mem_valid),
     .out_ready(mem_ready),
-    // 与SRAM的接口（读通道）
-    .sram_araddr(lsu_sram_araddr),
-    .sram_arvalid(lsu_sram_arvalid),
-    .sram_aready(lsu_sram_aready),
-    .sram_rdata(lsu_sram_rdata),
-    // 与SRAM的接口（写通道）
-    .sram_awaddr(lsu_sram_awaddr),
-    .sram_wdata(lsu_sram_wdata),
-    .sram_wstrb(lsu_sram_wstrb),
-    .sram_awvalid(lsu_sram_awvalid),
-    .sram_wvalid(lsu_sram_wvalid),
-    .sram_awready(lsu_sram_awready),
-    .sram_wready(lsu_sram_wready),
-    .sram_bvalid(lsu_sram_bvalid),
-    .sram_bready(lsu_sram_bready)
+    // 与 BUS 的接口（读通道）
+    .lsu_araddr(lsu_araddr),
+    .lsu_arvalid(lsu_arvalid),
+    .lsu_arready(lsu_arready),
+    .lsu_rdata(lsu_rdata),
+    .lsu_rvalid(lsu_rvalid),
+    // 与 BUS 的接口（写通道）
+    .lsu_awaddr(lsu_awaddr),
+    .lsu_awvalid(lsu_awvalid),
+    .lsu_awready(lsu_awready),
+    .lsu_wdata(lsu_wdata),
+    .lsu_wstrb(lsu_wstrb),
+    .lsu_wvalid(lsu_wvalid),
+    .lsu_wready(lsu_wready),
+    .lsu_bvalid(lsu_bvalid),
+    .lsu_bready(lsu_bready),
+    .lsu_rready(lsu_rready)
 );
 
 // ============================================================================
 // WBU阶段：写回（GPR写、CSR写）
 // ============================================================================
 // WBU阶段总是ready（因为是最后阶段）
-assign wbu_ready = 1'b1;
+assign wbu_ready = 1'b1; // 不知道能不能改成下面那种定义
 
 // MUX选择写回数据
 ysyx_25040131_mux_2 MUX_ALUORMEM_WB(
@@ -409,31 +421,105 @@ ysyx_25040131_mux_2 MUX_EX_A(
 );
 
 // ============================================================================
-// SRAM实例（支持IFU和LSU）
+// BUS 和 SRAM 相关信号
+// ============================================================================
+// BUS 与 SRAM/外设的统一接口（io_master）
+wire [31:0] io_master_araddr;
+wire io_master_arvalid;
+wire io_master_arready;
+wire [31:0] io_master_rdata;
+wire [1:0] io_master_rresp;
+wire io_master_rvalid;
+wire io_master_rready;
+wire [31:0] io_master_awaddr;
+wire io_master_awvalid;
+wire io_master_awready;
+wire [31:0] io_master_wdata;
+wire [3:0] io_master_wstrb;
+wire io_master_wvalid;
+wire io_master_wready;
+wire [1:0] io_master_bresp;
+wire io_master_bvalid;
+wire io_master_bready;
+
+// ============================================================================
+// BUS实例（总线仲裁和地址路由）
+// ============================================================================
+ysyx_25040131_bus BUS(
+    .clock(clk),
+    .reset(rst),
+    .flush_pipeline(1'b0),  // TODO: 如果需要流水线冲刷，连接相应信号
+
+    // AXI4 Master bus (外设接口)
+    .io_master_araddr(io_master_araddr),
+    .io_master_arvalid(io_master_arvalid),
+    .io_master_arready(io_master_arready),
+    .io_master_rdata(io_master_rdata),
+    .io_master_rresp(io_master_rresp),
+    .io_master_rvalid(io_master_rvalid),
+    .io_master_rready(io_master_rready),
+    .io_master_awaddr(io_master_awaddr),
+    .io_master_awvalid(io_master_awvalid),
+    .io_master_awready(io_master_awready),
+    .io_master_wdata(io_master_wdata),
+    .io_master_wstrb(io_master_wstrb),
+    .io_master_wvalid(io_master_wvalid),
+    .io_master_wready(io_master_wready),
+    .io_master_bresp(io_master_bresp),
+    .io_master_bvalid(io_master_bvalid),
+    .io_master_bready(io_master_bready),
+
+    // IFU 接口
+    .ifu_arready(ifu_arready),
+    .ifu_araddr(ifu_araddr),
+    .ifu_arvalid(ifu_arvalid),
+    .ifu_rdata(ifu_rdata),
+    .ifu_rvalid(ifu_rvalid),
+    .ifu_rready(ifu_rready),
+
+    // LSU 接口
+    .lsu_araddr(lsu_araddr),
+    .lsu_arvalid(lsu_arvalid),
+    .lsu_arready(lsu_arready),
+    .lsu_rdata(lsu_rdata),
+    .lsu_rvalid(lsu_rvalid),
+    .lsu_rready(lsu_rready),
+    .lsu_awaddr(lsu_awaddr),
+    .lsu_awvalid(lsu_awvalid),
+    .lsu_awready(lsu_awready),
+    .lsu_wdata(lsu_wdata),
+    .lsu_wstrb(lsu_wstrb),
+    .lsu_wvalid(lsu_wvalid),
+    .lsu_wready(lsu_wready),
+    .lsu_bvalid(lsu_bvalid),
+    .lsu_bready(lsu_bready)
+);
+
+// ============================================================================
+// SRAM实例（存储器模拟）
 // ============================================================================
 ysyx_25040131_sram SRAM(
     .clock(clk),
     .reset(rst),
-    // IFU读通道
-    .ifu_araddr(ifu_sram_araddr),
-    .ifu_rdata(ifu_sram_rdata),
-    .ifu_arvalid(ifu_sram_arvalid),
-    .ifu_aready(ifu_sram_aready),
-    // LSU读通道
-    .lsu_araddr(lsu_sram_araddr),
-    .lsu_rdata(lsu_sram_rdata),
-    .lsu_arvalid(lsu_sram_arvalid),
-    .lsu_aready(lsu_sram_aready),
-    // LSU写通道
-    .lsu_awaddr(lsu_sram_awaddr),
-    .lsu_wdata(lsu_sram_wdata),
-    .lsu_wstrb(lsu_sram_wstrb),
-    .lsu_awvalid(lsu_sram_awvalid),
-    .lsu_wvalid(lsu_sram_wvalid),
-    .lsu_awready(lsu_sram_awready),
-    .lsu_wready(lsu_sram_wready),
-    .lsu_bvalid(lsu_sram_bvalid),
-    .lsu_bready(lsu_sram_bready)
+    // AXI4-Lite Read Channel (统一使用 io_master 接口)
+    .io_master_araddr(io_master_araddr),
+    .io_master_arvalid(io_master_arvalid),
+    .io_master_arready(io_master_arready),
+    .io_master_rdata(io_master_rdata),
+    .io_master_rresp(io_master_rresp),
+    .io_master_rvalid(io_master_rvalid),
+    .io_master_rready(io_master_rready),
+    // AXI4-Lite Write Channel (统一使用 io_master 接口)
+    .io_master_awaddr(io_master_awaddr),
+    .io_master_awvalid(io_master_awvalid),
+    .io_master_awready(io_master_awready),
+    .io_master_wdata(io_master_wdata),
+    .io_master_wstrb(io_master_wstrb),
+    .io_master_wvalid(io_master_wvalid),
+    .io_master_wready(io_master_wready),
+    .io_master_bresp(io_master_bresp),
+    .io_master_bvalid(io_master_bvalid),
+    .io_master_bready(io_master_bready)
 );
 
 endmodule

@@ -8,161 +8,129 @@ module ysyx_25040131_sram #(
     input clock,
     input reset,
 
-    // IFU读通道（优先）
-    input [XLEN - 1: 0] ifu_araddr,
-    output reg [XLEN - 1: 0] ifu_rdata,
-    input ifu_arvalid,
-    output ifu_aready,
+    // AXI4-Lite Read Channel (统一使用 io_master 接口)
+    // Read Address Channel
+    input [XLEN - 1: 0] io_master_araddr,
+    input io_master_arvalid,
+    output io_master_arready,
+    // Read Data Channel
+    output [XLEN - 1: 0] io_master_rdata,
+    output [1:0] io_master_rresp,  // AXI4-Lite response: 2'b00 = OKAY
+    output io_master_rvalid,
+    input io_master_rready,
 
-    // LSU读通道
-    input [XLEN - 1: 0] lsu_araddr,
-    output reg [XLEN - 1: 0] lsu_rdata,
-    input lsu_arvalid,
-    output lsu_aready,
-
-    // LSU写通道
-    input [XLEN - 1: 0] lsu_awaddr,
-    input [XLEN - 1: 0] lsu_wdata,
-    input [7:0] lsu_wstrb,  // 写字节掩码
-    input lsu_awvalid,
-    input lsu_wvalid,
-    output lsu_awready,
-    output lsu_wready,
-    output lsu_bvalid,      // 写完成信号
-    input lsu_bready
+    // AXI4-Lite Write Channel (统一使用 io_master 接口)
+    // Write Address Channel
+    input [XLEN - 1: 0] io_master_awaddr,
+    input io_master_awvalid,
+    output io_master_awready,
+    // Write Data Channel
+    input [XLEN - 1: 0] io_master_wdata,
+    input [3:0] io_master_wstrb,  // Write strobe (byte enable) - 4位
+    input io_master_wvalid,
+    output io_master_wready,
+    // Write Response Channel
+    output [1:0] io_master_bresp,  // AXI4-Lite response: 2'b00 = OKAY
+    output io_master_bvalid,
+    input io_master_bready
 );
 
   // ------------------------------
-  // 读状态机（IF/LS 共享仲裁）
-  // IF_A  : IF 读地址阶段（优先 IFU）
-  // IF_D  : IF 等待读数据返回（延迟YSYX_SRAM_DELAY周期）
-  // IF_B  : IF 把读数据回传给 IFU（产生 ifu_aready）
-  // LS_A  : LSU 读地址阶段（在 IFU 无请求时）
-  // LS_D  : LSU 等待读数据返回（延迟YSYX_SRAM_DELAY周期）
-  // LS_R  : LSU 读数据准备好
-  typedef enum logic [2:0] {
-    IF_A = 3'b000,
-    IF_D = 3'b001,
-    IF_B = 3'b010,
-    LS_A = 3'b011,
-    LS_D = 3'b100,
-    LS_R = 3'b101
-  } state_load_t;
-
-  // 写状态机（仅服务 LSU 写）
-  // LS_S_A: 等待发起写地址
-  // LS_S_W: 发送写数据（延迟YSYX_SRAM_DELAY周期）
-  // LS_S_B: 等待写响应
-  typedef enum logic [1:0] {
-    LS_S_A = 2'b00,
-    LS_S_W = 2'b01,
-    LS_S_B = 2'b10
-  } state_store_t;
-
-  state_load_t state_load;
-  state_store_t state_store;
+  // AXI4-Lite Response Codes
+  localparam [1:0] AXI_RESP_OKAY = 2'b00;
+  localparam [1:0] AXI_RESP_EXOKAY = 2'b01;
+  localparam [1:0] AXI_RESP_SLVERR = 2'b10;
+  localparam [1:0] AXI_RESP_DECERR = 2'b11;
 
   // ------------------------------
-  // 可观察的状态信号（用于gtkwave调试）
-  wire [2:0] sram_state_load_debug;
-  wire [1:0] sram_state_store_debug;
-  assign sram_state_load_debug = state_load;
-  assign sram_state_store_debug = state_store;
+  // Read State Machine
+  // AR: Read Address phase
+  // D:  Wait for read data (delay YSYX_SRAM_DELAY cycles)
+  // R:  Read data ready (waiting for rready)
+  typedef enum logic [1:0] {
+    AR = 2'b00,
+    D  = 2'b01,
+    R  = 2'b10
+  } state_read_t;
 
-  // 读状态机相关寄存器
-  reg [XLEN - 1: 0] read_addr_reg;
-  reg [XLEN - 1: 0] ifu_rdata_reg;  // IFU读数据暂存
-  reg [XLEN - 1: 0] lsu_rdata_reg;  // LSU读数据暂存
+  // Write State Machine
+  // AW: Wait for write address and data
+  // W:  Wait for write delay (YSYX_SRAM_DELAY cycles)
+  // B:  Write response ready
+  typedef enum logic [1:0] {
+    AW = 2'b00,
+    W  = 2'b01,
+    B  = 2'b10
+  } state_write_t;
   
-  // 延迟计数器：用于跟踪IF_D、LS_D和LS_S_W状态的延迟周期数
+  // Track if address and data have been received
+  reg aw_received;
+  reg w_received;
+
+  state_read_t state_read;
+  state_write_t state_write;
+
+  // ------------------------------
+  // Debug signals
+  wire [1:0] sram_state_read_debug;
+  wire [1:0] sram_state_write_debug;
+  assign sram_state_read_debug = state_read;
+  assign sram_state_write_debug = state_write;
+
+  // Read state machine registers
+  reg [XLEN - 1: 0] read_addr_reg;
   reg [$clog2(`YSYX_SRAM_DELAY + 1) - 1: 0] delay_counter;
 
-  // 写状态机相关寄存器
+  // Write state machine registers
   reg [XLEN - 1: 0] write_addr_reg;
   reg [XLEN - 1: 0] write_data_reg;
-  reg [7:0] write_strb_reg;
+  reg [3:0] write_strb_reg;  // 4位 wstrb
+  reg [$clog2(`YSYX_SRAM_DELAY + 1) - 1: 0] write_delay_counter;
+
+  // Read data register
+  reg [XLEN - 1: 0] io_master_rdata_reg;
+  reg [1:0] io_master_rresp_reg;
 
   // ------------------------------
-  // 读状态机
+  // Read State Machine
   always @(posedge clock) begin
     if (reset) begin
-      state_load <= IF_A;
+      state_read <= AR;
       read_addr_reg <= {XLEN{1'b0}};
-      ifu_rdata_reg <= {XLEN{1'b0}};
-      lsu_rdata_reg <= {XLEN{1'b0}};
       delay_counter <= 0;
+      io_master_rdata_reg <= {XLEN{1'b0}};
+      io_master_rresp_reg <= AXI_RESP_OKAY;
     end else begin
-      unique case (state_load)
-        IF_A: begin
-          // 优先处理IFU读请求
-          if (ifu_arvalid) begin
-            read_addr_reg <= ifu_araddr;
+      unique case (state_read)
+        AR: begin
+          // Wait for read address
+          if (io_master_arvalid && io_master_arready) begin
+            read_addr_reg <= io_master_araddr;
             delay_counter <= 0;
-            state_load <= IF_D;
-          end else if (lsu_arvalid) begin
-            // IFU无请求时，处理LSU读请求
-            read_addr_reg <= lsu_araddr;
-            state_load <= LS_A;
+            state_read <= D;
           end
         end
-        IF_D: begin
-          // 延迟多个周期后读取数据
+        D: begin
+          // Delay cycles before reading data
           if (`YSYX_SRAM_DELAY == 1 || delay_counter >= (`YSYX_SRAM_DELAY - 1)) begin
-            // 延迟周期已满，读取数据并进入下一状态
-            ifu_rdata_reg <= `YSYX_DPI_C_NPC_READ(read_addr_reg, 32'hf);
-            state_load <= IF_B;
+            // Delay complete, read data and enter R state
+            io_master_rdata_reg <= `YSYX_DPI_C_NPC_READ(read_addr_reg, 32'hf);
+            io_master_rresp_reg <= AXI_RESP_OKAY;
+            state_read <= R;
             delay_counter <= 0;
           end else begin
-            // 继续延迟
             delay_counter <= delay_counter + 1;
           end
         end
-        IF_B: begin
-          // 数据已准备好，等待被消费
-          // 当ifu_arvalid变低时（表示已接收数据并撤销请求），回到IF_A状态
-          if (!ifu_arvalid) begin // ifu的valid只有在IDLE并且上下游有效时才为1,所以这边实际上就是无条件变成IF_A吧
-            state_load <= IF_A;
-          end
-        end
-        LS_A: begin
-          // 如果IFU有请求，优先处理IFU
-          if (ifu_arvalid) begin
-            read_addr_reg <= ifu_araddr;
-            delay_counter <= 0;
-            state_load <= IF_D;
-          end else begin
-            // 否则进入延迟周期
-            delay_counter <= 0;
-            state_load <= LS_D;
-          end
-        end
-        LS_D: begin
-          // 延迟多个周期后读取数据
-          if (`YSYX_SRAM_DELAY == 1 || delay_counter >= (`YSYX_SRAM_DELAY - 1)) begin
-            // 延迟周期已满，读取数据并进入下一状态
-            lsu_rdata_reg <= `YSYX_DPI_C_NPC_READ(read_addr_reg, 32'hf);
-            state_load <= LS_R;
-            delay_counter <= 0;
-          end else begin
-            // 继续延迟
-            delay_counter <= delay_counter + 1;
-          end
-        end
-        LS_R: begin
-          // 数据已准备好，等待被消费
-          // 当lsu_arvalid变低时（表示已接收数据并撤销请求），回到LS_A状态
-          if (!lsu_arvalid) begin
-            state_load <= LS_A;
-          end
-          // 如果IFU有请求，优先处理IFU
-          else if (ifu_arvalid) begin
-            read_addr_reg <= ifu_araddr;
-            delay_counter <= 0;
-            state_load <= IF_D;
+        R: begin
+          // Read data ready, wait for rready (握手完成)
+          if (io_master_rready && io_master_rvalid) begin
+            // Data transferred, return to AR state
+            state_read <= AR;
           end
         end
         default: begin
-          state_load <= IF_A;
+          state_read <= AR;
           delay_counter <= 0;
         end
       endcase
@@ -170,50 +138,62 @@ module ysyx_25040131_sram #(
   end
 
   // ------------------------------
-  // 写状态机
-  // 写延迟计数器：用于跟踪LS_S_W状态的延迟周期数
-  reg [$clog2(`YSYX_SRAM_DELAY + 1) - 1: 0] write_delay_counter;
-  
+  // Write State Machine
   always @(posedge clock) begin
     if (reset) begin
-      state_store <= LS_S_A;
+      state_write <= AW;
       write_addr_reg <= {XLEN{1'b0}};
       write_data_reg <= {XLEN{1'b0}};
-      write_strb_reg <= 8'h0;
+      write_strb_reg <= 4'h0;
       write_delay_counter <= 0;
+      aw_received <= 1'b0;
+      w_received <= 1'b0;
     end else begin
-      unique case (state_store)
-        LS_S_A: begin
-          // 等待发起写地址和数据
-          // LSU会在同一个周期发送awvalid和wvalid
-          if (lsu_awvalid && lsu_wvalid) begin
-            write_addr_reg <= lsu_awaddr;
-            write_data_reg <= lsu_wdata;
-            write_strb_reg <= lsu_wstrb;
+      unique case (state_write)
+        AW: begin
+          // AXI4-Lite: AW and W channels can arrive in any order
+          // Accept address when valid and not yet received
+          if (io_master_awvalid && io_master_awready && !aw_received) begin
+            write_addr_reg <= io_master_awaddr;
+            aw_received <= 1'b1;
+          end
+          // Accept data when valid and not yet received
+          if (io_master_wvalid && io_master_wready && !w_received) begin
+            write_data_reg <= io_master_wdata;
+            write_strb_reg <= io_master_wstrb;
+            w_received <= 1'b1;
+          end
+          // When both address and data received, proceed to write delay
+          if (aw_received && w_received) begin
             write_delay_counter <= 0;
-            state_store <= LS_S_W;
+            aw_received <= 1'b0;
+            w_received <= 1'b0;
+            state_write <= W;
           end
         end
-        LS_S_W: begin
-          // 延迟多个周期后写入数据
+        W: begin
+          // Delay cycles before writing data
           if (`YSYX_SRAM_DELAY == 1 || write_delay_counter >= (`YSYX_SRAM_DELAY - 1)) begin
-            // 延迟周期已满，执行写操作并进入下一状态
-            `YSYX_DPI_C_NPC_WRITE(write_addr_reg, write_data_reg, {24'h0, write_strb_reg[7:0]});
-            state_store <= LS_S_B;
+            // Delay complete, execute write and enter B state
+            // 将 4 位 wstrb 扩展为 8 位用于 DPI 调用
+            `YSYX_DPI_C_NPC_WRITE(write_addr_reg, write_data_reg, {24'h0, 4'b0, write_strb_reg});
+            state_write <= B;
             write_delay_counter <= 0;
           end else begin
-            // 继续延迟
             write_delay_counter <= write_delay_counter + 1;
           end
         end
-        LS_S_B: begin
-          // 写完成，等待lsu_bready
-          if (lsu_bready) begin
-            state_store <= LS_S_A;
+        B: begin
+          // Write response ready, wait for bready (握手完成)
+          if (io_master_bready && io_master_bvalid) begin
+            // Response transferred, return to AW state
+            aw_received <= 1'b0;
+            w_received <= 1'b0;
+            state_write <= AW;
           end
         end
         default: begin
-          state_store <= LS_S_A;
+          state_write <= AW;
           write_delay_counter <= 0;
         end
       endcase
@@ -221,18 +201,23 @@ module ysyx_25040131_sram #(
   end
 
   // ------------------------------
-  // 输出信号
-  // IFU读通道
-  assign ifu_rdata = ifu_rdata_reg;
-  assign ifu_aready = (state_load == IF_B);
+  // 组合逻辑：ready 和 valid 信号
+  // Read Address Channel
+  assign io_master_arready = (state_read == AR) && !reset;
 
-  // LSU读通道
-  assign lsu_rdata = lsu_rdata_reg;
-  assign lsu_aready = (state_load == LS_R);
+  // Read Data Channel
+  assign io_master_rdata = io_master_rdata_reg;
+  assign io_master_rresp = io_master_rresp_reg;
+  assign io_master_rvalid = (state_read == R);
 
-  // LSU写通道
-  assign lsu_awready = (state_store == LS_S_A) && lsu_awvalid && lsu_wvalid;
-  assign lsu_wready = (state_store == LS_S_A) && lsu_awvalid && lsu_wvalid;  // 在LS_S_A状态时ready，表示可以接收写地址和数据
-  assign lsu_bvalid = (state_store == LS_S_B);  // 在LS_S_B状态时valid，表示写完成
+  // Write Address Channel
+  assign io_master_awready = (state_write == AW) && !aw_received && !reset;
+
+  // Write Data Channel
+  assign io_master_wready = (state_write == AW) && !w_received && !reset;
+
+  // Write Response Channel
+  assign io_master_bresp = AXI_RESP_OKAY;
+  assign io_master_bvalid = (state_write == B);
 
 endmodule
