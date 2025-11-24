@@ -66,6 +66,8 @@
 // 包括读延迟和写延迟，SRAM会在IF_D、LS_D和LS_S_W状态中重复多个周期
 `define YSYX_SRAM_DELAY 1
 
+`define YSYX_VIRTUAL_DEVICE 1
+
 // === Architecture (arch) Parameters ===
 `endif
 

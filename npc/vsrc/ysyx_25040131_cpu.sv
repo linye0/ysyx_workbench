@@ -496,30 +496,160 @@ ysyx_25040131_bus BUS(
 );
 
 // ============================================================================
+// Xbar 信号（地址路由）
+// ============================================================================
+// Xbar 到 SRAM 的信号
+wire [31:0] sram_araddr;
+wire sram_arvalid;
+wire sram_arready;
+wire [31:0] sram_rdata;
+wire [1:0] sram_rresp;
+wire sram_rvalid;
+wire sram_rready;
+wire [31:0] sram_awaddr;
+wire sram_awvalid;
+wire sram_awready;
+wire [31:0] sram_wdata;
+wire [3:0] sram_wstrb;
+wire sram_wvalid;
+wire sram_wready;
+wire [1:0] sram_bresp;
+wire sram_bvalid;
+wire sram_bready;
+
+// Xbar 到 UART 的信号
+wire [31:0] uart_araddr;
+wire uart_arvalid;
+wire uart_arready;
+wire [31:0] uart_rdata;
+wire [1:0] uart_rresp;
+wire uart_rvalid;
+wire uart_rready;
+wire [31:0] uart_awaddr;
+wire uart_awvalid;
+wire uart_awready;
+wire [31:0] uart_wdata;
+wire [3:0] uart_wstrb;
+wire uart_wvalid;
+wire uart_wready;
+wire [1:0] uart_bresp;
+wire uart_bvalid;
+wire uart_bready;
+
+// ============================================================================
+// Xbar实例（地址路由：BUS → Xbar → SRAM/UART）
+// ============================================================================
+ysyx_25040131_xbar XBAR(
+    .clock(clk),
+    .reset(rst),
+    // Master 接口（来自 BUS）
+    .m_axi_araddr(io_master_araddr),
+    .m_axi_arvalid(io_master_arvalid),
+    .m_axi_arready(io_master_arready),
+    .m_axi_rdata(io_master_rdata),
+    .m_axi_rresp(io_master_rresp),
+    .m_axi_rvalid(io_master_rvalid),
+    .m_axi_rready(io_master_rready),
+    .m_axi_awaddr(io_master_awaddr),
+    .m_axi_awvalid(io_master_awvalid),
+    .m_axi_awready(io_master_awready),
+    .m_axi_wdata(io_master_wdata),
+    .m_axi_wstrb(io_master_wstrb),
+    .m_axi_wvalid(io_master_wvalid),
+    .m_axi_wready(io_master_wready),
+    .m_axi_bresp(io_master_bresp),
+    .m_axi_bvalid(io_master_bvalid),
+    .m_axi_bready(io_master_bready),
+    // Slave 接口 - SRAM
+    .sram_araddr(sram_araddr),
+    .sram_arvalid(sram_arvalid),
+    .sram_arready(sram_arready),
+    .sram_rdata(sram_rdata),
+    .sram_rresp(sram_rresp),
+    .sram_rvalid(sram_rvalid),
+    .sram_rready(sram_rready),
+    .sram_awaddr(sram_awaddr),
+    .sram_awvalid(sram_awvalid),
+    .sram_awready(sram_awready),
+    .sram_wdata(sram_wdata),
+    .sram_wstrb(sram_wstrb),
+    .sram_wvalid(sram_wvalid),
+    .sram_wready(sram_wready),
+    .sram_bresp(sram_bresp),
+    .sram_bvalid(sram_bvalid),
+    .sram_bready(sram_bready),
+    // Slave 接口 - UART
+    .uart_araddr(uart_araddr),
+    .uart_arvalid(uart_arvalid),
+    .uart_arready(uart_arready),
+    .uart_rdata(uart_rdata),
+    .uart_rresp(uart_rresp),
+    .uart_rvalid(uart_rvalid),
+    .uart_rready(uart_rready),
+    .uart_awaddr(uart_awaddr),
+    .uart_awvalid(uart_awvalid),
+    .uart_awready(uart_awready),
+    .uart_wdata(uart_wdata),
+    .uart_wstrb(uart_wstrb),
+    .uart_wvalid(uart_wvalid),
+    .uart_wready(uart_wready),
+    .uart_bresp(uart_bresp),
+    .uart_bvalid(uart_bvalid),
+    .uart_bready(uart_bready)
+);
+
+// ============================================================================
 // SRAM实例（存储器模拟）
 // ============================================================================
 ysyx_25040131_sram SRAM(
     .clock(clk),
     .reset(rst),
-    // AXI4-Lite Read Channel (统一使用 io_master 接口)
-    .io_master_araddr(io_master_araddr),
-    .io_master_arvalid(io_master_arvalid),
-    .io_master_arready(io_master_arready),
-    .io_master_rdata(io_master_rdata),
-    .io_master_rresp(io_master_rresp),
-    .io_master_rvalid(io_master_rvalid),
-    .io_master_rready(io_master_rready),
-    // AXI4-Lite Write Channel (统一使用 io_master 接口)
-    .io_master_awaddr(io_master_awaddr),
-    .io_master_awvalid(io_master_awvalid),
-    .io_master_awready(io_master_awready),
-    .io_master_wdata(io_master_wdata),
-    .io_master_wstrb(io_master_wstrb),
-    .io_master_wvalid(io_master_wvalid),
-    .io_master_wready(io_master_wready),
-    .io_master_bresp(io_master_bresp),
-    .io_master_bvalid(io_master_bvalid),
-    .io_master_bready(io_master_bready)
+    // AXI4-Lite Read Channel
+    .io_master_araddr(sram_araddr),
+    .io_master_arvalid(sram_arvalid),
+    .io_master_arready(sram_arready),
+    .io_master_rdata(sram_rdata),
+    .io_master_rresp(sram_rresp),
+    .io_master_rvalid(sram_rvalid),
+    .io_master_rready(sram_rready),
+    // AXI4-Lite Write Channel
+    .io_master_awaddr(sram_awaddr),
+    .io_master_awvalid(sram_awvalid),
+    .io_master_awready(sram_awready),
+    .io_master_wdata(sram_wdata),
+    .io_master_wstrb(sram_wstrb),
+    .io_master_wvalid(sram_wvalid),
+    .io_master_wready(sram_wready),
+    .io_master_bresp(sram_bresp),
+    .io_master_bvalid(sram_bvalid),
+    .io_master_bready(sram_bready)
+);
+
+// ============================================================================
+// UART实例（串口设备）
+// ============================================================================
+ysyx_25040131_uart UART(
+    .clock(clk),
+    .reset(rst),
+    // AXI4-Lite Read Channel
+    .s_axi_araddr(uart_araddr),
+    .s_axi_arvalid(uart_arvalid),
+    .s_axi_arready(uart_arready),
+    .s_axi_rdata(uart_rdata),
+    .s_axi_rresp(uart_rresp),
+    .s_axi_rvalid(uart_rvalid),
+    .s_axi_rready(uart_rready),
+    // AXI4-Lite Write Channel
+    .s_axi_awaddr(uart_awaddr),
+    .s_axi_awvalid(uart_awvalid),
+    .s_axi_awready(uart_awready),
+    .s_axi_wdata(uart_wdata),
+    .s_axi_wstrb(uart_wstrb),
+    .s_axi_wvalid(uart_wvalid),
+    .s_axi_wready(uart_wready),
+    .s_axi_bresp(uart_bresp),
+    .s_axi_bvalid(uart_bvalid),
+    .s_axi_bready(uart_bready)
 );
 
 endmodule

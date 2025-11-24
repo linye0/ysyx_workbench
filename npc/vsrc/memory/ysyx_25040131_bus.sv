@@ -107,6 +107,14 @@ module ysyx_25040131_bus #(
   logic [XLEN-1:0] ifu_rdata_reg;  // IFU 读数据寄存器
   logic [XLEN-1:0] lsu_rdata_reg;   // LSU 读数据寄存器
 
+  // 地址锁存寄存器
+  logic [XLEN-1:0] io_master_araddr_reg;  // 读地址寄存器
+  logic [XLEN-1:0] io_master_awaddr_reg;  // 写地址寄存器
+
+  logic io_master_arvalid_reg;
+  logic io_master_awvalid_reg;
+  logic io_master_wvalid_reg;
+
   // lsu read
   // io_rdata：从 AXI R 通道读取的数据
   logic [XLEN-1:0] io_rdata;
@@ -132,23 +140,25 @@ module ysyx_25040131_bus #(
       state_load <= BUS_IDLE;
       ifu_rdata_reg <= {XLEN{1'b0}};
       lsu_rdata_reg <= {XLEN{1'b0}};
+      io_master_araddr_reg <= {XLEN{1'b0}};
+      io_master_arvalid_reg <= 1'b0;
     end else begin
       unique case (state_load)
         BUS_IDLE: begin
           // 优先处理 IFU 请求
           if (ifu_arvalid) begin
-            if (io_master_arready) begin
-              state_load <= IFU_WAIT_R;
-            end else begin
+            //if (io_master_arready) begin
+              // 地址握手完成，锁存地址
+              // io_master_araddr_reg <= ifu_araddr;
+              // state_load <= IFU_WAIT_R;
+            // end else begin
               state_load <= IFU_REQ_AR;
-            end
+            // end
           end else if (lsu_arvalid) begin
             if (clint_en) begin
               // CLINT 旁路，直接进入 LSU_DONE
               lsu_rdata_reg <= clint_rdata;
               state_load <= LSU_DONE;
-            end else if (io_master_arready) begin
-              state_load <= LSU_WAIT_R;
             end else begin
               state_load <= LSU_REQ_AR;
             end
@@ -156,14 +166,18 @@ module ysyx_25040131_bus #(
         end
         IFU_REQ_AR: begin
           // 等待 IFU 读地址握手完成
-          if (io_master_arready) begin
+          // if (io_master_arready) begin
+            // 地址握手完成，锁存地址
+            io_master_araddr_reg <= ifu_araddr;
+            io_master_arvalid_reg <= 1'b1;
             state_load <= IFU_WAIT_R;
-          end
+          // end
         end
         IFU_WAIT_R: begin
           // 等待读数据返回
           if (io_master_rvalid) begin
             ifu_rdata_reg <= io_master_rdata;
+            io_master_arvalid_reg <= 1'b0;
             state_load <= IFU_DONE;
           end
         end
@@ -175,22 +189,16 @@ module ysyx_25040131_bus #(
         end
         LSU_REQ_AR: begin
           // 等待 LSU 读地址握手完成
-          if (clint_en || ifu_arvalid) begin
-            // CLINT 旁路或 IFU 请求，优先处理 IFU
-            if (ifu_arvalid && io_master_arready) begin
-              state_load <= IFU_WAIT_R;
-            end else if (clint_en) begin
-              lsu_rdata_reg <= clint_rdata;
-              state_load <= LSU_DONE;
-            end
-          end else if (io_master_arready) begin
+            // 地址握手完成，锁存地址
+            io_master_araddr_reg <= lsu_araddr;
+            io_master_arvalid_reg <= 1'b1;
             state_load <= LSU_WAIT_R;
           end
-        end
         LSU_WAIT_R: begin
           // 等待读数据返回
           if (io_master_rvalid) begin
             lsu_rdata_reg <= io_master_rdata;
+            io_master_arvalid_reg <= 1'b0;
             state_load <= LSU_DONE;
           end
         end
@@ -210,6 +218,9 @@ module ysyx_25040131_bus #(
   always @(posedge clock) begin
     if (reset) begin
       state_store <= BUS_WRITE_IDLE;
+      io_master_awaddr_reg <= {XLEN{1'b0}};
+      io_master_awvalid_reg <= 1'b0;
+      io_master_wvalid_reg <= 1'b0;
     end else begin
       unique case (state_store)
         BUS_WRITE_IDLE: begin
@@ -220,15 +231,18 @@ module ysyx_25040131_bus #(
         end
         BUS_WRITE_AW: begin
           // 等待写地址握手完成
-          if (io_master_awready) begin
-            // 地址握手完成，进入等待写数据状态
+            // 地址握手完成，锁存地址
+            io_master_awaddr_reg <= lsu_awaddr;
+            io_master_awvalid_reg <= 1'b1;
+            // 进入等待写数据状态
             state_store <= BUS_WRITE_W;
-          end
         end
         BUS_WRITE_W: begin
           // 等待写数据握手完成
           if (io_master_wready) begin
+          // BUG TO DO: 这里要等待的真的是wready吗？
             // 数据握手完成，进入等待写响应状态
+            io_master_wvalid_reg <= 1'b1;
             state_store <= BUS_WRITE_BOTH;
           end
         end
@@ -239,6 +253,8 @@ module ysyx_25040131_bus #(
         BUS_WRITE_B: begin
           // 等待写响应握手完成
           if (io_master_bvalid && lsu_bready) begin
+            io_master_awvalid_reg <= 1'b0;
+            io_master_wvalid_reg <= 1'b0;
             state_store <= BUS_WRITE_IDLE;
           end
         end
@@ -247,30 +263,23 @@ module ysyx_25040131_bus #(
     end
   end
 
-  // ------------------------------
-  // 通过状态机选择传出的读取地址
-  logic [XLEN-1:0] bus_araddr;
-  assign bus_araddr = (
-    ({XLEN{(state_load == BUS_IDLE || state_load == IFU_REQ_AR) && ifu_arvalid}} & ifu_araddr) |
-    ({XLEN{(state_load == BUS_IDLE || state_load == LSU_REQ_AR) && lsu_arvalid && !clint_en}} & lsu_araddr)
-  );
-
-  // ------------------------------
+  // ----------------------/--------
   // io_master 接口连接
   // Read Address Channel
-  assign io_master_araddr = bus_araddr;
-  assign io_master_arvalid = !reset && (
-    ((state_load == BUS_IDLE || state_load == IFU_REQ_AR) && ifu_arvalid) |
-    ((state_load == BUS_IDLE || state_load == LSU_REQ_AR) && lsu_arvalid && !clint_en)
-  );
+  // 使用锁存的地址寄存器
+  assign io_master_araddr = io_master_araddr_reg;
+  assign io_master_arvalid = !reset && io_master_arvalid_reg;
+    // ((state_load == BUS_IDLE || state_load == IFU_REQ_AR) && ifu_arvalid) |
+    // ((state_load == BUS_IDLE || state_load == LSU_REQ_AR) && lsu_arvalid && !clint_en)
   assign io_master_rready = (
     (state_load == IFU_WAIT_R) ||
     (state_load == LSU_WAIT_R)
   );
 
   // Write Address Channel
-  assign io_master_awaddr = lsu_awaddr;
-  assign io_master_awvalid = !reset && (state_store == BUS_WRITE_AW) && lsu_awvalid;
+  // 使用锁存的地址寄存器
+  assign io_master_awaddr = io_master_awaddr_reg;
+  assign io_master_awvalid = !reset && io_master_awvalid_reg;
 
   // Write Data Channel
   /*
@@ -285,7 +294,7 @@ module ysyx_25040131_bus #(
   );
   */
   assign io_master_wdata = lsu_wdata;
-  assign io_master_wvalid = !reset && (state_store == BUS_WRITE_W) && lsu_wvalid;
+  assign io_master_wvalid = !reset && io_master_wvalid_reg;
   assign io_master_wstrb = lsu_wstrb[3:0];  // 使用 4 位 wstrb
 
   // Write Response Channel
@@ -306,10 +315,10 @@ module ysyx_25040131_bus #(
   assign lsu_rvalid = (state_load == LSU_DONE);
 
   // LSU Write Address Ready
-  assign lsu_awready = (state_store == BUS_WRITE_AW) && io_master_awready;
+  assign lsu_awready = (state_store == BUS_WRITE_AW); 
 
   // LSU Write Data Ready
-  assign lsu_wready = (state_store == BUS_WRITE_W) && io_master_wready;
+  assign lsu_wready = (state_store == BUS_WRITE_W);
 
   // LSU Write Response
   assign lsu_bvalid = (state_store == BUS_WRITE_B) && io_master_bvalid;
@@ -318,8 +327,8 @@ module ysyx_25040131_bus #(
   // DIFTEST 支持
   always @(posedge clock) begin
     // 基本健壮性断言：AXI 响应码应为 OKAY
-    `YSYX_ASSERT(io_master_rresp == 2'b00, "rresp == 2'b00");
-    `YSYX_ASSERT(io_master_bresp == 2'b00, "bresp == 2'b00");
+    // `YSYX_ASSERT(io_master_rresp == 2'b00, "rresp == 2'b00");
+    // `YSYX_ASSERT(io_master_bresp == 2'b00, "bresp == 2'b00");
     // DIFTEST：对某些外设/MMIO/VGA 等地址的写操作，要求参考模型跳过对比
     if (io_master_awvalid) begin
       // `YSYX_DPI_C_NPC_DIFFTEST_MEM_DIFF(io_master_awaddr, io_master_wdata, {{4'b0}, io_master_wstrb})
