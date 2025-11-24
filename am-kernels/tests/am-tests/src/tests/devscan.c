@@ -41,7 +41,7 @@ static void video_test() {
     },
     .sibling = to_guest(NULL),
   };
-
+  
   io_write(AM_GPU_MEMCPY, 0, vmem, sizeof(vmem));
   io_write(AM_GPU_RENDER, 0);
 }

@@ -9,7 +9,10 @@
 #include <difftest-def.h>
 #include <cpu/difftest.h>
 
+
 #ifdef CONFIG_NPC
+
+
 
 void reset(TOP_NAME* top, int n) {
 	top->rst = 1;
@@ -31,6 +34,7 @@ void init_verilog(int argc, char* argv[]) {
     top->trace(tfp, 0);
     tfp->open("wave.vcd");
 
+
 	reset(top, 16);
 }
 
@@ -40,6 +44,7 @@ void cpu_exec_once() {
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
+        tfp->flush();
     }
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
@@ -48,6 +53,7 @@ void cpu_exec_once() {
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
+        tfp->flush();
     }
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
@@ -84,6 +90,8 @@ extern "C" void npc_exu_ebreak()
 void verilog_connect(TOP_NAME *top, NPCState *npc)
 {
   // for difftest
+  npc->state = NEMU_RUNNING;
+  npc->valid_signal = &(top->rootp->difftest_signal);
   npc->inst = (uint32_t *)&(top->rootp->out_inst);
   npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs);
   npc->cpc = (uint32_t *)&(top->rootp->pc);
@@ -93,8 +101,6 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mepc);
   npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mcause);
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtval);
-  npc->finish_signal = (uint32_t*)&(top->rootp->out_valid);
-  npc->state = NEMU_RUNNING;
 }
 
 void npc_abort() {
@@ -207,6 +213,11 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
         case 12:
             paddr_write(waddr, 2, wdata);
             break;
+        /*
+        case 0xff:
+            host_write(host_addr, 8, wdata);
+            break;
+        */
         /*
         case 0xff:
             host_write(host_addr, 8, wdata);
