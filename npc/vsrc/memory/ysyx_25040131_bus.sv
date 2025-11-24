@@ -128,10 +128,14 @@ module ysyx_25040131_bus #(
   state_store_t state_store;
 
   assign ifu_arready = (state_load == BUS_IDLE);
-  assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid && !clint_en;
+  assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid;
 
   // CLINT 旁路：当 LSU 读 RTC 地址时，走片内 CLINT，而非 AXI 外设
+  `ifdef YSYX_AM_DEVICE
+  assign clint_en = (lsu_araddr == `YSYX_AM_RTC_ADDR) || (lsu_araddr == `YSYX_AM_RTC_ADDR_UP);
+  `else
   assign clint_en = (lsu_araddr == `YSYX_BUS_RTC_ADDR) || (lsu_araddr == `YSYX_BUS_RTC_ADDR_UP);
+  `endif
 
   // ------------------------------
   // Read State Machine
@@ -357,6 +361,18 @@ module ysyx_25040131_bus #(
       end
     end
   end
+
+    // CLINT（RTC）片内外设：为 LSU 提供本地读取，不经 AXI
+  assign clint_arvalid = (lsu_arvalid && clint_en);
+  ysyx_25040131_clint clint (
+      .clock(clock),
+      .reset(reset),
+      .araddr(lsu_araddr),
+      .arvalid(clint_arvalid),
+      .arready(clint_arready),
+      .rdata(clint_rdata),
+      .rvalid(clint_rvalid)
+  );
 
 endmodule
 

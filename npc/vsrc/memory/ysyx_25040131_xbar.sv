@@ -102,7 +102,7 @@ module ysyx_25040131_xbar #(
   // 地址范围定义
   localparam [XLEN-1:0] SRAM_BASE = 32'h80000000;
   localparam [XLEN-1:0] SRAM_END = 32'h88000000;
-  `ifdef YSYX_VIRTUAL_DEVICE
+  `ifdef YSYX_AM_DEVICE
   localparam [XLEN-1:0] VIRTUAL_BASE = 32'ha0000000;
   localparam [XLEN-1:0] VIRTUAL_END = 32'ha1200000;
   `endif
@@ -115,13 +115,13 @@ module ysyx_25040131_xbar #(
 
   // 地址译码：判断地址属于哪个设备（分别处理读和写）
   wire read_addr_is_sram = (m_axi_araddr >= SRAM_BASE && m_axi_araddr <= SRAM_END)
-  `ifdef YSYX_VIRTUAL_DEVICE
+  `ifdef YSYX_AM_DEVICE
     || (m_axi_araddr >= VIRTUAL_BASE && m_axi_araddr <= VIRTUAL_END)
   `endif
   ;
   wire read_addr_is_uart = (m_axi_araddr >= UART_BASE && m_axi_araddr <= UART_END);
   wire write_addr_is_sram = (m_axi_awaddr >= SRAM_BASE && m_axi_awaddr <= SRAM_END)
-  `ifdef YSYX_VIRTUAL_DEVICE
+  `ifdef YSYX_AM_DEVICE
     || (m_axi_awaddr >= VIRTUAL_BASE && m_axi_awaddr <= VIRTUAL_END)
   `endif
   ;
