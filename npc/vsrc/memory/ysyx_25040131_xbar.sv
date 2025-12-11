@@ -14,33 +14,45 @@ module ysyx_25040131_xbar #(
     input clock,
     input reset,
 
-    // AXI4-Lite Master 接口（来自 BUS）
-    // Read Address Channel
+    // AXI4 Master 接口（来自 BUS）- Full AXI4
+    // Read Address Channel (AR)
     input [XLEN-1:0] m_axi_araddr,
+    input [3:0] m_axi_arid,
+    input [7:0] m_axi_arlen,
+    input [2:0] m_axi_arsize,
+    input [1:0] m_axi_arburst,
     input m_axi_arvalid,
     output m_axi_arready,
 
-    // Read Data Channel
+    // Read Data Channel (R)
     output [XLEN-1:0] m_axi_rdata,
     output [1:0] m_axi_rresp,
     output m_axi_rvalid,
     input m_axi_rready,
+    output m_axi_rlast,
+    output [3:0] m_axi_rid,
 
-    // Write Address Channel
+    // Write Address Channel (AW)
     input [XLEN-1:0] m_axi_awaddr,
+    input [3:0] m_axi_awid,
+    input [7:0] m_axi_awlen,
+    input [2:0] m_axi_awsize,
+    input [1:0] m_axi_awburst,
     input m_axi_awvalid,
     output m_axi_awready,
 
-    // Write Data Channel
+    // Write Data Channel (W)
     input [XLEN-1:0] m_axi_wdata,
     input [3:0] m_axi_wstrb,
     input m_axi_wvalid,
     output m_axi_wready,
+    input m_axi_wlast,
 
-    // Write Response Channel
+    // Write Response Channel (B)
     output [1:0] m_axi_bresp,
     output m_axi_bvalid,
     input m_axi_bready,
+    output [3:0] m_axi_bid,
 
     // AXI4-Lite Slave 接口 - SRAM
     // Read Address Channel
@@ -113,6 +125,12 @@ module ysyx_25040131_xbar #(
   localparam AXI_RESP_OKAY = 2'b00;
   localparam AXI_RESP_DECERR = 2'b11;
 
+  // ID锁存寄存器（用于匹配响应）
+  reg [3:0] read_id_reg;
+  reg [3:0] write_id_reg;
+  reg read_id_valid;
+  reg write_id_valid;
+
   // 地址译码：判断地址属于哪个设备（分别处理读和写）
   wire read_addr_is_sram = (m_axi_araddr >= SRAM_BASE && m_axi_araddr <= SRAM_END)
   `ifdef YSYX_AM_DEVICE
@@ -136,6 +154,21 @@ module ysyx_25040131_xbar #(
                          read_addr_is_uart ? uart_arready :
                          1'b0;  // 地址错误时不响应
 
+  // 锁存读事务ID
+  always @(posedge clock) begin
+    if (reset) begin
+      read_id_reg <= 4'b0;
+      read_id_valid <= 1'b0;
+    end else begin
+      if (m_axi_arvalid && m_axi_arready) begin
+        read_id_reg <= m_axi_arid;
+        read_id_valid <= 1'b1;
+      end else if (m_axi_rvalid && m_axi_rready && m_axi_rlast) begin
+        read_id_valid <= 1'b0;
+      end
+    end
+  end
+
   // 读数据通道路由
   assign m_axi_rdata = read_addr_is_sram ? sram_rdata :
                        read_addr_is_uart ? uart_rdata :
@@ -146,6 +179,9 @@ module ysyx_25040131_xbar #(
   assign m_axi_rvalid = read_addr_is_sram ? sram_rvalid :
                         read_addr_is_uart ? uart_rvalid :
                         1'b0;
+  // AXI4-Lite slave总是单次传输，rlast=1（当rvalid有效时）
+  assign m_axi_rlast = m_axi_rvalid;
+  assign m_axi_rid = read_id_valid ? read_id_reg : 4'b0;
   assign sram_rready = m_axi_rready && read_addr_is_sram;
   assign uart_rready = m_axi_rready && read_addr_is_uart;
 
@@ -158,7 +194,23 @@ module ysyx_25040131_xbar #(
                          write_addr_is_uart ? uart_awready :
                          1'b0;  // 地址错误时不响应
 
+  // 锁存写事务ID
+  always @(posedge clock) begin
+    if (reset) begin
+      write_id_reg <= 4'b0;
+      write_id_valid <= 1'b0;
+    end else begin
+      if (m_axi_awvalid && m_axi_awready) begin
+        write_id_reg <= m_axi_awid;
+        write_id_valid <= 1'b1;
+      end else if (m_axi_bvalid && m_axi_bready) begin
+        write_id_valid <= 1'b0;
+      end
+    end
+  end
+
   // 写数据通道路由
+  // AXI4-Lite slave不需要wlast，但我们从master接收（忽略）
   assign sram_wdata = m_axi_wdata;
   assign sram_wstrb = m_axi_wstrb;
   assign sram_wvalid = m_axi_wvalid && write_addr_is_sram;
@@ -176,6 +228,7 @@ module ysyx_25040131_xbar #(
   assign m_axi_bvalid = write_addr_is_sram ? sram_bvalid :
                         write_addr_is_uart ? uart_bvalid :
                         1'b0;
+  assign m_axi_bid = write_id_valid ? write_id_reg : 4'b0;
   assign sram_bready = m_axi_bready && write_addr_is_sram;
   assign uart_bready = m_axi_bready && write_addr_is_uart;
 

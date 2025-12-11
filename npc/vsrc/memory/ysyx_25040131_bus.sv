@@ -11,33 +11,45 @@ module ysyx_25040131_bus #(
 
     input flush_pipeline,
 
-    // AXI4 Master bus (统一接口，用于 SRAM 和外设)
-    // 读地址通道（AR）
+    // AXI4 Master bus (统一接口，用于 SRAM 和外设) - Full AXI4
+    // Read Address Channel (AR)
     output [XLEN-1:0] io_master_araddr, // AXI ARADDR：读起始地址
-    output io_master_arvalid,       // AXI ARVALID：读地址有效握手
-    input io_master_arready,        // AXI ARREADY：从端准备好接收读地址
+    output [3:0] io_master_arid,       // AXI ARID：读事务ID
+    output [7:0] io_master_arlen,      // AXI ARLEN：读突发长度
+    output [2:0] io_master_arsize,     // AXI ARSIZE：读传输大小
+    output [1:0] io_master_arburst,    // AXI ARBURST：读突发类型
+    output io_master_arvalid,          // AXI ARVALID：读地址有效握手
+    input io_master_arready,           // AXI ARREADY：从端准备好接收读地址
 
-    // 读数据通道（R）
-    input [XLEN-1:0] io_master_rdata, // AXI RDATA：读回数据
-    input [1:0] io_master_rresp,    // AXI RRESP：读响应（00=OKAY）
-    input io_master_rvalid,         // AXI RVALID：从端读数据有效握手
-    output io_master_rready,        // AXI RREADY：主端准备好接收读数据
+    // Read Data Channel (R)
+    input [XLEN-1:0] io_master_rdata,  // AXI RDATA：读回数据
+    input [1:0] io_master_rresp,       // AXI RRESP：读响应（00=OKAY）
+    input io_master_rvalid,            // AXI RVALID：从端读数据有效握手
+    output io_master_rready,           // AXI RREADY：主端准备好接收读数据
+    input io_master_rlast,             // AXI RLAST：读突发最后一个数据
+    input [3:0] io_master_rid,         // AXI RID：读事务ID
 
-    // 写地址通道（AW）
+    // Write Address Channel (AW)
     output [XLEN-1:0] io_master_awaddr,   // AXI AWADDR：写起始地址
-    output            io_master_awvalid,  // AXI AWVALID：写地址有效
-    input             io_master_awready,  // AXI AWREADY：从端接收写地址
+    output [3:0] io_master_awid,          // AXI AWID：写事务ID
+    output [7:0] io_master_awlen,         // AXI AWLEN：写突发长度
+    output [2:0] io_master_awsize,        // AXI AWSIZE：写传输大小
+    output [1:0] io_master_awburst,       // AXI AWBURST：写突发类型
+    output io_master_awvalid,             // AXI AWVALID：写地址有效
+    input io_master_awready,              // AXI AWREADY：从端接收写地址
 
-    // 写数据通道（W）
-    output [XLEN-1:0] io_master_wdata,   // AXI WDATA：写数据
-    output [     3:0] io_master_wstrb,   // AXI WSTRB：字节写使能（每bit对应1字节）
-    output            io_master_wvalid,  // AXI WVALID：写数据有效
-    input             io_master_wready,  // AXI WREADY：从端接收写数据
+    // Write Data Channel (W)
+    output [XLEN-1:0] io_master_wdata,    // AXI WDATA：写数据
+    output [3:0] io_master_wstrb,         // AXI WSTRB：字节写使能（每bit对应1字节）
+    output io_master_wvalid,              // AXI WVALID：写数据有效
+    input io_master_wready,               // AXI WREADY：从端接收写数据
+    output io_master_wlast,               // AXI WLAST：写突发最后一个数据
 
-    // 写响应通道（B）
-    input  [1:0] io_master_bresp,   // AXI BRESP：写响应（00=OKAY）
-    input        io_master_bvalid,  // AXI BVALID：写响应有效
-    output       io_master_bready,  // AXI BREADY：主端准备好接收写响应
+    // Write Response Channel (B)
+    input [1:0] io_master_bresp,          // AXI BRESP：写响应（00=OKAY）
+    input io_master_bvalid,               // AXI BVALID：写响应有效
+    output io_master_bready,              // AXI BREADY：主端准备好接收写响应
+    input [3:0] io_master_bid,             // AXI BID：写事务ID
 
     // ifu
     // IFU 读请求握手（IFU优先服务）。ifu_arready=1 表示当前允许 IFU 发起。
@@ -110,10 +122,13 @@ module ysyx_25040131_bus #(
   // 地址锁存寄存器
   logic [XLEN-1:0] io_master_araddr_reg;  // 读地址寄存器
   logic [XLEN-1:0] io_master_awaddr_reg;  // 写地址寄存器
+  logic [3:0] io_master_arid_reg;         // 读事务ID寄存器
+  logic [3:0] io_master_awid_reg;         // 写事务ID寄存器
 
   logic io_master_arvalid_reg;
   logic io_master_awvalid_reg;
   logic io_master_wvalid_reg;
+  logic io_master_wlast_reg;              // 写最后一个数据标志
 
   // lsu read
   // io_rdata：从 AXI R 通道读取的数据
@@ -145,6 +160,7 @@ module ysyx_25040131_bus #(
       ifu_rdata_reg <= {XLEN{1'b0}};
       lsu_rdata_reg <= {XLEN{1'b0}};
       io_master_araddr_reg <= {XLEN{1'b0}};
+      io_master_arid_reg <= 4'b0;
       io_master_arvalid_reg <= 1'b0;
     end else begin
       unique case (state_load)
@@ -170,12 +186,11 @@ module ysyx_25040131_bus #(
         end
         IFU_REQ_AR: begin
           // 等待 IFU 读地址握手完成
-          // if (io_master_arready) begin
-            // 地址握手完成，锁存地址
-            io_master_araddr_reg <= ifu_araddr;
-            io_master_arvalid_reg <= 1'b1;
-            state_load <= IFU_WAIT_R;
-          // end
+          // 地址握手完成，锁存地址和AXI4信号
+          io_master_araddr_reg <= ifu_araddr;
+          io_master_arid_reg <= 4'b0;  // 单事务，ID为0
+          io_master_arvalid_reg <= 1'b1;
+          state_load <= IFU_WAIT_R;
         end
         IFU_WAIT_R: begin
           // 等待读数据返回
@@ -193,11 +208,12 @@ module ysyx_25040131_bus #(
         end
         LSU_REQ_AR: begin
           // 等待 LSU 读地址握手完成
-            // 地址握手完成，锁存地址
-            io_master_araddr_reg <= lsu_araddr;
-            io_master_arvalid_reg <= 1'b1;
-            state_load <= LSU_WAIT_R;
-          end
+          // 地址握手完成，锁存地址和AXI4信号
+          io_master_araddr_reg <= lsu_araddr;
+          io_master_arid_reg <= 4'b0;  // 单事务，ID为0
+          io_master_arvalid_reg <= 1'b1;
+          state_load <= LSU_WAIT_R;
+        end
         LSU_WAIT_R: begin
           // 等待读数据返回
           if (io_master_rvalid) begin
@@ -223,8 +239,10 @@ module ysyx_25040131_bus #(
     if (reset) begin
       state_store <= BUS_WRITE_IDLE;
       io_master_awaddr_reg <= {XLEN{1'b0}};
+      io_master_awid_reg <= 4'b0;
       io_master_awvalid_reg <= 1'b0;
       io_master_wvalid_reg <= 1'b0;
+      io_master_wlast_reg <= 1'b0;
     end else begin
       unique case (state_store)
         BUS_WRITE_IDLE: begin
@@ -235,11 +253,12 @@ module ysyx_25040131_bus #(
         end
         BUS_WRITE_AW: begin
           // 等待写地址握手完成
-            // 地址握手完成，锁存地址
-            io_master_awaddr_reg <= lsu_awaddr;
-            io_master_awvalid_reg <= 1'b1;
-            // 进入等待写数据状态
-            state_store <= BUS_WRITE_W;
+          // 地址握手完成，锁存地址和AXI4信号
+          io_master_awaddr_reg <= lsu_awaddr;
+          io_master_awid_reg <= 4'b0;  // 单事务，ID为0
+          io_master_awvalid_reg <= 1'b1;
+          // 进入等待写数据状态
+          state_store <= BUS_WRITE_W;
         end
         BUS_WRITE_W: begin
           // 等待写数据握手完成
@@ -247,6 +266,7 @@ module ysyx_25040131_bus #(
           // BUG TO DO: 这里要等待的真的是wready吗？
             // 数据握手完成，进入等待写响应状态
             io_master_wvalid_reg <= 1'b1;
+            io_master_wlast_reg <= 1'b1;  // 单次传输，wlast=1
             state_store <= BUS_WRITE_BOTH;
           end
         end
@@ -259,6 +279,7 @@ module ysyx_25040131_bus #(
           if (io_master_bvalid && lsu_bready) begin
             io_master_awvalid_reg <= 1'b0;
             io_master_wvalid_reg <= 1'b0;
+            io_master_wlast_reg <= 1'b0;
             state_store <= BUS_WRITE_IDLE;
           end
         end
@@ -269,39 +290,35 @@ module ysyx_25040131_bus #(
 
   // ----------------------/--------
   // io_master 接口连接
-  // Read Address Channel
+  // Read Address Channel (AR)
   // 使用锁存的地址寄存器
   assign io_master_araddr = io_master_araddr_reg;
+  assign io_master_arid = io_master_arid_reg;
+  assign io_master_arlen = 8'b0;        // 单次传输，长度为0
+  assign io_master_arsize = 3'b010;     // 32位 = 4字节
+  assign io_master_arburst = 2'b01;     // INCR突发类型
   assign io_master_arvalid = !reset && io_master_arvalid_reg;
-    // ((state_load == BUS_IDLE || state_load == IFU_REQ_AR) && ifu_arvalid) |
-    // ((state_load == BUS_IDLE || state_load == LSU_REQ_AR) && lsu_arvalid && !clint_en)
   assign io_master_rready = (
     (state_load == IFU_WAIT_R) ||
     (state_load == LSU_WAIT_R)
   );
 
-  // Write Address Channel
+  // Write Address Channel (AW)
   // 使用锁存的地址寄存器
   assign io_master_awaddr = io_master_awaddr_reg;
+  assign io_master_awid = io_master_awid_reg;
+  assign io_master_awlen = 8'b0;        // 单次传输，长度为0
+  assign io_master_awsize = 3'b010;     // 32位 = 4字节
+  assign io_master_awburst = 2'b01;    // INCR突发类型
   assign io_master_awvalid = !reset && io_master_awvalid_reg;
 
-  // Write Data Channel
-  /*
-  logic [1:0] awaddr_lo;
-  logic [XLEN-1:0] wdata;
-  assign awaddr_lo = io_master_awaddr[1:0];
-  assign wdata = (
-    ({XLEN{awaddr_lo == 2'b00}} & lsu_wdata) |
-    ({XLEN{awaddr_lo == 2'b01}} & {{lsu_wdata[23:0]}, {8'b0}}) |
-    ({XLEN{awaddr_lo == 2'b10}} & {{lsu_wdata[15:0]}, {16'b0}}) |
-    ({XLEN{awaddr_lo == 2'b11}} & {{lsu_wdata[7:0]}, {24'b0}})
-  );
-  */
+  // Write Data Channel (W)
   assign io_master_wdata = lsu_wdata;
   assign io_master_wvalid = !reset && io_master_wvalid_reg;
   assign io_master_wstrb = lsu_wstrb[3:0];  // 使用 4 位 wstrb
+  assign io_master_wlast = io_master_wlast_reg;  // 单次传输，wlast=1
 
-  // Write Response Channel
+  // Write Response Channel (B)
   assign io_master_bready = (state_store == BUS_WRITE_B) && lsu_bready;
 
   // ------------------------------

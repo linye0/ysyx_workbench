@@ -15,15 +15,16 @@
 
 
 void reset(TOP_NAME* top, int n) {
-	top->rst = 1;
+	top->reset = 1;
 	for (int i = 0; i < n; i++) {
 		void cpu_exec_once();
 		cpu_exec_once();
 	}
-	top->rst = 0;
+	top->reset = 0;
 }
 
 void init_verilog(int argc, char* argv[]) {
+    Verilated::commandArgs(argc, argv);
 	contextp = new VerilatedContext;
 	contextp->commandArgs(argc, argv);
 	top = new TOP_NAME{contextp};
@@ -40,7 +41,7 @@ void init_verilog(int argc, char* argv[]) {
 
 void cpu_exec_once() {
     // printf("before exec: cpu->gpr[2] = %d\n", nemu_state.gpr[2]);
-    top->clk = (top->clk == 0) ? 1 : 0;
+    top->clock = (top->clock == 0) ? 1 : 0;
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
@@ -49,7 +50,7 @@ void cpu_exec_once() {
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
     contextp->timeInc(1);
-    top->clk = (top->clk == 0) ? 1 : 0;
+    top->clock = (top->clock == 0) ? 1 : 0;
     top->eval();
     if (tfp) {
         tfp->dump(contextp->time());
@@ -91,16 +92,32 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
 {
   // for difftest
   npc->state = NEMU_RUNNING;
-  npc->valid_signal = &(top->rootp->difftest_signal);
-  npc->inst = (uint32_t *)&(top->rootp->out_inst);
-  npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131_cpu__DOT__REG_FILE__DOT__regs);
-  npc->cpc = (uint32_t *)&(top->rootp->pc);
-  npc->pc = (uint32_t *)&(top->rootp->next_pc);
-  npc->mtvec = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtvec);
-  npc->mstatus = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mstatus);
-  npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mepc);
-  npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mcause);
-  npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131_cpu__DOT__u_csr__DOT__mtval);
+  #ifdef CONFIG_SYS_NPC
+  npc->valid_signal = &(top->rootp->ysyx_25040131__DOT__difftest_signal);
+  npc->inst = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__out_inst);
+  npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__REG_FILE__DOT__regs);
+  npc->cpc = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__pc);
+  npc->pc = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__next_pc);
+  npc->mtvec = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mtvec);
+  npc->mstatus = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mstatus);
+  npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mepc);
+  npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mcause);
+  npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mtval);
+  #else
+  #ifdef CONFIG_SYS_SOC
+  npc->valid_signal = &(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__difftest_signal);
+  npc->inst = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__out_inst);
+  npc->gpr = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__REG_FILE__DOT__regs);
+  npc->cpc = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__pc);
+  npc->pc = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__next_pc);
+  npc->mtvec = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mtvec);
+  npc->mstatus = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mstatus);
+  npc->mepc = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mepc);
+  npc->mcause = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mcause);
+  npc->mtval = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mtval);
+  #endif
+  #endif
+
 }
 
 void npc_abort() {
@@ -229,5 +246,8 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
             break;
     }
 }
+
+extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+extern "C" void mrom_read(int32_t addr, int32_t *data) { assert(0); }
 
 #endif
