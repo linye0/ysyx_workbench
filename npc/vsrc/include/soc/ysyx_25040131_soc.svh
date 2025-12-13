@@ -1,6 +1,8 @@
 `ifndef YSYX_SOC_SVH
 `define YSYX_SOC_SVH
 
+`define YSYX_SOC 1
+
 `define YSYX_PC_INIT `YSYX_XLEN'h20000000
 
 `define YSYX_ROM_ADDR 'h20000000

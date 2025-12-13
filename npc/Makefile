@@ -4,7 +4,7 @@ INC_PATH += $(NPC_HOME)/include/generated
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc -trace --Wno-LATCH\
-				-O3 --x-assign fast --x-initial fast --noassert -sv
+			-O3 --x-assign fast --x-initial fast --noassert -sv --autoflush
 
 BUILD_DIR = $(abspath build)
 OBJ_DIR = $(BUILD_DIR)
@@ -93,7 +93,7 @@ INC_PATH += $(AM_HOME)/am/src/riscv/npc/include
 
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 # 根据配置设置相应的宏定义
-CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -D__GUEST_ISA__=$(GUEST_ISA)
+CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -DCONFIG_NPC -D__GUEST_ISA__=$(GUEST_ISA)
 GDBFLAGS = $(CXXFLAGS) -g -O0
 LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 

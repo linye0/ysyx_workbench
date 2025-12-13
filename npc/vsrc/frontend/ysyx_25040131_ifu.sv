@@ -1,5 +1,6 @@
 `include "ysyx_25040131_config.svh"
 `include "ysyx_25040131_common.svh"
+`include "ysyx_25040131_soc.svh"
 
 module ysyx_25040131_ifu #(
     parameter bit [7:0] XLEN = `YSYX_XLEN
@@ -50,8 +51,14 @@ module ysyx_25040131_ifu #(
   
   always @(posedge clock) begin
     if (reset) begin
+      `ifdef YSYX_NPC
       pc_reg <= 32'h80000000;
       out_pc <= 32'h80000000;
+      `else `ifdef YSYX_SOC
+      pc_reg <= `YSYX_PC_INIT;
+      out_pc <= `YSYX_PC_INIT;
+      `endif
+      `endif
       ifu_state <= IFU_IDLE;
       inst_reg <= {XLEN{1'b0}};
     end else begin

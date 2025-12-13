@@ -62,12 +62,21 @@ static void exec_once(Decode *s, vaddr_t pc) {
   cpu.pc = s->dnpc;
   #endif
 #ifdef CONFIG_ITRACE
+#ifdef CONFIG_NPC
+if (*(nemu_state.valid_signal) == 1) {
+#endif
   char *p = s->logbuf;
+  #ifndef CONFIG_NPC
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
+  #endif
+  #ifdef CONFIG_NPC
+  p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", *(nemu_state.cpc));
+  #endif
   int ilen = s->snpc - s->pc;
   int i;
   uint8_t *inst = (uint8_t *)&s->isa.inst;
 #ifdef CONFIG_ISA_x86
+
   for (i = 0; i < ilen; i ++) {
 #else
   for (i = ilen - 1; i >= 0; i --) {
@@ -81,11 +90,15 @@ static void exec_once(Decode *s, vaddr_t pc) {
   space_len = space_len * 3 + 1;
   memset(p, ' ', space_len);
   p += space_len;
+  // printf("s->isa.inst: 0x%x\n", s->isa.inst);
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
   void itrace_record(const char *log, vaddr_t pc);
   itrace_record(s->logbuf, s->pc);
+  #ifdef CONFIG_NPC
+  }
+  #endif
 #endif
 }
 
@@ -95,10 +108,10 @@ static void execute(uint64_t n) {
     #ifdef CONFIG_NPC
     // HAVE BUG: 因为IDU和WBU没有分开，所以这边第一个指令会被打印两次，目前可以通过加特判解决。等阶段完整之后解决。
     if (g_first_exec) {
-      exec_once(&s, top->pc);
+      exec_once(&s, *(nemu_state.pc));
       g_first_exec = false;
     } else {
-      exec_once(&s, top->pc);
+      exec_once(&s, *(nemu_state.pc));
     }
     #else
     exec_once(&s, cpu.pc);

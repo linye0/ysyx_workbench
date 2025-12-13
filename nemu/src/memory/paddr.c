@@ -26,12 +26,20 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
+static uint8_t mrom[CONFIG_MROM_SIZE] PG_ALIGN = {};
+
 Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
 
 uint8_t* guest_to_host(paddr_t paddr) {
-   Assert(paddr - CONFIG_MBASE < CONFIG_MSIZE, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x, CONFIG_MBASE: 0x%x, CONFIG_MSIZE: 0x%x\n", pmem, paddr, CONFIG_MBASE, CONFIG_MSIZE);
-   return pmem + paddr - CONFIG_MBASE; 
-   }
+  if (in_pmem(paddr)) {
+    return pmem + paddr - CONFIG_MBASE;
+  }
+  // difftest_skip_ref();
+  if (im_mrom(paddr)) {
+    return mrom + paddr - CONFIG_MROM_BASE;
+  }
+  Assert(0, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x\n", pmem, paddr);
+}
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
 static word_t pmem_read(paddr_t addr, int len) {
@@ -87,3 +95,14 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
+
+#ifdef CONFIG_NPC
+extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+
+extern "C" void mrom_read(int32_t addr, int32_t *data) {
+    uint32_t offset = ((addr & 0xfffffffc) - CONFIG_MROM_BASE);
+    *data = *((uint32_t *)(mrom + offset));
+    //printf("mrom raddr: 0x%x, rdata: 0x%x, offest: 0x%x\n", addr, *data, offset);
+    // Log("mrom raddr: 0x%x, rdata: 0x%x, offest: 0x%x", addr, *data, offset);
+}
+#endif

@@ -8,6 +8,7 @@
 #include <utils.h>
 #include <difftest-def.h>
 #include <cpu/difftest.h>
+#include <memory/paddr.h>
 
 
 #ifdef CONFIG_NPC
@@ -36,7 +37,7 @@ void init_verilog(int argc, char* argv[]) {
     tfp->open("wave.vcd");
 
 
-	reset(top, 16);
+	reset(top, 8);
 }
 
 void cpu_exec_once() {
@@ -105,16 +106,16 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mtval);
   #else
   #ifdef CONFIG_SYS_SOC
-  npc->valid_signal = &(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__difftest_signal);
-  npc->inst = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__out_inst);
-  npc->gpr = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__REG_FILE__DOT__regs);
-  npc->cpc = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__pc);
-  npc->pc = (uint32_t *)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__next_pc);
-  npc->mtvec = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mtvec);
-  npc->mstatus = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mstatus);
-  npc->mepc = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mepc);
-  npc->mcause = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mcause);
-  npc->mtval = (uint32_t*)&(top->rootp->ysyxSoCFull__DOT__ysyx_25040131__DOT__u_csr__DOT__mtval);
+  npc->valid_signal = &(CONCAT_YSYXSOC_HEAD(difftest_signal));
+  npc->inst = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(out_inst));
+  npc->gpr = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(REG_FILE__DOT__regs));
+  npc->cpc = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(pc));
+  npc->pc = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(next_pc));
+  npc->mtvec = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mtvec));
+  npc->mstatus = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mstatus));
+  npc->mepc = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mepc));
+  npc->mcause = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mcause));
+  npc->mtval = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mtval));
   #endif
   #endif
 
@@ -247,7 +248,6 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
     }
 }
 
-extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
-extern "C" void mrom_read(int32_t addr, int32_t *data) { assert(0); }
+
 
 #endif

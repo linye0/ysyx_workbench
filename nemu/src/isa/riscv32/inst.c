@@ -241,7 +241,13 @@ static int npc_exec(Decode *s) {
 #endif
 
 int isa_exec_once(Decode *s) {
+  #ifndef CONFIG_NPC
   s->isa.inst = inst_fetch(&s->snpc, 4);
+  #endif
+  #ifdef CONFIG_NPC
+  s->isa.inst = *(nemu_state.inst);
+  s->snpc = s->pc + 4;  // RISC-V instructions are always 4 bytes
+  #endif
   #ifdef CONFIG_NPC
   if (*(nemu_state.valid_signal) == 1) {
    // uint32_t inst = s->isa.inst;

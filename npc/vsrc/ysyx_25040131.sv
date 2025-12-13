@@ -91,11 +91,11 @@ module ysyx_25040131 #(
 // ============================================================================
 
 // verilog_connect需要用到的信号：
-wire [31:0] pc;
-wire [31:0] next_pc;
+wire [31:0] pc /*verilator public_flat*/;  // 用于仿真环境访问的PC值
+wire [31:0] next_pc /*verilator public_flat*/;
 wire [31:0] imm_32;
-wire [31:0] out_inst;
-wire difftest_signal; // 用于判断在仿真环境当中什么时候能进行difftest_step()的信号（1位信号）
+wire [31:0] out_inst /*verilator public_flat*/;
+wire difftest_signal /*verilator public_flat*/; // 用于判断在仿真环境当中什么时候能进行difftest_step()的信号（1位信号）
 
 // ------------------------------
 // 数据信号
