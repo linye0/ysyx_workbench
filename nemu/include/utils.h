@@ -51,6 +51,8 @@ typedef struct
   uint32_t* mepc;
   uint32_t* mcause;
   uint32_t* mtval;
+
+  uint8_t* sram;
   
   // difftest signal
 

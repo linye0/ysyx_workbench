@@ -66,6 +66,7 @@ module ysyx_25040131_bus #(
     output lsu_arready,             // BUS 准备好接收 LSU 读地址
     input [XLEN-1:0] lsu_araddr,    // LSU 发起的读地址（数据读）
     output [XLEN-1:0] lsu_rdata,    // 返回给 LSU 的读数据（或 CLINT 数据）
+    output [1:0] lsu_rresp,         // 返回给 LSU 的读响应（00=OKAY）
     output lsu_rvalid,              // 返回给 LSU 的读数据有效
     input lsu_rready,                // LSU 准备好接收读数据
 
@@ -79,6 +80,7 @@ module ysyx_25040131_bus #(
     input [XLEN-1:0] lsu_wdata,     // LSU 写数据
     input [7:0] lsu_wstrb,          // LSU 写字节掩码（每bit对应1字节）
     output lsu_bvalid,              // BUS 写响应有效
+    output [1:0] lsu_bresp,         // 返回给 LSU 的写响应（00=OKAY）
     input lsu_bready                // LSU 准备好接收写响应
 );
 
@@ -152,6 +154,10 @@ module ysyx_25040131_bus #(
   state_load_t state_load;
   state_store_t state_store;
 
+  // 寄存器：锁存响应信号
+  reg [1:0] lsu_rresp_reg;
+  reg [1:0] lsu_bresp_reg;
+
   assign ifu_arready = (state_load == BUS_IDLE);
   assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid;
 
@@ -183,12 +189,14 @@ module ysyx_25040131_bus #(
   assign io_rdata = io_master_rdata;
   assign lsu_rdata = lsu_rdata_reg;
   assign lsu_rvalid = lsu_rvalid_reg;
+  assign lsu_rresp = lsu_rresp_reg;
 
   assign lsu_awready = (state_store == BUS_WRITE_AW); 
 
   assign lsu_wready = lsu_wready_reg;
 
   assign lsu_bvalid = lsu_bvalid_reg;
+  assign lsu_bresp = lsu_bresp_reg;
 
   // CLINT 旁路：当 LSU 读 RTC 地址时，走片内 CLINT，而非 AXI 外设
   `ifdef YSYX_AM_DEVICE
@@ -206,6 +214,7 @@ module ysyx_25040131_bus #(
       lsu_rdata_reg <= {XLEN{1'b0}};
       ifu_rvalid_reg <= 1'b0;
       lsu_rvalid_reg <= 1'b0;
+      lsu_rresp_reg <= 2'b00;
       io_master_araddr_reg <= {XLEN{1'b0}};
       io_master_arid_reg <= 4'b0;
       io_master_arvalid_reg <= 1'b0;
@@ -225,6 +234,7 @@ module ysyx_25040131_bus #(
             if (clint_en) begin
               // CLINT 旁路，直接进入 LSU_DONE
               lsu_rdata_reg <= clint_rdata;
+              lsu_rresp_reg <= 2'b00;  // CLINT 访问总是 OKAY
               lsu_rvalid_reg <= 1'b1;
               state_load <= LSU_DONE;
             end else begin
@@ -272,6 +282,7 @@ module ysyx_25040131_bus #(
           // 等待读数据返回
           if (io_master_rvalid && io_master_rready) begin
             lsu_rdata_reg <= io_master_rdata;
+            lsu_rresp_reg <= io_master_rresp;  // 锁存读响应
             io_master_rready_reg <= 1'b0;
             lsu_rvalid_reg <= 1'b1;
             state_load <= LSU_DONE;
@@ -296,6 +307,7 @@ module ysyx_25040131_bus #(
       state_store <= BUS_WRITE_IDLE;
       lsu_wready_reg <= 1'b0;
       lsu_wdata_reg <= {XLEN{1'b0}};
+      lsu_bresp_reg <= 2'b00;
       io_master_awaddr_reg <= {XLEN{1'b0}};
       io_master_awid_reg <= 4'b0;
       io_master_awvalid_reg <= 1'b0;
@@ -342,6 +354,7 @@ module ysyx_25040131_bus #(
           // 等待写响应握手完成
           if (io_master_bvalid && io_master_bready) begin
             io_master_wlast_reg <= 1'b0;
+            lsu_bresp_reg <= io_master_bresp;  // 锁存写响应
             lsu_bvalid_reg <= 1'b1;
             state_store <= BUS_WRITE_DONE;
           end

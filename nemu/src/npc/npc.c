@@ -119,6 +119,7 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mepc));
   npc->mcause = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mcause));
   npc->mtval = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mtval));
+  npc->sram = (uint8_t*)&(CONCAT_YSYXSOC_ASIC_HEAD(axi4ram__DOT__mem_ext__DOT__Memory));
   #endif
   #endif
 

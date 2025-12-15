@@ -1,6 +1,6 @@
 module ysyx_25040131_next_pc(
     input [1: 0] pcImm_NEXTPC_rs1Imm,
-    input condition_branch, is_mret, exc_valid,
+    input condition_branch, is_mret, exc_valid, access_fault,
     input [31: 0] pc, offset, rs1Data, mepc, mtvec,
     output reg [31: 0] next_pc,
     // 流水线握手信号
@@ -21,7 +21,11 @@ end
 */
 
 always @(*) begin
-    if(pcImm_NEXTPC_rs1Imm == 2'b01) begin
+    // Access Fault 优先级最高：当检测到访问错误时，跳转到 PC=0
+    if (access_fault) begin
+        next_pc = 32'h0;
+    end
+    else if(pcImm_NEXTPC_rs1Imm == 2'b01) begin
         next_pc = pc + offset;
     end
     else if(pcImm_NEXTPC_rs1Imm == 2'b10) begin

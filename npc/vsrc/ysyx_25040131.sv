@@ -161,6 +161,7 @@ wire [31:0] lsu_araddr;     // LSU发送给BUS的读地址
 wire lsu_arvalid;           // LSU读地址有效
 wire lsu_arready;           // BUS准备好接收LSU读地址
 wire [31:0] lsu_rdata;      // BUS返回给LSU的数据
+wire [1:0] lsu_rresp;       // BUS返回给LSU的读响应
 wire lsu_rvalid;            // BUS返回给LSU的数据有效
 wire lsu_rready;            // LSU准备好接收读数据
 // LSU 与 BUS 的接口（写通道）
@@ -172,7 +173,9 @@ wire [7:0] lsu_wstrb;       // LSU发送给BUS的写字节掩码
 wire lsu_wvalid;            // LSU写数据有效
 wire lsu_wready;            // BUS准备好接收LSU写数据
 wire lsu_bvalid;            // BUS写响应有效
+wire [1:0] lsu_bresp;       // BUS返回给LSU的写响应
 wire lsu_bready;            // LSU准备好接收写响应
+wire access_fault;          // LSU访问错误信号
 
 // ------------------------------
 // 流水线握手信号链：IFU -> IDU -> EXU -> MEM -> WBU
@@ -418,8 +421,11 @@ ysyx_25040131_lsu LSU(
     .lsu_wvalid(lsu_wvalid),
     .lsu_wready(lsu_wready),
     .lsu_bvalid(lsu_bvalid),
+    .lsu_bresp(lsu_bresp),
     .lsu_bready(lsu_bready),
-    .lsu_rready(lsu_rready)
+    .lsu_rready(lsu_rready),
+    .lsu_rresp(lsu_rresp),
+    .access_fault(access_fault)
 );
 
 // ============================================================================
@@ -466,6 +472,7 @@ ysyx_25040131_next_pc NEXT_PC(
     .mepc(mepc),
     .mtvec(mtvec),
     .exc_valid(exc_valid),
+    .access_fault(access_fault),  // Access Fault 信号
     .offset(imm_32),
     .rs1Data(read_rs1_data),
     .next_pc(next_pc),
@@ -563,6 +570,7 @@ ysyx_25040131_bus BUS(
     .lsu_arvalid(lsu_arvalid),
     .lsu_arready(lsu_arready),
     .lsu_rdata(lsu_rdata),
+    .lsu_rresp(lsu_rresp),
     .lsu_rvalid(lsu_rvalid),
     .lsu_rready(lsu_rready),
     .lsu_awaddr(lsu_awaddr),
@@ -573,6 +581,7 @@ ysyx_25040131_bus BUS(
     .lsu_wvalid(lsu_wvalid),
     .lsu_wready(lsu_wready),
     .lsu_bvalid(lsu_bvalid),
+    .lsu_bresp(lsu_bresp),
     .lsu_bready(lsu_bready)
 );
 

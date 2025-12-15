@@ -19,6 +19,7 @@
 #include <device/mmio.h>
 #include <isa.h>
 #include <debug.h>
+#include <utils.h>
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -40,7 +41,12 @@ uint8_t* guest_to_host(paddr_t paddr) {
     return mrom + paddr - CONFIG_MROM_BASE;
   }
   if (in_sram(paddr)) {
+    #ifndef CONFIG_NPC
     return sram + paddr - CONFIG_SRAM_BASE;
+    #endif
+    #ifdef CONFIG_NPC
+    return nemu_state.sram + paddr - CONFIG_SRAM_BASE;
+    #endif
   }
   Assert(0, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x\n", pmem, paddr);
 }

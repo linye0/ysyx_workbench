@@ -27,6 +27,7 @@ module ysyx_25040131_lsu #(
     output lsu_arvalid,                  // 读地址有效
     input lsu_arready,                    // BUS 准备好接收读地址
     input [XLEN - 1: 0] lsu_rdata,      // BUS 返回的读数据（out_lsu_rdata）
+    input [1:0] lsu_rresp,               // BUS 返回的读响应（00=OKAY）
     input lsu_rvalid,                    // BUS 返回的读数据有效（out_lsu_rvalid）
     output lsu_rready,                   // LSU 准备好接收读数据
 
@@ -39,7 +40,11 @@ module ysyx_25040131_lsu #(
     output lsu_wvalid,                   // 写数据有效
     input lsu_wready,                    // BUS 准备好接收写数据
     input lsu_bvalid,                    // BUS 写响应有效
-    output lsu_bready                    // LSU 准备好接收写响应（由 LSU 内部控制）
+    input [1:0] lsu_bresp,               // BUS 返回的写响应（00=OKAY）
+    output lsu_bready,                   // LSU 准备好接收写响应（由 LSU 内部控制）
+
+    // Access Fault 输出
+    output access_fault                  // 访问错误信号（当 resp != 00 时置1）
 );
 
   // ------------------------------
@@ -79,30 +84,74 @@ module ysyx_25040131_lsu #(
   reg [1:0] write_mem_reg;
   reg [7:0] wstrb_reg;
   reg [XLEN - 1: 0] raw_read_data;  // 从BUS读取的原始数据
+  reg access_fault_reg;              // Access Fault 寄存器
 
-  // 根据write_mem生成wstrb（用于写操作）
+  // 根据write_mem和addr生成wstrb（用于写操作），只使用低4位（对应32bit数据的4个字节）
   function [7:0] gen_wstrb;
     input [1:0] write_mem;
     input [XLEN - 1: 0] addr;
-    reg [7:0] base_wstrb;
+    reg [3:0] w4;          // 4bit 字节掩码
+    reg [1:0] offset;      // 地址低2位
     begin
-      if (write_mem != 2'b0) begin
-        // 写操作：根据write_mem生成基础wstrb
-        case (write_mem)
-          2'b01: base_wstrb = 8'hf;  // sw: 4字节，总是0xf
-          2'b10: base_wstrb = 8'h3;  // sh: 2字节，基础是0x3
-          2'b11: base_wstrb = 8'h1;  // sb: 1字节，基础是0x1
-          default: base_wstrb = 8'h0;
-        endcase
-        // 根据地址低2位调整wstrb位置
-        if (write_mem == 2'b01) begin
-          gen_wstrb = 8'hf;  // sw总是写入4字节
-        end else begin
-          gen_wstrb = base_wstrb;
+      offset = addr[1:0];
+      case (write_mem)
+        2'b01: begin
+          // sw: 4字节，总是写入整个字
+          w4 = 4'b1111;
         end
-      end else begin
-        gen_wstrb = 8'h0;
-      end
+        2'b10: begin
+          // sh: 2字节，根据addr[1]选择低半字或高半字
+          case (offset[1])
+            1'b0: w4 = 4'b0011;  // 地址偏移 0 或 1：写入低16位
+            1'b1: w4 = 4'b1100;  // 地址偏移 2 或 3：写入高16位
+          endcase
+        end
+        2'b11: begin
+          // sb: 1字节，根据addr[1:0]选择具体字节
+          case (offset)
+            2'b00: w4 = 4'b0001; // 最低字节
+            2'b01: w4 = 4'b0010;
+            2'b10: w4 = 4'b0100;
+            2'b11: w4 = 4'b1000; // 最高字节
+          endcase
+        end
+        default: w4 = 4'b0000;
+      endcase
+      gen_wstrb = {4'b0000, w4};  // 仅低4位有效，BUS 侧会取 lsu_wstrb[3:0]
+    end
+  endfunction
+
+  // 根据write_mem和addr对写数据进行对齐（SRAM 以4字节对齐）
+  function [XLEN - 1: 0] gen_wdata_aligned;
+    input [1:0] write_mem;
+    input [XLEN - 1: 0] addr;
+    input [XLEN - 1: 0] wdata_in;   // 原始写数据（来自rs2）
+    reg [1:0] offset;
+    begin
+      offset = addr[1:0];
+      case (write_mem)
+        2'b01: begin
+          // sw: 4字节，直接写整个word
+          gen_wdata_aligned = wdata_in;
+        end
+        2'b10: begin
+          // sh: 2字节，根据addr[1]选择低/高半字
+          case (offset[1])
+            1'b0: gen_wdata_aligned = {16'h0000, wdata_in[15:0]}; // 低16位
+            1'b1: gen_wdata_aligned = {wdata_in[15:0], 16'h0000}; // 高16位
+          endcase
+        end
+        2'b11: begin
+          // sb: 1字节，根据addr[1:0]选择某个字节位置
+          case (offset)
+            2'b00: gen_wdata_aligned = {24'h0, wdata_in[7:0]};
+            2'b01: gen_wdata_aligned = {16'h0, wdata_in[7:0], 8'h0};
+            2'b10: gen_wdata_aligned = {8'h0, wdata_in[7:0], 16'h0};
+            2'b11: gen_wdata_aligned = {wdata_in[7:0], 24'h0};
+          endcase
+        end
+        default: gen_wdata_aligned = {XLEN{1'b0}};
+      endcase
     end
   endfunction
 
@@ -177,23 +226,38 @@ module ysyx_25040131_lsu #(
       wstrb_reg <= 8'h0;
       raw_read_data <= {XLEN{1'b0}};
       read_data <= {XLEN{1'b0}};
+      access_fault_reg <= 1'b0;
     end else begin
       // 读操作：在 LOAD_IDLE 状态保存地址和read_mem，准备发送读地址
       if (state_load == LOAD_IDLE && prev_valid && next_ready && read_mem != 3'b0) begin
         addr_reg <= addr;
         read_mem_reg <= read_mem;
+        access_fault_reg <= 1'b0;  // 清除之前的错误标志
       end
-      // 读操作：保存读回的数据并处理
+      // 读操作：保存读回的数据并处理，检测访问错误
       if (state_load == LOAD_WAIT_R && lsu_rvalid) begin
         raw_read_data <= lsu_rdata;
         read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
+        // 检测读响应错误（resp != 2'b00 表示错误）
+        if (lsu_rresp != 2'b00) begin
+          access_fault_reg <= 1'b1;
+        end
       end
-      // 写操作：在 STORE_IDLE 状态保存地址和数据，准备发送写地址
+      // 写操作：在 STORE_IDLE 状态保存地址和对齐后的数据，准备发送写地址
       if (state_store == STORE_IDLE && prev_valid && next_ready && write_mem != 2'b0) begin
         addr_reg <= addr;
-        data_reg <= data;
+        // 根据地址低2位对写数据进行对齐（SRAM 四字节对齐）
+        data_reg <= gen_wdata_aligned(write_mem, addr, data);
         write_mem_reg <= write_mem;
         wstrb_reg <= gen_wstrb(write_mem, addr);
+        access_fault_reg <= 1'b0;  // 清除之前的错误标志
+      end
+      // 写操作：检测写响应错误
+      if (state_store == STORE_WAIT_B && lsu_bvalid && lsu_bready) begin
+        // 检测写响应错误（resp != 2'b00 表示错误）
+        if (lsu_bresp != 2'b00) begin
+          access_fault_reg <= 1'b1;
+        end
       end
     end
   end
@@ -317,6 +381,9 @@ module ysyx_25040131_lsu #(
   assign lsu_wvalid = (state_store == STORE_DATA_REQUESTED);
   // 在 STORE_WAIT_B 状态保持 bready，直到写响应接收完成
   assign lsu_bready = (state_store == STORE_WAIT_B);
+
+  // Access Fault 输出：当检测到 resp 错误时置1
+  assign access_fault = access_fault_reg;
 
 endmodule
 

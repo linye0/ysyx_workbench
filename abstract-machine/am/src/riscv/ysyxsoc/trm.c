@@ -4,6 +4,8 @@
 #include <riscv/ysyxsoc/include/npc.h>
 
 extern char _heap_start;
+extern char _stack_top;
+extern char _stack_bottom;
 int main(const char *args);
 
 extern char _pmem_start;
@@ -11,7 +13,7 @@ extern char _pmem_start;
 #define PMEM_END  ((uintptr_t)&_pmem_start + PMEM_SIZE)
 # define npc_trap(code) asm volatile("mv a0, %0; ebreak" : :"r"(code))  
 
-Area heap = RANGE(&_heap_start, PMEM_END);
+Area heap = RANGE(&_heap_start, &_stack_bottom);
 static const char mainargs[MAINARGS_MAX_LEN] = MAINARGS_PLACEHOLDER; // defined in CFLAGS
 
 void putch(char ch) {
