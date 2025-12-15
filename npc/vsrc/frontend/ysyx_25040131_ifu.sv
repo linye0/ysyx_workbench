@@ -41,7 +41,6 @@ module ysyx_25040131_ifu #(
   } ifu_state_t;
 
   ifu_state_t ifu_state;
-  reg [XLEN - 1: 0] pc_reg;
   reg [XLEN - 1: 0] inst_reg;  // 暂存从BUS读取的指令
 
   // ------------------------------
@@ -52,10 +51,8 @@ module ysyx_25040131_ifu #(
   always @(posedge clock) begin
     if (reset) begin
       `ifdef YSYX_NPC
-      pc_reg <= 32'h80000000;
       out_pc <= 32'h80000000;
       `else `ifdef YSYX_SOC
-      pc_reg <= `YSYX_PC_INIT;
       out_pc <= `YSYX_PC_INIT;
       `endif
       `endif
@@ -66,8 +63,6 @@ module ysyx_25040131_ifu #(
         IFU_IDLE: begin
           // 当可以发送请求时（流水线允许且需要取指）
           if (next_ready) begin
-            // 保存当前PC用于输出指令
-            out_pc <= pc_reg;
             // 进入 ReqAr 状态，发送读地址请求
             ifu_state <= IFU_REQ_AR;
           end
@@ -92,7 +87,7 @@ module ysyx_25040131_ifu #(
           // 数据已接收（rready=1），等待WBU完成（prev_valid有效）后，更新pc_reg为next_pc
           if (prev_valid && ifu_rready) begin
             // WBU完成，更新PC并切换到 Idle 状态，准备取下一条指令
-            pc_reg <= next_pc;
+            out_pc <= next_pc;
             ifu_state <= IFU_IDLE;
           end
         end
@@ -113,7 +108,7 @@ module ysyx_25040131_ifu #(
   assign out_inst = inst_reg;
   
   // 与 BUS 的接口
-  assign ifu_araddr = pc_reg;
+  assign ifu_araddr = out_pc;
   assign ifu_arvalid = (ifu_state == IFU_REQ_AR);
   assign ifu_rready = (ifu_state == IFU_DONE);
 

@@ -1,23 +1,22 @@
-AM_SRCS := riscv/npc/start.S \
-           riscv/npc/trm.c \
-           riscv/npc/ioe.c \
-           riscv/npc/timer.c \
-           riscv/npc/input.c \
-           riscv/npc/cte.c \
-           riscv/npc/trap.S \
-           riscv/npc/gpu.c \
+AM_SRCS := riscv/ysyxsoc/start.S \
+           riscv/ysyxsoc/trm.c \
+           riscv/ysyxsoc/ioe.c \
+           riscv/ysyxsoc/timer.c \
+           riscv/ysyxsoc/input.c \
+           riscv/ysyxsoc/cte.c \
+           riscv/ysyxsoc/trap.S \
+           riscv/ysyxsoc/gpu.c \
            platform/dummy/vme.c \
            platform/dummy/mpe.c
 
 CFLAGS    += -fdata-sections -ffunction-sections
-LDSCRIPTS += $(AM_HOME)/scripts/linker.ld
-### 加载链接脚本，用于告诉链接器如何将编译后的目标文件(.o)布局到最终的二进制文件当中
-LDFLAGS   += --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
+LDSCRIPTS += $(AM_HOME)/scripts/ysyxsoc.ld
+LDFLAGS   += --defsym=_pmem_start=0x20000000 --defsym=_entry_offset=0x0 --defsym=_sram_start=0x0f000000
 LDFLAGS   += --gc-sections -e _start
 NPCFLAGS  += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
 NPCFLAGS  += -e $(IMAGE).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
-# NPCFLAGS  += -b
-
+NPCFLAGS  += -m $(abspath $(IMAGE)).bin
+NPCFLAGS  += -b
 
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = The insert-arg rule in Makefile will insert mainargs here.
@@ -29,7 +28,11 @@ insert-arg: image
 image: image-dep
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
-	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -Obinary $(IMAGE).elf $(IMAGE).bin
+## TODO: 我其实也不确定这样写对不对，之后有BUG的话记得优先回来检查一下这边
+	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents \
+		-O binary --only-section=.text --only-section=.rodata \
+		--only-section=.data* --only-section=.sdata* \
+		$(IMAGE).elf $(IMAGE).bin
 
 ## run调用insert-arg调用image，此时IMAGE.bin里面应该已经包含了AM提供的程序运行所需的库函数
 ## elf文件是由$(AM_HOME)/Makefile生成的

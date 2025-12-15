@@ -35,7 +35,6 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 // 用于特判的bool
-static bool g_first_exec = true;
 
 void device_update();
 
@@ -106,13 +105,7 @@ static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     #ifdef CONFIG_NPC
-    // HAVE BUG: 因为IDU和WBU没有分开，所以这边第一个指令会被打印两次，目前可以通过加特判解决。等阶段完整之后解决。
-    if (g_first_exec) {
-      exec_once(&s, *(nemu_state.pc));
-      g_first_exec = false;
-    } else {
-      exec_once(&s, *(nemu_state.pc));
-    }
+    exec_once(&s, *(nemu_state.pc));
     #else
     exec_once(&s, cpu.pc);
     #endif

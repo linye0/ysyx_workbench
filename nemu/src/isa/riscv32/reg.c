@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <common.h>
 #include "local-include/reg.h"
 
 const char *regs[] = {
@@ -35,7 +36,11 @@ void isa_reg_display() {
 word_t isa_reg_str2val(const char *s, bool *success) {
 	if (strcmp(s, "pc") == 0) {
 		*success = true;
-		return cpu.pc;
+        #ifdef CONFIG_NPC
+		return cpu.cpc;
+        #else
+        return cpu.pc;
+        #endif
 	}
     if (strcmp(s, "mstatus") == 0)
     {

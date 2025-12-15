@@ -27,6 +27,7 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
 static uint8_t mrom[CONFIG_MROM_SIZE] PG_ALIGN = {};
+static uint8_t sram[CONFIG_SRAM_SIZE] PG_ALIGN = {};
 
 Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
 
@@ -35,8 +36,11 @@ uint8_t* guest_to_host(paddr_t paddr) {
     return pmem + paddr - CONFIG_MBASE;
   }
   // difftest_skip_ref();
-  if (im_mrom(paddr)) {
+  if (in_mrom(paddr)) {
     return mrom + paddr - CONFIG_MROM_BASE;
+  }
+  if (in_sram(paddr)) {
+    return sram + paddr - CONFIG_SRAM_BASE;
   }
   Assert(0, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x\n", pmem, paddr);
 }
@@ -70,8 +74,8 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
-  panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-      addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
+  panic("address = " FMT_PADDR " is out of bound at pc = " FMT_WORD,
+      addr, cpu.pc);
 }
 
 void init_mem() {
@@ -84,14 +88,14 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr))) return pmem_read(addr, len);
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  if (likely(in_pmem(addr) || in_sram(addr))) { pmem_write(addr, len, data); return; }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }

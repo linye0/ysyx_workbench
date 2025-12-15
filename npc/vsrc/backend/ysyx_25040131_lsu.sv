@@ -107,29 +107,58 @@ module ysyx_25040131_lsu #(
   endfunction
 
   // 根据read_mem对读取的数据进行符号扩展
+  // 注意：raw_data是从SRAM读取的32位对齐数据，需要根据原始地址的偏移提取正确的字节/半字
   function [XLEN - 1: 0] sign_extend;
     input [XLEN - 1: 0] raw_data;
     input [2:0] read_mem;
     input [XLEN - 1: 0] addr;
+    reg [1:0] addr_offset;  // 地址偏移（addr[1:0]）
     reg [7:0] byte_data;
     reg [15:0] half_data;
     begin
+      addr_offset = addr[1:0];  // 获取地址低2位作为偏移
       case (read_mem)
-        3'b001: sign_extend = raw_data;  // lw: 不需要扩展
-        3'b010: begin  // lhu: 无符号扩展
-          half_data = raw_data[15:0];
+        3'b001: begin  // lw: 4字节，必须是4字节对齐（偏移0）
+          sign_extend = raw_data;
+        end
+        3'b010: begin  // lhu: 无符号半字扩展
+          case (addr_offset)
+            2'b00: half_data = raw_data[15:0];   // 偏移0: 提取[15:0]
+            2'b01: half_data = raw_data[23:8];   // 偏移1: 提取[23:8]
+            2'b10: half_data = raw_data[31:16];  // 偏移2: 提取[31:16]
+            2'b11: half_data = raw_data[31:16];  // 偏移3: 提取[31:24]和下一个字的[7:0]，这里做近似处理（所以理论上这种情况不会出现？如果有BUG记得回来检查）
+            default: half_data = raw_data[15:0];
+          endcase
           sign_extend = {16'h0, half_data};
         end
-        3'b011: begin  // lbu: 无符号扩展
-          byte_data = raw_data[7:0];
+        3'b011: begin  // lbu: 无符号字节扩展
+          case (addr_offset)
+            2'b00: byte_data = raw_data[7:0];    // 偏移0: 提取[7:0]
+            2'b01: byte_data = raw_data[15:8];  // 偏移1: 提取[15:8]
+            2'b10: byte_data = raw_data[23:16]; // 偏移2: 提取[23:16]
+            2'b11: byte_data = raw_data[31:24]; // 偏移3: 提取[31:24]
+            default: byte_data = raw_data[7:0];
+          endcase
           sign_extend = {24'h0, byte_data};
         end
-        3'b110: begin  // lh: 有符号扩展
-          half_data = raw_data[15:0];
+        3'b110: begin  // lh: 有符号半字扩展
+          case (addr_offset)
+            2'b00: half_data = raw_data[15:0];   // 偏移0: 提取[15:0]
+            2'b01: half_data = raw_data[23:8];   // 偏移1: 提取[23:8]
+            2'b10: half_data = raw_data[31:16];  // 偏移2: 提取[31:16]
+            2'b11: half_data = raw_data[31:16];  // 偏移3: 提取[31:24]和下一个字的[7:0]，这里做近似处理（所以理论上这种情况不会出现？如果有BUG记得回来检查）
+            default: half_data = raw_data[15:0];
+          endcase
           sign_extend = {{16{half_data[15]}}, half_data};
         end
-        3'b111: begin  // lb: 有符号扩展
-          byte_data = raw_data[7:0];
+        3'b111: begin  // lb: 有符号字节扩展
+          case (addr_offset)
+            2'b00: byte_data = raw_data[7:0];    // 偏移0: 提取[7:0]
+            2'b01: byte_data = raw_data[15:8];   // 偏移1: 提取[15:8]
+            2'b10: byte_data = raw_data[23:16]; // 偏移2: 提取[23:16]
+            2'b11: byte_data = raw_data[31:24];  // 偏移3: 提取[31:24]
+            default: byte_data = raw_data[7:0];
+          endcase
           sign_extend = {{24{byte_data[7]}}, byte_data};
         end
         default: sign_extend = raw_data;

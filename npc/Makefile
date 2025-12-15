@@ -59,6 +59,9 @@ endif
 BIN = $(OBJ_DIR)/V$(TOPNAME)
 BIN_GDB = $(OBJ_DIR)/V$(TOPNAME)_gdb
 
+# autoconf.h 文件路径（用于依赖检查）
+AUTOCONF_H = $(NPC_HOME)/include/generated/autoconf.h
+
 # 在条件判断后添加 --top-module（使用更新后的 TOPNAME）
 VERILATOR_CFLAGS += --top-module $(TOPNAME)
 
@@ -99,22 +102,22 @@ LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
 all: default
 
-$(BIN): $(VSRCS) $(SRCS)
+$(BIN): $(VSRCS) $(SRCS) $(AUTOCONF_H)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) \
 		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		$(addprefix -I, $(INC_PATH)) \
-		$^ \
+		$(filter-out $(AUTOCONF_H),$^) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
 
-$(BIN_GDB): $(VSRCS) $(SRCS)
+$(BIN_GDB): $(VSRCS) $(SRCS) $(AUTOCONF_H)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -I, $(INC_PATH)) \
 		$(addprefix -CFLAGS , $(GDBFLAGS)) \
 		$(addprefix -LDFLAGS , $(LDFLAGS)) \
-		$^ \
+		$(filter-out $(AUTOCONF_H),$^) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN_GDB))
 
 run: $(BIN)

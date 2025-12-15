@@ -29,27 +29,27 @@ module ysyx_25040131_bus #(
     input io_master_rlast,             // AXI RLAST：读突发最后一个数据
     input [3:0] io_master_rid,         // AXI RID：读事务ID
 
-    // Write Address Channel (AW)
-    output [XLEN-1:0] io_master_awaddr,   // AXI AWADDR：写起始地址
-    output [3:0] io_master_awid,          // AXI AWID：写事务ID
-    output [7:0] io_master_awlen,         // AXI AWLEN：写突发长度
-    output [2:0] io_master_awsize,        // AXI AWSIZE：写传输大小
-    output [1:0] io_master_awburst,       // AXI AWBURST：写突发类型
-    output io_master_awvalid,             // AXI AWVALID：写地址有效
-    input io_master_awready,              // AXI AWREADY：从端接收写地址
+    // write address channel (aw)
+    output [XLEN-1:0] io_master_awaddr,   // axi awaddr：写起始地址
+    output [3:0] io_master_awid,          // axi awid：写事务id
+    output [7:0] io_master_awlen,         // axi awlen：写突发长度
+    output [2:0] io_master_awsize,        // axi awsize：写传输大小
+    output [1:0] io_master_awburst,       // axi awburst：写突发类型
+    output io_master_awvalid,             // axi awvalid：写地址有效
+    input io_master_awready,              // axi awready：从端接收写地址
 
-    // Write Data Channel (W)
-    output [XLEN-1:0] io_master_wdata,    // AXI WDATA：写数据
-    output [3:0] io_master_wstrb,         // AXI WSTRB：字节写使能（每bit对应1字节）
-    output io_master_wvalid,              // AXI WVALID：写数据有效
-    input io_master_wready,               // AXI WREADY：从端接收写数据
-    output io_master_wlast,               // AXI WLAST：写突发最后一个数据
+    // write data channel (w)
+    output [XLEN-1:0] io_master_wdata,    // axi wdata：写数据
+    output [3:0] io_master_wstrb,         // axi wstrb：字节写使能（每bit对应1字节）
+    output io_master_wvalid,              // axi wvalid：写数据有效
+    input io_master_wready,               // axi wready：从端接收写数据
+    output io_master_wlast,               // axi wlast：写突发最后一个数据
 
-    // Write Response Channel (B)
-    input [1:0] io_master_bresp,          // AXI BRESP：写响应（00=OKAY）
-    input io_master_bvalid,               // AXI BVALID：写响应有效
-    output io_master_bready,              // AXI BREADY：主端准备好接收写响应
-    input [3:0] io_master_bid,             // AXI BID：写事务ID
+    // write response channel (b)
+    input [1:0] io_master_bresp,          // axi bresp：写响应（00=okay）
+    input io_master_bvalid,               // axi bvalid：写响应有效
+    output io_master_bready,              // axi bready：主端准备好接收写响应
+    input [3:0] io_master_bid,             // axi bid：写事务id
 
     // ifu
     // IFU 读请求握手（IFU优先服务）。ifu_arready=1 表示当前允许 IFU 发起。

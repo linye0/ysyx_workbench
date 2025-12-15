@@ -17,6 +17,14 @@ config MROM_SIZE
   hex "MROM size"
   default 0x00000fff
 
+config SRAM_BASE
+  hex "SRAM base address"
+  default 0x0f000000
+
+config SRAM_SIZE
+  hex "SRAM size"
+  default 0x00001fff
+
 config PC_RESET_OFFSET
   hex "Offset of reset vector from the base of memory"
   default 0x100000 if ISA_x86

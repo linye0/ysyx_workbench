@@ -38,6 +38,8 @@ void init_verilog(int argc, char* argv[]) {
 
 
 	reset(top, 8);
+
+    update_cpu_state(nemu_state);
 }
 
 void cpu_exec_once() {
@@ -66,6 +68,7 @@ void cpu_exec_once() {
 void update_cpu_state(NPCState npc) {
     // cpu.pc = *(npc.pc);
     // cpu.pc = top->pc;
+    cpu.cpc = *(nemu_state.cpc);
     cpu.pc = *(nemu_state.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];

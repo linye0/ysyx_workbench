@@ -184,6 +184,7 @@ typedef struct {
   word_t sr[4096];
   uint32_t priv;
   uint32_t last_inst_priv;
+  vaddr_t cpc;
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

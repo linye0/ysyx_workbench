@@ -29,13 +29,13 @@ __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
-    if (in_pmem(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr)) {
       memcpy(guest_to_host(addr), buf, n);
       return;
     }
     Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
   } else {
-    if (in_pmem(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr)) {
       memcpy(buf, guest_to_host(addr), n);
       return;
     }
@@ -43,10 +43,15 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
   }
 }
 
+__EXPORT void difftest_reg_display(){
+  isa_reg_display();
+}
+
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
   CPU_state *npc = (CPU_state *)dut;
   if (direction == DIFFTEST_TO_REF) {
-    cpu.pc = npc->pc;
+    cpu.pc = npc->cpc;
+    // printf("npc->pc = %"PRIx64"\n", npc->pc);
     for (int i = 0; i < 32; i++) {
       cpu.gpr[i] = npc->gpr[i];
     } 
@@ -66,6 +71,13 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
     npc->sr[CSR_MEPC] = cpu.sr[CSR_MEPC];
     npc->sr[CSR_MSTATUS] = cpu.sr[CSR_MSTATUS];
     npc->sr[CSR_MTVAL] = cpu.sr[CSR_MTVAL];
+  }
+}
+
+__EXPORT void difftest_mem_display(int N, int startAddress) {
+  for (int i = 0; i < N; i++) {
+    printf("addr :0x%08x, data: 0x%08x\n", (uint32_t)startAddress, paddr_read(startAddress, 4));
+    startAddress += 4;
   }
 }
 
@@ -94,3 +106,5 @@ __EXPORT void difftest_init(int port) {
   /* Perform ISA dependent initialization. */
   init_isa();
 }
+
+
