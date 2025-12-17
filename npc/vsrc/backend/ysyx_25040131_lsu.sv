@@ -86,7 +86,23 @@ module ysyx_25040131_lsu #(
   reg [XLEN - 1: 0] raw_read_data;  // 从BUS读取的原始数据
   reg access_fault_reg;              // Access Fault 寄存器
 
+  // 将read_mem转换为类似write_mem的格式（用于生成wstrb）
+  function [1:0] read_mem_to_write_mem;
+    input [2:0] read_mem;
+    begin
+      case (read_mem)
+        3'b001: read_mem_to_write_mem = 2'b01;  // lw -> sw (4字节)
+        3'b010: read_mem_to_write_mem = 2'b10;  // lhu -> sh (2字节)
+        3'b011: read_mem_to_write_mem = 2'b11;  // lbu -> sb (1字节)
+        3'b110: read_mem_to_write_mem = 2'b10;  // lh -> sh (2字节)
+        3'b111: read_mem_to_write_mem = 2'b11;  // lb -> sb (1字节)
+        default: read_mem_to_write_mem = 2'b00;
+      endcase
+    end
+  endfunction
+
   // 根据write_mem和addr生成wstrb（用于写操作），只使用低4位（对应32bit数据的4个字节）
+  // 也可以用于读操作，通过read_mem_to_write_mem转换后使用
   function [7:0] gen_wstrb;
     input [1:0] write_mem;
     input [XLEN - 1: 0] addr;
@@ -233,6 +249,8 @@ module ysyx_25040131_lsu #(
         addr_reg <= addr;
         read_mem_reg <= read_mem;
         access_fault_reg <= 1'b0;  // 清除之前的错误标志
+        // 根据read_mem和地址生成wstrb（规则与写操作相同）
+        wstrb_reg <= gen_wstrb(read_mem_to_write_mem(read_mem), addr);
       end
       // 读操作：保存读回的数据并处理，检测访问错误
       if (state_load == LOAD_WAIT_R && lsu_rvalid) begin

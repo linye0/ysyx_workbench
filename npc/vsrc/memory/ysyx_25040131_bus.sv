@@ -157,6 +157,8 @@ module ysyx_25040131_bus #(
   // 寄存器：锁存响应信号
   reg [1:0] lsu_rresp_reg;
   reg [1:0] lsu_bresp_reg;
+  // 寄存器：锁存wstrb（读操作和写操作都需要）
+  reg [7:0] lsu_wstrb_reg;
 
   assign ifu_arready = (state_load == BUS_IDLE);
   assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid;
@@ -178,7 +180,7 @@ module ysyx_25040131_bus #(
 
   assign io_master_wdata = lsu_wdata_reg;
   assign io_master_wvalid = io_master_wvalid_reg;
-  assign io_master_wstrb = lsu_wstrb[3:0];  // 使用 4 位 wstrb
+  assign io_master_wstrb = lsu_wstrb_reg[3:0];  // 使用锁存的wstrb（读操作和写操作都使用）
   assign io_master_wlast = io_master_wlast_reg;  // 单次传输，wlast=1
 
   assign io_master_bready = io_master_bready_reg;
@@ -215,6 +217,7 @@ module ysyx_25040131_bus #(
       ifu_rvalid_reg <= 1'b0;
       lsu_rvalid_reg <= 1'b0;
       lsu_rresp_reg <= 2'b00;
+      lsu_wstrb_reg <= 8'h0;
       io_master_araddr_reg <= {XLEN{1'b0}};
       io_master_arid_reg <= 4'b0;
       io_master_arvalid_reg <= 1'b0;
@@ -231,6 +234,8 @@ module ysyx_25040131_bus #(
               state_load <= IFU_REQ_AR;
             // end
           end else if (lsu_arvalid) begin
+            // 锁存wstrb（读操作时也需要，由LSU在LOAD_IDLE状态生成）
+            lsu_wstrb_reg <= lsu_wstrb;
             if (clint_en) begin
               // CLINT 旁路，直接进入 LSU_DONE
               lsu_rdata_reg <= clint_rdata;
@@ -337,6 +342,7 @@ module ysyx_25040131_bus #(
           // 等待写数据握手完成
           if (lsu_wready && lsu_wvalid) begin
             lsu_wdata_reg <= lsu_wdata;
+            lsu_wstrb_reg <= lsu_wstrb;  // 锁存写操作的wstrb
             io_master_wvalid_reg <= 1'b1;
             io_master_wlast_reg <= 1'b1;  // 单次传输，wlast=1
             lsu_wready_reg <= 1'b0;
@@ -380,7 +386,7 @@ module ysyx_25040131_bus #(
     // DIFTEST：对某些外设/MMIO/VGA 等地址的写操作，要求参考模型跳过对比
     if (io_master_awvalid) begin
       // `YSYX_DPI_C_NPC_DIFFTEST_MEM_DIFF(io_master_awaddr, io_master_wdata, {{4'b0}, io_master_wstrb})
-      if ((io_master_awaddr >= 'h10000000 && io_master_awaddr <= 'h10000005) ||
+      if ((io_master_awaddr >= 'h10000000 && io_master_awaddr <= 'h10000fff) ||
           (io_master_awaddr >= 'h10001000 && io_master_awaddr <= 'h10001fff) ||
           (io_master_awaddr >= 'h10002000 && io_master_awaddr <= 'h1000200f) ||
           (io_master_awaddr >= 'h10011000 && io_master_awaddr <= 'h10012000) ||
@@ -393,7 +399,7 @@ module ysyx_25040131_bus #(
     end
     // DIFTEST：对上述地址范围的读操作同样跳过参考对比
     if (io_master_arvalid) begin
-      if ((io_master_araddr >= 'h10000000 && io_master_araddr <= 'h10000005) ||
+      if ((io_master_araddr >= 'h10000000 && io_master_araddr <= 'h10000fff) ||
           (io_master_araddr >= 'h10001000 && io_master_araddr <= 'h10001fff) ||
           (io_master_araddr >= 'h10002000 && io_master_araddr <= 'h1000200f) ||
           (io_master_araddr >= 'h10011000 && io_master_araddr <= 'h10012000) ||

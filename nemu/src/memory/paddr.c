@@ -28,6 +28,7 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
 static uint8_t mrom[CONFIG_MROM_SIZE] PG_ALIGN = {};
+static uint8_t flash[CONFIG_FLASH_SIZE] PG_ALIGN = {};
 static uint8_t sram[CONFIG_SRAM_SIZE] PG_ALIGN = {};
 
 Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
@@ -39,6 +40,9 @@ uint8_t* guest_to_host(paddr_t paddr) {
   // difftest_skip_ref();
   if (in_mrom(paddr)) {
     return mrom + paddr - CONFIG_MROM_BASE;
+  }
+  if (in_flash(paddr)) {
+    return flash + paddr - CONFIG_FLASH_BASE;
   }
   if (in_sram(paddr)) {
     #ifndef CONFIG_NPC
@@ -94,7 +98,7 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr))) return pmem_read(addr, len);
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
@@ -107,7 +111,11 @@ void paddr_write(paddr_t addr, int len, word_t data) {
 }
 
 #ifdef CONFIG_NPC
-extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+extern "C" void flash_read(int32_t addr, int32_t *data) { 
+  uint32_t offset = addr;
+  *data = *((uint32_t *)(flash + offset));
+  // printf("flash raddr: 0x%x, rdata: 0x%x, offest: 0x%x\n", addr, *data, offset);
+}
 
 extern "C" void mrom_read(int32_t addr, int32_t *data) {
     uint32_t offset = ((addr & 0xfffffffc) - CONFIG_MROM_BASE);

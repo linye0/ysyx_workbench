@@ -17,6 +17,14 @@ config MROM_SIZE
   hex "MROM size"
   default 0x00000fff
 
+config FLASH_BASE
+  hex "FLASH base address"
+  default 0x30000000
+
+config FLASH_SIZE
+  hex "FLASH size"
+  default 0x0fffffff
+
 config SRAM_BASE
   hex "SRAM base address"
   default 0x0f000000

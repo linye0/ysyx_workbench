@@ -29,13 +29,13 @@ __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr)) {
       memcpy(guest_to_host(addr), buf, n);
       return;
     }
     Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
   } else {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr)) {
       memcpy(buf, guest_to_host(addr), n);
       return;
     }
@@ -47,11 +47,21 @@ __EXPORT void difftest_reg_display(){
   isa_reg_display();
 }
 
-__EXPORT void difftest_regcpy(void *dut, bool direction) {
+__EXPORT void difftest_regcpy(void *dut, int direction) {
   CPU_state *npc = (CPU_state *)dut;
-  if (direction == DIFFTEST_TO_REF) {
+  if (direction == DIFFTEST_TO_REF_SKIP_REF) {
+    // only use for ref_difftest_skip, so cpu.pc = npc->pc(next_pc)
+    cpu.pc = npc->pc;
+    for (int i = 0; i < 32; i++) {
+      cpu.gpr[i] = npc->gpr[i];
+    }
+    cpu.sr[CSR_MTVEC] = npc->sr[CSR_MTVEC];
+    cpu.sr[CSR_MCAUSE] = npc->sr[CSR_MCAUSE];
+    cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
+    cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
+    cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+  } else if (direction == DIFFTEST_TO_REF) {
     cpu.pc = npc->cpc;
-    // printf("npc->pc = %"PRIx64"\n", npc->pc);
     for (int i = 0; i < 32; i++) {
       cpu.gpr[i] = npc->gpr[i];
     } 
@@ -60,7 +70,6 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
     cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
     cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
     cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
-
   } else if (direction == DIFFTEST_TO_DUT) {
     npc->pc = cpu.pc;
     for (int i = 0; i < 32; i++) {

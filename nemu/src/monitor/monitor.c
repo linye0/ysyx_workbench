@@ -49,7 +49,7 @@ void sdb_set_batch_mode();
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
-static char *mrom_img_file = NULL;
+static char *flash_img_file = NULL;
 static int difftest_port = 1234;
 
 long load_file(const char *filename, void *buf)
@@ -90,9 +90,9 @@ static long load_img() {
 
   fclose(fp);
 
-  if (mrom_img_file != NULL) {
-    Log("Loading mrom image from %s", mrom_img_file);
-    load_file(mrom_img_file, guest_to_host(MROM_BASE));
+  if (flash_img_file != NULL) {
+    Log("Loading flash image from %s", flash_img_file);
+    load_file(flash_img_file, guest_to_host(CONFIG_FLASH_BASE));
   }
 
   return size;
@@ -113,14 +113,14 @@ static int parse_args(int argc, char *argv[]) {
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:m:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:f:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
 	    case 'e': elf_file = optarg; break;
-      case 'm': mrom_img_file = optarg; break;
+      case 'f': flash_img_file = optarg; break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -129,7 +129,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-d,--diff=REF_SO        run DiffTest with reference REF_SO\n");
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
 		    printf("\t-e,--elf=FILE           elf file to be parsed\n");
-        printf("\t-m,--mrom=FILE          mrom image file to be loaded\n");
+        printf("\t-f,--flash=FILE          flash image file to be loaded\n");
         printf("\n");
         exit(0);
     }

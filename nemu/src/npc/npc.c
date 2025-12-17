@@ -37,7 +37,7 @@ void init_verilog(int argc, char* argv[]) {
     tfp->open("wave.vcd");
 
 
-	reset(top, 8);
+	reset(top, 32);  // 这个值如果设的太小的话，在接入SoC的时候，由于SoC里面的一个傻逼延迟器，会导致reset在复位之后又被短暂的设为1,导致出现bug
 
     update_cpu_state(nemu_state);
 }
