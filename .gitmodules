@@ -1,7 +1,9 @@
 [submodule "ysyxSoC"]
     path = ysyxSoC
     url = git@github.com:linye0/ysyxSoC_ly.git
+	branch = master
 
 [submodule "rt-thread-am"]
     path = rt-thread-am
     url = git@github.com:linye0/rt-thread-am.git
+	branch = master
