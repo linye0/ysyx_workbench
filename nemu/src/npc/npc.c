@@ -46,19 +46,23 @@ void cpu_exec_once() {
     // printf("before exec: cpu->gpr[2] = %d\n", nemu_state.gpr[2]);
     top->clock = (top->clock == 0) ? 1 : 0;
     top->eval();
+    #ifdef CONFIG_GTKWAVE
     if (tfp) {
         tfp->dump(contextp->time());
         tfp->flush();
     }
+    #endif
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
     contextp->timeInc(1);
     top->clock = (top->clock == 0) ? 1 : 0;
     top->eval();
+    #ifdef CONFIG_GTKWAVE
     if (tfp) {
         tfp->dump(contextp->time());
         tfp->flush();
     }
+    #endif
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
 
     contextp->timeInc(1);
