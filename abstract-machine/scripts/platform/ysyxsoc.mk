@@ -15,7 +15,7 @@ LDFLAGS   += --defsym=_pmem_start=0x30000000 --defsym=_entry_offset=0x0 --defsym
 LDFLAGS   += --gc-sections -e _start
 NPCFLAGS  += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
 NPCFLAGS  += -e $(IMAGE).elf -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
-NPCFLAGS  += -f $(abspath $(IMAGE)).bin
+NPCFLAGS  += -f $(abspath $(IMAGE)).bin -m $(abspath $(IMAGE)).bin
 NPCFLAGS  += -b
 
 MAINARGS_MAX_LEN = 64
