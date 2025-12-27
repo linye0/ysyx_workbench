@@ -51,6 +51,8 @@ typedef struct
   uint32_t* mepc;
   uint32_t* mcause;
   uint32_t* mtval;
+  uint32_t* mvendorid;
+  uint32_t* marchid;
 
   uint8_t* sram;
   

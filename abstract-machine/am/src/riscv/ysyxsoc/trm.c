@@ -41,6 +41,30 @@ void halt(int code) {
   while (1);
 }
 
+void brandShow() {
+  int i;
+  int index;
+  char buf[10];
+  uint32_t number;
+  uint32_t mvendorid;
+  uint32_t marchid;
+  asm volatile("csrr %0, mvendorid" : "=r"(mvendorid));
+  asm volatile("csrr %0, marchid" : "=r"(marchid));
+  for (i = 3; i >= 0; i--) {
+    putch((char)(((mvendorid >> (i * 8)) & 0xff)));
+  }
+  number = marchid;
+  index = 0;
+  while (number > 0) {
+    buf[index++] = (number % 10) + '0';
+    number /= 10;
+  }
+  for(i = index - 1;i >= 0;i--){
+    putch(buf[i]);
+  }
+  putch('\n');
+  
+}
 
 void _trm_init() {
   // bootloader: 将数据段从mrom复制到sram
@@ -52,6 +76,8 @@ void _trm_init() {
   }
 
   init_uart();
+
+  brandShow();
 
   // call main
   int ret = main(mainargs);

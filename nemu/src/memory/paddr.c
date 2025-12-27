@@ -30,6 +30,7 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 static uint8_t mrom[CONFIG_MROM_SIZE] PG_ALIGN = {};
 static uint8_t flash[CONFIG_FLASH_SIZE] PG_ALIGN = {};
 static uint8_t sram[CONFIG_SRAM_SIZE] PG_ALIGN = {};
+static uint8_t psram[CONFIG_PSRAM_SIZE] PG_ALIGN = {};
 
 Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
 
@@ -51,6 +52,9 @@ uint8_t* guest_to_host(paddr_t paddr) {
     #ifdef CONFIG_NPC
     return nemu_state.sram + paddr - CONFIG_SRAM_BASE;
     #endif
+  }
+  if (in_psram(paddr)) {
+    return psram + paddr - CONFIG_PSRAM_BASE;
   }
   Assert(0, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x\n", pmem, paddr);
 }
@@ -111,6 +115,35 @@ void paddr_write(paddr_t addr, int len, word_t data) {
 }
 
 #ifdef CONFIG_NPC
+extern "C" void psram_read(int addr, int *data) {
+  uint32_t offset = addr;
+  *data = paddr_read(CONFIG_PSRAM_BASE + offset, 4);
+	return;
+}
+
+extern "C" void psram_write(int addr, int wdata, char wstrb) {
+  // wstrb表示要写入的半字节数量: 2 -> 1字节, 4 -> 2字节, 8 -> 4字节
+  // 有效数据永远在高wstrb个半字节内
+  uint32_t actual_data;
+  
+  switch (wstrb) {
+    case 2:  // 写入1字节，有效数据在wdata[31:24]
+      actual_data = (wdata >> 24) & 0xFF;
+      *(uint8_t *)guest_to_host(CONFIG_PSRAM_BASE + addr) = (uint8_t)actual_data;
+      break;
+    case 4:  // 写入2字节，有效数据在wdata[31:16]
+      actual_data = (wdata >> 16) & 0xFFFF;
+      *(uint16_t *)guest_to_host(CONFIG_PSRAM_BASE + addr) = (uint16_t)actual_data;
+      break;
+    case 8:  // 写入4字节，有效数据在wdata[31:0]
+      actual_data = wdata;
+      *(uint32_t *)guest_to_host(CONFIG_PSRAM_BASE + addr) = (uint32_t)actual_data;
+      break;
+    default:
+      break;
+  }
+  return;
+}
 extern "C" void flash_read(int32_t addr, int32_t *data) { 
   uint32_t offset = addr;
   *data = *((uint32_t *)(flash + offset));

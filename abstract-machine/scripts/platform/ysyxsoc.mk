@@ -38,6 +38,7 @@ image: image-dep
 ## elf文件是由$(AM_HOME)/Makefile生成的
 run: insert-arg
 	# echo "TODO: add command here to run simulation"
+	$(MAKE) -C $(YSYX_HOME)/ysyxSoC verilog
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 	
 gdb: insert-arg

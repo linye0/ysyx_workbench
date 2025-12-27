@@ -84,6 +84,8 @@ void update_cpu_state(NPCState npc) {
     cpu.sr[CSR_MEPC] = *(npc.mepc);
     cpu.sr[CSR_MCAUSE] = *(npc.mcause);
     cpu.sr[CSR_MTVAL] = *(npc.mtval);
+    cpu.sr[CSR_MVENDORID] = *(npc.mvendorid);
+    cpu.sr[CSR_MARCHID] = *(npc.marchid);
     return;
 }
 
@@ -123,6 +125,8 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mepc));
   npc->mcause = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mcause));
   npc->mtval = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mtval));
+  npc->mvendorid = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__mvendorid));
+  npc->marchid = (uint32_t*)&(CONCAT_YSYXSOC_HEAD(u_csr__DOT__marchid));
   npc->sram = (uint8_t*)&(CONCAT_YSYXSOC_ASIC_HEAD(axi4ram__DOT__mem_ext__DOT__Memory));
   #endif
   #endif

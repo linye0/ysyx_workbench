@@ -35,6 +35,15 @@ reg [31:0] mepc;     // 0x341
 reg [31:0] mcause;   // 0x342
 reg [31:0] mtval;    // 0x343
 
+// --- 只读 CSR 寄存器（Machine Information Registers）---
+wire [31:0] mvendorid/*verilator public_flat*/;  // 0xF11 - Vendor ID (只读)
+wire [31:0] marchid/*verilator public_flat*/;    // 0xF12 - Architecture ID (只读)
+
+// 设置 mvendorid 为 ysyx 的 ASCII 码
+assign mvendorid = 32'h79737978;  // 'y'=0x79, 's'=0x73, 'y'=0x79, 'x'=0x78
+
+// 设置 marchid 为学号数字部分的十进制表示
+assign marchid = 32'd25040131;  // 学号 ysyx_25040131 的数字部分
 // 复位初始值（根据 RISC-V 手册）
 initial begin
     mstatus = 32'h00000000;  // MIE=0, MPIE=0, MPP=0 (PRV_U)
@@ -146,6 +155,8 @@ always @(*) begin
         12'h341: csr_rdata = mepc;
         12'h342: csr_rdata = mcause;
         12'h343: csr_rdata = mtval;
+        12'hF11: csr_rdata = mvendorid;  // Vendor ID (只读)
+        12'hF12: csr_rdata = marchid;    // Architecture ID (只读)
         default: csr_rdata = 32'h0; // 未实现 CSR 返回 0
     endcase
 end

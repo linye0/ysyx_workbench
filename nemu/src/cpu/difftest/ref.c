@@ -29,13 +29,13 @@ __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr)) {
       memcpy(guest_to_host(addr), buf, n);
       return;
     }
     Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
   } else {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr)) {
       memcpy(buf, guest_to_host(addr), n);
       return;
     }
@@ -60,6 +60,8 @@ __EXPORT void difftest_regcpy(void *dut, int direction) {
     cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
     cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
     cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+    cpu.sr[CSR_MVENDORID] = npc->sr[CSR_MVENDORID];
+    cpu.sr[CSR_MARCHID] = npc->sr[CSR_MARCHID];
   } else if (direction == DIFFTEST_TO_REF) {
     cpu.pc = npc->cpc;
     for (int i = 0; i < 32; i++) {
@@ -70,6 +72,8 @@ __EXPORT void difftest_regcpy(void *dut, int direction) {
     cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
     cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
     cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+    cpu.sr[CSR_MVENDORID] = npc->sr[CSR_MVENDORID];
+    cpu.sr[CSR_MARCHID] = npc->sr[CSR_MARCHID];
   } else if (direction == DIFFTEST_TO_DUT) {
     npc->pc = cpu.pc;
     for (int i = 0; i < 32; i++) {
