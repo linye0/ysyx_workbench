@@ -11,6 +11,8 @@ extern char _edata;
 extern char _etext;
 extern char _rodata;
 extern char _erodata;
+extern char _bstart;
+extern char _bend;
 int main(const char *args);
 
 extern char _pmem_start;
@@ -63,17 +65,51 @@ void brandShow() {
     putch(buf[i]);
   }
   putch('\n');
-  
+}
+
+/**
+ * 搬运数据段并清零 BSS 段
+ * 目的：将存储在 Flash (LMA) 中的数据加载到 PSRAM (VMA) 中运行
+ */
+void load_sections() {
+    // 1. 搬运数据段 (.data)
+    // 根据之前的链接脚本，.data 的 LMA 紧跟在 .rodata 之后
+    // 所以 LMA = _erodata
+    uintptr_t data_vma_start = (uintptr_t)&_data;
+    uintptr_t data_vma_end   = (uintptr_t)&_edata;
+    uintptr_t data_lma_start = (uintptr_t)&_erodata;
+    
+    size_t data_size = data_vma_end - data_vma_start;
+
+    if (data_size > 0) {
+        memcpy((void *)data_vma_start, (void *)data_lma_start, data_size);
+    }
+
+    // 2. 清零 BSS 段 (.bss)
+    // BSS 段不占用 Flash 空间，只需在运行前将其所在的内存空间清零
+    uintptr_t bss_start = (uintptr_t)&_bstart;
+    uintptr_t bss_end   = (uintptr_t)&_bend;
+    
+    size_t bss_size = bss_end - bss_start;
+    
+    if (bss_size > 0) {
+        memset((void *)bss_start, 0, bss_size);
+    }
 }
 
 void _trm_init() {
   // bootloader: 将数据段从mrom复制到sram
+  /*
   size_t data_size = (uintptr_t)&_edata - (uintptr_t)&_data;
   if (data_size > 0) {
     // 数据段在mrom中的地址 = mrom起始 + .text大小 + .rodata大小
     uintptr_t data_lma = 0x20000000 + ((uintptr_t)&_etext - 0x20000000) + ((uintptr_t)&_erodata - (uintptr_t)&_rodata);
     memcpy((void *)&_data, (void *)data_lma, data_size);
   }
+  */
+
+  // 执行内存搬运和清零
+  load_sections();
 
   init_uart();
 
