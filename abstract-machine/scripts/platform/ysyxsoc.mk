@@ -9,6 +9,10 @@ AM_SRCS := riscv/ysyxsoc/start.S \
            platform/dummy/vme.c \
            platform/dummy/mpe.c
 
+
+## 内存优化
+CFLAGS    += -Os -fno-asynchronous-unwind-tables -fno-stack-protector
+
 CFLAGS    += -fdata-sections -ffunction-sections
 LDSCRIPTS += $(AM_HOME)/scripts/ysyxsoc.ld
 LDFLAGS   += --defsym=_pmem_start=0x30000000 --defsym=_entry_offset=0x0 --defsym=_sram_start=0x0f000000 --defsym=_sram_size=0x2000
@@ -29,10 +33,7 @@ image: image-dep
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
 ## TODO: 我其实也不确定这样写对不对，之后有BUG的话记得优先回来检查一下这边
-	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents \
-		--only-section=.text --only-section=.rodata \
-		--only-section=.data* --only-section=.sdata* \
-		-O binary $(IMAGE).elf $(IMAGE).bin
+	@$(OBJCOPY) -S -O binary $(IMAGE).elf $(IMAGE).bin
 
 ## run调用insert-arg调用image，此时IMAGE.bin里面应该已经包含了AM提供的程序运行所需的库函数
 ## elf文件是由$(AM_HOME)/Makefile生成的

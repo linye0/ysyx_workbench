@@ -4,5 +4,6 @@
 
 _start:
   mv s0, zero
-  la sp, _stack_pointer
+  lui sp, %hi(_stack_pointer)
+  addi sp, sp, %lo(_stack_pointer)
   call _trm_init

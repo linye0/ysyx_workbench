@@ -15,7 +15,7 @@ config MROM_BASE
 
 config MROM_SIZE
   hex "MROM size"
-  default 0x00000fff
+  default 0x00001000
 
 config FLASH_BASE
   hex "FLASH base address"
@@ -23,7 +23,7 @@ config FLASH_BASE
 
 config FLASH_SIZE
   hex "FLASH size"
-  default 0x0fffffff
+  default 0x10000000
 
 config SRAM_BASE
   hex "SRAM base address"
@@ -31,7 +31,7 @@ config SRAM_BASE
 
 config SRAM_SIZE
   hex "SRAM size"
-  default 0x00001fff
+  default 0x00002000
 
 config PSRAM_BASE
   hex "PSRAM base address"
@@ -39,7 +39,8 @@ config PSRAM_BASE
 
 config PSRAM_SIZE
   hex "PSRAM size"
-  default 0x20000000
+  default 0x00400000
+
 
 config PC_RESET_OFFSET
   hex "Offset of reset vector from the base of memory"

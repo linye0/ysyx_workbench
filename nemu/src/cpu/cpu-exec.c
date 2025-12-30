@@ -18,6 +18,7 @@
 #include <cpu/difftest.h>
 #include <utils.h>
 #include <locale.h>
+#include <isa.h>
 
 #ifdef CONFIG_NPC
 #include <npc/npc_verilog.h>
@@ -53,10 +54,24 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (wp_difftest() > 0) nemu_state.state = NEMU_STOP;
 }
 
+#ifdef CONFIG_NPC
+void check_pc_bound() {
+  if (!((cpu.cpc >= CONFIG_PSRAM_BASE && cpu.cpc <= CONFIG_PSRAM_BASE + CONFIG_PSRAM_SIZE) || (cpu.cpc >= CONFIG_FLASH_BASE && cpu.cpc < CONFIG_FLASH_BASE + CONFIG_FLASH_SIZE))) {
+    printf("pc out of bound: 0x%x\n", cpu.pc);
+    isa_reg_display();
+    nemu_state.state = NEMU_ABORT;
+  }
+  return ;
+}
+#endif
+
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
+  #ifdef CONFIG_NPC
+  check_pc_bound();
+  #endif
   #ifndef CONFIG_NPC
   cpu.pc = s->dnpc;
   #endif

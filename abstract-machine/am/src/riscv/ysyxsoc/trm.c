@@ -6,13 +6,6 @@
 
 extern char _heap_start;
 extern char _heap_end;
-extern char _data;
-extern char _edata;
-extern char _etext;
-extern char _rodata;
-extern char _erodata;
-extern char _bstart;
-extern char _bend;
 int main(const char *args);
 
 extern char _pmem_start;
@@ -67,55 +60,76 @@ void brandShow() {
   putch('\n');
 }
 
-/**
- * 搬运数据段并清零 BSS 段
- * 目的：将存储在 Flash (LMA) 中的数据加载到 PSRAM (VMA) 中运行
- */
-void load_sections() {
-    // 1. 搬运数据段 (.data)
-    // 根据之前的链接脚本，.data 的 LMA 紧跟在 .rodata 之后
-    // 所以 LMA = _erodata
-    uintptr_t data_vma_start = (uintptr_t)&_data;
-    uintptr_t data_vma_end   = (uintptr_t)&_edata;
-    uintptr_t data_lma_start = (uintptr_t)&_erodata;
-    
-    size_t data_size = data_vma_end - data_vma_start;
+// 定义一个宏，强制获取符号的绝对链接地址 (VMA/LMA)
+#define GET_ABS_ADDR(sym) ({ \
+  uintptr_t _addr; \
+  asm volatile("lui %0, %%hi(" #sym "); addi %0, %0, %%lo(" #sym ")" : "=r"(_addr)); \
+  _addr; \
+})
 
-    if (data_size > 0) {
-        memcpy((void *)data_vma_start, (void *)data_lma_start, data_size);
+static void copy_segment(uintptr_t vma_start, uintptr_t vma_end, uintptr_t lma_start) {
+    uint32_t *dst = (uint32_t *)vma_start;
+    uint32_t *src = (uint32_t *)lma_start;
+    uint32_t count = (vma_end - vma_start + 3) / 4;
+    
+    // 只有在区间有效时才搬运
+    if (vma_start < vma_end) {
+        for (uint32_t i = 0; i < count; i++) {
+            dst[i] = src[i];
+        }
     }
+}
 
-    // 2. 清零 BSS 段 (.bss)
-    // BSS 段不占用 Flash 空间，只需在运行前将其所在的内存空间清零
-    uintptr_t bss_start = (uintptr_t)&_bstart;
-    uintptr_t bss_end   = (uintptr_t)&_bend;
+void load_sections() {
+    // 1. 分段搬运：使用绝对地址加载，避开 PC 相对寻址陷阱
+    // 搬运 .text
+    copy_segment(
+        GET_ABS_ADDR(_text_vma_start), 
+        GET_ABS_ADDR(_text_vma_end), 
+        GET_ABS_ADDR(_text_lma_start)
+    );
+    // 搬运 .rodata
+    copy_segment(
+        GET_ABS_ADDR(_rodata_vma_start), 
+        GET_ABS_ADDR(_rodata_vma_end), 
+        GET_ABS_ADDR(_rodata_lma_start)
+    );
+    // 搬运 .data
+    copy_segment(
+        GET_ABS_ADDR(_data_vma_start), 
+        GET_ABS_ADDR(_data_vma_end), 
+        GET_ABS_ADDR(_data_lma_start)
+    );
+
+    // 2. 清零 BSS：同样使用绝对地址
+    uint32_t *bss_ptr = (uint32_t *)GET_ABS_ADDR(_bss_vma_start);
+    uint32_t *bss_end = (uint32_t *)GET_ABS_ADDR(_bss_vma_end);
     
-    size_t bss_size = bss_end - bss_start;
-    
-    if (bss_size > 0) {
-        memset((void *)bss_start, 0, bss_size);
+    while (bss_ptr < bss_end) {
+        *bss_ptr++ = 0;
     }
 }
 
 void _trm_init() {
-  // bootloader: 将数据段从mrom复制到sram
-  /*
-  size_t data_size = (uintptr_t)&_edata - (uintptr_t)&_data;
-  if (data_size > 0) {
-    // 数据段在mrom中的地址 = mrom起始 + .text大小 + .rodata大小
-    uintptr_t data_lma = 0x20000000 + ((uintptr_t)&_etext - 0x20000000) + ((uintptr_t)&_erodata - (uintptr_t)&_rodata);
-    memcpy((void *)&_data, (void *)data_lma, data_size);
-  }
-  */
+    // 依然先初始化串口，方便调试
+    init_uart();
 
-  // 执行内存搬运和清零
-  load_sections();
+    // 1. 将程序从 Flash 搬运到 PSRAM
+    load_sections();
 
-  init_uart();
+    // 2. 显示 SoC 信息
+    brandShow();
 
-  brandShow();
+    // 3. 强制获取 main 的绝对地址 (此时 main 的符号地址已经在 0x8000xxxx)
+    int (*psram_main)(const char *);
+    asm volatile(
+        "lui %0, %%hi(main)\n\t"
+        "addi %0, %0, %%lo(main)"
+        : "=r"(psram_main)
+    );
 
-  // call main
-  int ret = main(mainargs);
-  halt(ret);
+    // 4. 跳转到 PSRAM 执行 main
+    int ret = psram_main(mainargs);
+
+    halt(ret);
 }

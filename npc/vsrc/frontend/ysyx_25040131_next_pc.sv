@@ -29,7 +29,7 @@ always @(*) begin
         next_pc = pc + offset;
     end
     else if(pcImm_NEXTPC_rs1Imm == 2'b10) begin
-        next_pc = rs1Data + offset;
+        next_pc = (rs1Data + offset) & 32'hfffffffe;
     end
     else if(condition_branch) begin
         next_pc = pc + offset;

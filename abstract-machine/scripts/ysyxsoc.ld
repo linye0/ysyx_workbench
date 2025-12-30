@@ -10,55 +10,58 @@ MEMORY {
 }
 
 SECTIONS {
-  /* 代码段和只读数据依然放在 Flash 中 */
-  . = ORIGIN(flash);
+  . = ORIGIN(psram);
 
-  .text :
-  {
+  /* --- 代码段 --- */
+  .text : {
+    _text_vma_start = .;
     *(entry)
     *(.text*)
-    _etext = .;
-  } > flash AT> flash : text
-  etext = .;
+    . = ALIGN(4);
+    _text_vma_end = .;
+  } > psram AT> flash : text   /* <--- 必须指向 : text */
 
-  .rodata :
-  {
-    _rodata = .;
+  _text_lma_start = LOADADDR(.text);
+
+  /* --- 只读数据段 --- */
+  .rodata : {
+    _rodata_vma_start = .;
     *(.rodata*)
     *(.srodata*)
-    _erodata = .;
-  } > flash AT> flash
+    . = ALIGN(4);
+    _rodata_vma_end = .;
+  } > psram AT> flash : text   /* <--- 通常只读数据也放在 : text 容器 */
 
-  /* --- 关键修改：数据段搬迁到 PSRAM --- */
-  /* VMA 指向 psram，LMA (加载地址) 依然在 flash 中，启动时需要搬运 */
-  .data :
-  {
-    _data = .;
+  _rodata_lma_start = LOADADDR(.rodata);
+
+  /* --- 数据段 --- */
+  .data : {
+    _data_vma_start = .;
     *(.data*)
     *(.sdata*)
-    _edata = .;
-  } > psram AT> flash : data
+    . = ALIGN(4);
+    _data_vma_end = .;
+  } > psram AT> flash : data   /* <--- 指向 : data */
 
-  /* BSS 段直接分配在 PSRAM */
-  .bss (NOLOAD) :
-  {
-    _bstart = .;
+  _data_lma_start = LOADADDR(.data);
+
+  /* --- BSS段 (不需要加载地址，不属于任何加载容器) --- */
+  .bss (NOLOAD) : {
+    . = ALIGN(4);
+    _bss_vma_start = .;
     *(.bss*)
     *(.sbss*)
     *(.scommon)
-    _bend = .;
-  } > psram
+    . = ALIGN(4);
+    _bss_vma_end = .;
+  } > psram                    /* <--- 注意：NOLOAD段不要加 : phdr */
 
-  /* --- 堆栈调整 --- */
-  /* 考虑到 microbench 的需求，我们将栈和堆都移入 4MB 的 PSRAM */
-  
-  . = ALIGN(0x10);
-  _stack_top = .;
-  . = . + 0x8000;      /* 将栈大小增加到 32KB，防止递归/大数据结构溢出 */
-  _stack_pointer = .;
-  
+  /* --- 关键修改：栈分配在极速的 SRAM 中 --- */
+  /* 栈顶设在 SRAM 末尾，向下增长，独占 8KB SRAM 空间 */
+  _stack_pointer = ORIGIN(sram) + LENGTH(sram);
+
+  /* --- 修改：堆分配在 PSRAM 的剩余空间 --- */
   _heap_start = ALIGN(0x10);
-  /* 堆区可以使用 PSRAM 剩余的所有空间 */
   _heap_end = ORIGIN(psram) + LENGTH(psram);
 
   end = .;
