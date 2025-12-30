@@ -139,6 +139,7 @@ wire [31:0] mepc;
 wire [31:0] mtvec;
 wire [31:0] write_aluormem_rd_data;
 
+
 // ------------------------------
 // IFU相关信号
 wire [31:0] ifu_inst;      // IFU输出的指令
@@ -337,6 +338,7 @@ ysyx_25040131_alu ALU(
 
 // GPR读通道（EXU阶段）
 ysyx_25040131_gpr REG_FILE(
+    .is_jalr(pcImm_NEXTPC_rs1Imm == 2'b10),
     .rst(reset),
     .clk(clock),
     // 读通道（EXU阶段）
@@ -474,7 +476,7 @@ ysyx_25040131_next_pc NEXT_PC(
     .exc_valid(exc_valid),
     .access_fault(access_fault),  // Access Fault 信号
     .offset(imm_32),
-    .rs1Data(read_rs1_data),
+    .rs1Data(read_rs1_data), // 使用锁存的 rs1Data，确保跳转目标地址计算正确
     .next_pc(next_pc),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效

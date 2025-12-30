@@ -56,8 +56,12 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 #ifdef CONFIG_NPC
 void check_pc_bound() {
-  if (!((cpu.cpc >= CONFIG_PSRAM_BASE && cpu.cpc <= CONFIG_PSRAM_BASE + CONFIG_PSRAM_SIZE) || (cpu.cpc >= CONFIG_FLASH_BASE && cpu.cpc < CONFIG_FLASH_BASE + CONFIG_FLASH_SIZE))) {
-    printf("pc out of bound: 0x%x\n", cpu.pc);
+  bool in_bound = 
+    (cpu.cpc >= CONFIG_SRAM_BASE && cpu.cpc < CONFIG_SRAM_BASE + CONFIG_SRAM_SIZE) || 
+    (cpu.cpc >= CONFIG_PSRAM_BASE && cpu.cpc < CONFIG_PSRAM_BASE + CONFIG_PSRAM_SIZE) ||
+    (cpu.cpc >= CONFIG_FLASH_BASE && cpu.cpc < CONFIG_FLASH_BASE + CONFIG_FLASH_SIZE);
+  if (!in_bound) {
+    printf("pc out of bound: 0x%x\n", cpu.cpc);
     isa_reg_display();
     nemu_state.state = NEMU_ABORT;
   }
