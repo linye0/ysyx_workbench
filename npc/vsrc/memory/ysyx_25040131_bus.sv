@@ -203,6 +203,7 @@ module ysyx_25040131_bus #(
   // CLINT 旁路：当 LSU 读 RTC 地址时，走片内 CLINT，而非 AXI 外设
   `ifdef YSYX_AM_DEVICE
   assign clint_en = (lsu_araddr == `YSYX_AM_RTC_ADDR) || (lsu_araddr == `YSYX_AM_RTC_ADDR_UP);
+  // assign  clint_en = 0; // clint的映射地址和SDRAM的空间冲突的，暂时禁用
   `else
   assign clint_en = (lsu_araddr == `YSYX_BUS_RTC_ADDR) || (lsu_araddr == `YSYX_BUS_RTC_ADDR_UP);
   `endif
@@ -394,6 +395,7 @@ module ysyx_25040131_bus #(
           (io_master_awaddr >= 'hc0000000) ||
           (0))
         begin
+        // $display("DIFTEST: skip write to %h", io_master_awaddr);
         `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
       end
     end
@@ -407,6 +409,7 @@ module ysyx_25040131_bus #(
           (io_master_araddr >= 'hc0000000) ||
           (0))
         begin
+        // $display("DIFTEST: skip read from %h", io_master_araddr);
         `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
       end
     end

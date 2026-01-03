@@ -29,13 +29,13 @@ __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr)) {
       memcpy(guest_to_host(addr), buf, n);
       return;
     }
     Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
   } else {
-    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr)) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr)) {
       memcpy(buf, guest_to_host(addr), n);
       return;
     }

@@ -36,6 +36,7 @@ module ysyx_25040131_clint #(
     end else begin
       mtime <= mtime + 1;
       if (arvalid) begin
+        // $display("DIFTEST: skip read from CLINT: %h", araddr);
         `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
         // $display("CLINT: read mtime: %h\n", mtime);
         rvalid <= 1;

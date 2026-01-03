@@ -70,6 +70,7 @@ void check_pc_bound() {
 #endif
 
 static void exec_once(Decode *s, vaddr_t pc) {
+
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);

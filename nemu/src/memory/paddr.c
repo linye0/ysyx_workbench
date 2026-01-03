@@ -31,6 +31,7 @@ static uint8_t mrom[CONFIG_MROM_SIZE] PG_ALIGN = {};
 static uint8_t flash[CONFIG_FLASH_SIZE] PG_ALIGN = {};
 static uint8_t sram[CONFIG_SRAM_SIZE] PG_ALIGN = {};
 static uint8_t psram[CONFIG_PSRAM_SIZE] PG_ALIGN = {};
+static uint8_t sdram[CONFIG_SDRAM_SIZE] PG_ALIGN = {};
 
 Mem_flag mem_flag = {.flag = 0, .addr = 0, .len = 0};
 
@@ -55,6 +56,9 @@ uint8_t* guest_to_host(paddr_t paddr) {
   }
   if (in_psram(paddr)) {
     return psram + paddr - CONFIG_PSRAM_BASE;
+  }
+  if (in_sdram(paddr)) {
+    return sdram + paddr - CONFIG_SDRAM_BASE;
   }
   Assert(0, "ERROR in guest_to_host: paddr out of bound! pmem: 0x%x, paddr: 0x%x\n", pmem, paddr);
 }
@@ -102,19 +106,46 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr))) return pmem_read(addr, len);
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr) || in_sram(addr))) { pmem_write(addr, len, data); return; }
+  //printf("paddr_write: addr = 0x%x, len = %d, data = 0x%x, in_sdram: %d\n", addr, len, data, in_sdram(addr));
+  if (likely(in_pmem(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) { pmem_write(addr, len, data); return; }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
 
 #ifdef CONFIG_NPC
+extern "C" void sdram_write(int32_t wAddr, char wMask, int16_t wData) {
+  void *const host_addr = guest_to_host(CONFIG_SDRAM_BASE + wAddr);
+  uint16_t originData = (*(uint16_t *)host_addr);
+  switch (wMask) {
+    case 0b01: 
+      (*(uint16_t *)host_addr) = (originData & 0xFF00) | (wData & 0x00FF);
+      break;
+    case 0b10:
+      (*(uint16_t *)host_addr) = (originData & 0x00FF) | (wData & 0xFF00);
+      break;
+    case 0b11:
+      (*(uint16_t *)host_addr) = wData;
+    case 0b00:
+      break;
+    default:
+      break;
+  }
+  return;
+}
+
+extern "C" int16_t sdram_read(int32_t rAddr, char rMask) {
+  const uint16_t data = paddr_read(CONFIG_SDRAM_BASE +rAddr, 2);
+  //printf("sdram_read: rAddr = 0x%x, rMask = %d, data = 0x%x\n", rAddr, rMask, data);
+  return data;
+}
+
 extern "C" void psram_read(int addr, int *data) {
   uint32_t offset = addr;
   *data = paddr_read(CONFIG_PSRAM_BASE + offset, 4);
@@ -144,6 +175,7 @@ extern "C" void psram_write(int addr, int wdata, char wstrb) {
   }
   return;
 }
+
 extern "C" void flash_read(int32_t addr, int32_t *data) { 
   uint32_t offset = addr;
   *data = *((uint32_t *)(flash + offset));

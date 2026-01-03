@@ -89,6 +89,8 @@ static void decode_operand(Decode *s, int *rd, int* rs, word_t *src1, word_t *sr
 }
 
 static int decode_exec(Decode *s) {
+  //printf("decode exec at pc: 0x%x\n", s->pc);
+
   s->dnpc = s->snpc;
 
 #define INSTPAT_INST(s) ((s)->isa.inst)
@@ -241,6 +243,7 @@ static int npc_exec(Decode *s) {
 #endif
 
 int isa_exec_once(Decode *s) {
+
   #ifndef CONFIG_NPC
   s->isa.inst = inst_fetch(&s->snpc, 4);
   #endif

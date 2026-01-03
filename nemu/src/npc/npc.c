@@ -145,6 +145,7 @@ extern "C" void npc_illegal_inst() {
 }
 
 extern "C" void npc_difftest_skip_ref() {
+    //printf("npc_difftest_skip_ref\n");
     difftest_skip_ref();
 }
 
