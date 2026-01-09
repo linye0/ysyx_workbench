@@ -59,7 +59,8 @@ void check_pc_bound() {
   bool in_bound = 
     (cpu.cpc >= CONFIG_SRAM_BASE && cpu.cpc < CONFIG_SRAM_BASE + CONFIG_SRAM_SIZE) || 
     (cpu.cpc >= CONFIG_PSRAM_BASE && cpu.cpc < CONFIG_PSRAM_BASE + CONFIG_PSRAM_SIZE) ||
-    (cpu.cpc >= CONFIG_FLASH_BASE && cpu.cpc < CONFIG_FLASH_BASE + CONFIG_FLASH_SIZE);
+    (cpu.cpc >= CONFIG_FLASH_BASE && cpu.cpc < CONFIG_FLASH_BASE + CONFIG_FLASH_SIZE) ||
+    (cpu.cpc >= CONFIG_SDRAM_BASE && cpu.cpc < CONFIG_SDRAM_BASE + CONFIG_SDRAM_SIZE);
   if (!in_bound) {
     printf("pc out of bound: 0x%x\n", cpu.cpc);
     isa_reg_display();
@@ -70,7 +71,6 @@ void check_pc_bound() {
 #endif
 
 static void exec_once(Decode *s, vaddr_t pc) {
-
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);

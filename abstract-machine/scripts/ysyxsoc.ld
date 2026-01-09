@@ -4,6 +4,7 @@ MEMORY {
   flash : ORIGIN = 0x30000000, LENGTH = 1600M
   psram : ORIGIN = 0x80000000, LENGTH = 4M
   sram  : ORIGIN = 0x0f000000, LENGTH = 8K
+  sdram : ORIGIN = 0xa0000000, LENGTH = 4M
 }
 
 SECTIONS {
@@ -45,7 +46,7 @@ SECTIONS {
     
     . = ALIGN(4);
     _text_vma_end = .;
-  } > psram
+  } > sdram
   _flash_lma = ALIGN(_text_lma_start + SIZEOF(.text), 0x1000);
 
   /* --- 只读数据段 (.rodata) --- */
@@ -56,7 +57,7 @@ SECTIONS {
     *(.srodata*)
     . = ALIGN(4);
     _rodata_vma_end = .;
-  } > psram
+  } > sdram
   _flash_lma = ALIGN(_rodata_lma_start + SIZEOF(.rodata), 0x1000);
 
   /* --- 可变数据段 (.data) --- */
@@ -76,7 +77,7 @@ SECTIONS {
     
     . = ALIGN(4);
     _data_vma_end = .;
-  } > psram
+  } > sdram
   _flash_lma = ALIGN(_data_lma_start + SIZEOF(.data), 0x1000);
 
   /* --- 未初始化数据段 (.bss) --- */
@@ -90,10 +91,10 @@ SECTIONS {
     __am_apps_bss_end = .;
     . = ALIGN(4);
     _bss_vma_end = .;
-  } > psram
+  } > sdram
 
   /* 符号定义 */
   _stack_pointer = ORIGIN(sram) + LENGTH(sram);
   _heap_start = ALIGN(_bss_vma_end, 0x10);
-  _heap_end = ORIGIN(psram) + LENGTH(psram);
+  _heap_end = ORIGIN(sdram) + LENGTH(sdram);
 }

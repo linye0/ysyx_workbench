@@ -10,14 +10,16 @@ static bool has_uart, has_kbd;
 static void drain_keys() {
   if (has_uart) {
     while (1) {
+      //printf("uart.\n");
       char ch = io_read(AM_UART_RX).data;
       if (ch == (char)-1) break;
       printf("Got (uart): %c (%d)\n", ch, ch & 0xff);
     }
   }
-
+  
   if (has_kbd) {
     while (1) {
+      //printf("kbd.\n");
       AM_INPUT_KEYBRD_T ev = io_read(AM_INPUT_KEYBRD);
       /*
       io_read(AM_INPUT_KEYBRD)展开成:
@@ -52,7 +54,9 @@ static void drain_keys() {
 void keyboard_test() {
   printf("Try to press any key (uart or keyboard)...\n");
   has_uart = io_read(AM_UART_CONFIG).present;
+  if (has_uart) printf("has uart...\n");
   has_kbd  = io_read(AM_INPUT_CONFIG).present;
+  if (has_kbd) printf("has kbd...\n");
   while (1) {
     drain_keys();
   }

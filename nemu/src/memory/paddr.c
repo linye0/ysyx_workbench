@@ -120,8 +120,9 @@ void paddr_write(paddr_t addr, int len, word_t data) {
 }
 
 #ifdef CONFIG_NPC
-extern "C" void sdram_write(int32_t wAddr, char wMask, int16_t wData) {
-  void *const host_addr = guest_to_host(CONFIG_SDRAM_BASE + wAddr);
+extern "C" void sdram_write(int32_t id, int32_t wAddr, char wMask, int16_t wData) {
+  //printf("sdram_write: wAddr = 0x%x, wMask = %d, wData = 0x%x\n", wAddr, wMask, wData);
+  void *const host_addr = guest_to_host(CONFIG_SDRAM_BASE + wAddr + (id * 2));
   uint16_t originData = (*(uint16_t *)host_addr);
   switch (wMask) {
     case 0b01: 
@@ -140,8 +141,8 @@ extern "C" void sdram_write(int32_t wAddr, char wMask, int16_t wData) {
   return;
 }
 
-extern "C" int16_t sdram_read(int32_t rAddr, char rMask) {
-  const uint16_t data = paddr_read(CONFIG_SDRAM_BASE +rAddr, 2);
+extern "C" int16_t sdram_read(int32_t id, int32_t rAddr, char rMask) {
+  const uint16_t data = paddr_read(CONFIG_SDRAM_BASE +rAddr + (id*2), 2);
   //printf("sdram_read: rAddr = 0x%x, rMask = %d, data = 0x%x\n", rAddr, rMask, data);
   return data;
 }

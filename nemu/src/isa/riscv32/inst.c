@@ -23,6 +23,9 @@
 #include <cpu/decode.h>
 #ifdef CONFIG_NPC
 #include <npc/npc_verilog.h>
+#ifdef CONFIG_NVBOARD
+#include <nvboard.h>
+#endif
 #endif
 
 #define R(i) gpr(i)
@@ -238,6 +241,9 @@ static int npc_exec(Decode *s) {
   // Change temporary. LY
   cpu_exec_once();
   update_cpu_state(nemu_state);
+  #ifdef CONFIG_NVBOARD
+  nvboard_update();
+  #endif
   return 0;
 }
 #endif

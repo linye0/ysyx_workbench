@@ -17,6 +17,12 @@ default: $(BIN)
 include ../Makefile
 include $(NPC_HOME)/scripts/config.mk
 
+# constraint file
+SRC_AUTO_BIND = $(abspath $(BUILD_DIR)/auto_bind.cpp)
+$(SRC_AUTO_BIND): $(NXDC_FILES)
+	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
+
+
 # ============================================================================
 # 根据 CONFIG_SYS_SOC 或 CONFIG_SYS_NPC 配置编译选项
 # ============================================================================
@@ -74,8 +80,13 @@ DIRS-BLACKLIST-y += $(DIRS-BLACKLIST)
 SRCS-BLACKLIST-y += $(SRCS-BLACKLIST) $(shell find -L $(DIRS-BLACKLIST-y) -name "*.c")
 SRCS-y += $(shell find -L $(DIRS-y) -name "*.c")
 SRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
+SRCS += $(SRC_AUTO_BIND)
 # $(info SRCS: $(SRCS))
 ARGS ?= -l $(OBJ_DIR)/npc-log.txt -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
+
+# NVBoard interop: rules
+include $(NVBOARD_HOME)/scripts/nvboard.mk
+SRCS += $(SRC_AUTO_BIND)
 
 INC_PATH += $(OBJ_DIR)
 
@@ -91,6 +102,8 @@ INC_PATH += $(NEMU_HOME)/include
 INC_PATH += $(NEMU_HOME)/tools/capstone/repo/include
 #device
 INC_PATH += $(AM_HOME)/am/src/riscv/npc/include
+# NVBOARD 头文件路径
+INC_PATH += $(NVBOARD_HOME)/include
 
 #$(info INC_PATH: $(INC_PATH))
 
@@ -102,22 +115,22 @@ LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
 all: default
 
-$(BIN): $(VSRCS) $(SRCS) $(AUTOCONF_H)
+$(BIN): $(VSRCS) $(SRCS) $(AUTOCONF_H) $(NVBOARD_ARCHIVE)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) \
-		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		$(addprefix -I, $(INC_PATH)) \
 		$(filter-out $(AUTOCONF_H),$^) \
+		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
 
-$(BIN_GDB): $(VSRCS) $(SRCS) $(AUTOCONF_H)
+$(BIN_GDB): $(VSRCS) $(SRCS) $(AUTOCONF_H) $(NVBOARD_ARCHIVE)
 	@echo "Building verilator simulation..."
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		$(addprefix -I, $(INC_PATH)) \
 		$(addprefix -CFLAGS , $(GDBFLAGS)) \
-		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		$(filter-out $(AUTOCONF_H),$^) \
+		$(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN_GDB))
 
 run: $(BIN)

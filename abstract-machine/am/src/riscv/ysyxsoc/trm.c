@@ -63,10 +63,10 @@ static void copy_segment_ssbl(uintptr_t vma_start, uintptr_t vma_end, uintptr_t 
 }
 
 __attribute__((section(".text.ssbl")))
-void init_uart(void) {
+void init_uart(uint16_t div) {
   outb(UART16550_LCR, 0x80); 
-  outb(UART16550_DL2, 0);    
-  outb(UART16550_DL1, 1);    
+  outb(UART16550_DL2, (uint8_t)(div >> 8));    
+  outb(UART16550_DL1, (uint8_t)div);    
   outb(UART16550_LCR, 0x03); 
 }
 
@@ -110,12 +110,12 @@ void ssbl_main() {
   while (bss_ptr < bss_end) { *bss_ptr++ = 0; }
 
   // 3. 硬件初始化与打印
-  init_uart();
+  init_uart(1);
   brandShow();
 
   // 4. 跳转到应用
-  int (*psram_main)(const char *) = (void *)GET_ABS_ADDR(main);
-  int ret = psram_main(mainargs);
+  int (*sdram_main)(const char *) = (void *)GET_ABS_ADDR(main);
+  int ret = sdram_main(mainargs);
   halt(ret);
 }
 

@@ -1,3 +1,4 @@
+#include "include/npc.h"
 #include <am.h>
 #include <klib-macros.h>
 
@@ -13,13 +14,66 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *);
 void __am_input_keybrd(AM_INPUT_KEYBRD_T *);
 
 static void __am_timer_config(AM_TIMER_CONFIG_T *cfg) { cfg->present = true; cfg->has_rtc = true; }
-static void __am_input_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = true;  }
-static void __am_uart_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = false;  }
+static void __am_input_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = false;  }
+static void __am_uart_config(AM_UART_CONFIG_T *cfg) { cfg->present = true; }
 
+/*
+static void __am_uart_init(void) {
+  Uart16550Lcr_t lcr;
+  lcr = (Uart16550Lcr_t) {
+    .dlab = 1,
+    .set_break = 0,
+    .stick_parity= 0,
+    .eps = 0,
+    .pen = 0,
+    .stb = 0,
+    .wls = 0b11,
+  };
+  outb(UART16550_LCR, lcr.as_u8);
+  outb(UART16550_DL2, 0x00);
+  outb(UART16550_DL1, 0x01);
+  lcr = (Uart16550Lcr_t) {
+    .dlab = 0,
+    .set_break = 0,
+    .stick_parity = 0,
+    .eps = 0,
+    .pen = 0,
+    .stb = 0,
+    .wls = 0b11,
+  };
+  outb(UART16550_LCR, lcr.as_u8);
+}
+*/
+
+
+
+static void __am_uart_tx(AM_UART_TX_T *tx) {
+  Uart16550Lsr_t lsr;
+  do {
+    lsr.as_u8 = inb(UART16550_LSR);
+  } while (!lsr.thre);
+  outb(UART16550_TX, tx->data);
+}
+
+static void __am_uart_rx(AM_UART_RX_T *rx) {
+  int lsr, dr;
+  char data;
+  lsr = inb(UART16550_LSR);
+  dr = (lsr >> UART_LS_DR) & 1;
+  if(dr){
+    data = inb(UART16550_RX);
+    rx->data = data;
+  } 
+  else
+    rx->data = 0xff;
+}
 
 
 typedef void (*handler_t)(void *buf);
 static void *lut[128] = {
+  [AM_UART_CONFIG]  = __am_uart_config,
+  [AM_UART_TX]      = __am_uart_tx,
+  [AM_UART_RX]      = __am_uart_rx,
   [AM_TIMER_CONFIG] = __am_timer_config,
   [AM_TIMER_RTC   ] = __am_timer_rtc,
   [AM_TIMER_UPTIME] = __am_timer_uptime,
