@@ -55,8 +55,9 @@ SpeedThrottle()
 
   //delay
   uint64 now;
-  while ((now = FCEUD_GetTime()) - cur_time < time_left)
-    ;
+	while ((now = FCEUD_GetTime()) - cur_time < time_left)
+		;
+
 
 	if(!InFrame)
 	{

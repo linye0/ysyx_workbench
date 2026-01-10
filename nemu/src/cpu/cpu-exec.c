@@ -123,9 +123,42 @@ if (*(nemu_state.valid_signal) == 1) {
 
 static void execute(uint64_t n) {
   Decode s;
+  #ifdef CONFIG_NPC
+  // PC 卡死检测：记录上一次的 PC 值和时间
+  static vaddr_t last_pc = 0;
+  static uint64_t last_pc_time = 0;
+  static uint64_t same_pc_count = 0;
+  const uint64_t PC_STUCK_THRESHOLD = 10000000; // 10秒 (微秒)
+  #endif
+  
   for (;n > 0; n --) {
     #ifdef CONFIG_NPC
-    exec_once(&s, *(nemu_state.pc));
+    vaddr_t current_pc = *(nemu_state.pc);
+    
+    // 检查 PC 是否变化
+    if (current_pc == last_pc) {
+      same_pc_count++;
+      // 每隔一定次数检查一次时间（避免频繁调用 get_time）
+      if (same_pc_count % 100000 == 0) {
+        printf("same_pc_count check.\n");
+        uint64_t current_time = get_time();
+        uint64_t time_elapsed = current_time - last_pc_time;
+        if (time_elapsed > PC_STUCK_THRESHOLD) {
+          printf("\n" ANSI_FMT("ERROR: PC stuck at 0x%08x for more than 10 seconds!", ANSI_FG_RED) "\n", current_pc);
+          printf("Time elapsed: %lu us (%.2f seconds)\n", time_elapsed, time_elapsed / 1000000.0);
+          printf("Instruction count at same PC: %lu\n", same_pc_count);
+          isa_reg_display();
+          Assert(0, "PC stuck detected - possible infinite loop or hardware hang");
+        }
+      }
+    } else {
+      // PC 发生了变化，重置计数器和时间
+      last_pc = current_pc;
+      last_pc_time = get_time();
+      same_pc_count = 0;
+    }
+    
+    exec_once(&s, current_pc);
     #else
     exec_once(&s, cpu.pc);
     #endif

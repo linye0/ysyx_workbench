@@ -3,7 +3,7 @@ NXDC_FILES = constr/top.nxdc
 INC_PATH += $(NPC_HOME)/include/generated
 
 VERILATOR = verilator
-VERILATOR_CFLAGS += -MMD --build -cc -trace --Wno-LATCH\
+VERILATOR_CFLAGS += -MMD --build -cc -trace --Wno-LATCH -Wno-WIDTHEXPAND\
 			-O3 --x-assign fast --x-initial fast --noassert -sv --autoflush
 
 BUILD_DIR = $(abspath build)

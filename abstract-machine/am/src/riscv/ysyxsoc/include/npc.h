@@ -8,16 +8,19 @@
 
 #define MMIO_BASE 0xa0000000
 
+/*
 #define SERIAL_PORT (DEVICE_BASE + 0x00003f8)
 #define KBD_ADDR (DEVICE_BASE + 0x0000060)
-#define RTC_ADDR (DEVICE_BASE + 0x0000048)
 #define VGACTL_ADDR (DEVICE_BASE + 0x0000100)
 #define AUDIO_ADDR (DEVICE_BASE + 0x0000200)
 #define DISK_ADDR (DEVICE_BASE + 0x0000300)
 #define FB_ADDR (MMIO_BASE + 0x1000000)
 #define AUDIO_SBUF_ADDR (MMIO_BASE + 0x1200000)
+*/
 // uart
 #define UART_BASE 0x10000000L
+
+#define RTC_ADDR 0x02000048
 
 #define UART_TX 0x0L
 
@@ -43,6 +46,10 @@
 #define UART_LS_EI	7	// Error indicator
 
 #define PGSIZE 4096
+
+#define PS2 0x10011000
+#define VGA 0x21000000
+#define VGA_SIZE 0x00200000
 
 typedef union Uart16550Lcr {
   struct {

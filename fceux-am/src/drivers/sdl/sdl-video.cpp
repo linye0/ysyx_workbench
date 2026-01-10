@@ -83,6 +83,7 @@ InitVideo(FCEUGI *gi)
 	s_paletterefresh = 1;
 
 	 // if using more than 8bpp, initialize the conversion routines
+  
 	InitBlitToHigh(4, 0x00ff0000, 0x0000ff00, 0x000000ff, 0, 0, 0);
 	return 0;
 }

@@ -93,11 +93,13 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_raise_intr = dlsym(handle, "difftest_raise_intr");
   assert(ref_difftest_raise_intr);
 
+  #ifdef CONFIG_NPC
   ref_difftest_reg_display = dlsym(handle, "difftest_reg_display");
   assert(ref_difftest_reg_display);
 
   ref_difftest_mem_display = dlsym(handle, "difftest_mem_display");
   assert(ref_difftest_mem_display);
+  #endif
 
   #ifdef CONFIG_NPC
   ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
@@ -117,9 +119,11 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
 
   ref_difftest_init(port);
   ref_difftest_memcpy(CONFIG_MBASE, guest_to_host(CONFIG_MBASE), img_size, DIFFTEST_TO_REF);
+  #ifdef CONFIG_NPC
   ref_difftest_memcpy(CONFIG_MROM_BASE, guest_to_host(CONFIG_MROM_BASE), CONFIG_MROM_SIZE, DIFFTEST_TO_REF);
   ref_difftest_memcpy(CONFIG_FLASH_BASE, guest_to_host(CONFIG_FLASH_BASE), CONFIG_FLASH_SIZE, DIFFTEST_TO_REF);
   ref_difftest_memcpy(CONFIG_SRAM_BASE, guest_to_host(CONFIG_SRAM_BASE), CONFIG_SRAM_SIZE, DIFFTEST_TO_REF);
+  #endif
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 }
 

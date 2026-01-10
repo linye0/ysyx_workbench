@@ -22,8 +22,3 @@ clean: myclean
 myclean:
 	-rm -rf ./nes/gen
 	
-run-npc:
-	@make ARCH=$(ARCH) run mainargs=$(MAINARGS)
-	@echo "Building and running simulation for $(MAINARGS)..."
-	@cd $(YSYX_HOME)/npc && \
-		make run-sim ALL=fceux ARCH=$(ARCH) TEST_DIR=$(CURDIR)

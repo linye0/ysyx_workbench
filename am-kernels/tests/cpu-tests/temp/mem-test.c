@@ -6,8 +6,8 @@ extern char _heap_end;
 
 int main() {
 
-    volatile uint16_t *start = (uint16_t *)(uintptr_t)0xa1ffff00;
-    volatile uint16_t *end = (uint16_t *)(uintptr_t)0xa1ffffff;
+    volatile uint16_t *start = (uint16_t *)(uintptr_t)0xc0000000;
+    volatile uint16_t *end = (uint16_t *)(uintptr_t)0xffffffff;
     int len_mask = 0xFFFF;
     //int i = 0;
 
