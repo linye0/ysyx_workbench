@@ -112,7 +112,7 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   // for difftest
   npc->state = NEMU_RUNNING;
   #ifdef CONFIG_SYS_NPC
-  npc->valid_signal = &(top->rootp->ysyx_25040131__DOT__difftest_signal);
+  npc->difftest_signal = &(top->rootp->ysyx_25040131__DOT__difftest_signal);
   npc->inst = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__out_inst);
   npc->gpr = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__REG_FILE__DOT__regs);
   npc->cpc = (uint32_t *)&(top->rootp->ysyx_25040131__DOT__pc);
@@ -124,7 +124,7 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mtval);
   #else
   #ifdef CONFIG_SYS_SOC
-  npc->valid_signal = &(CONCAT_YSYXSOC_HEAD(difftest_signal));
+  npc->difftest_signal = &(CONCAT_YSYXSOC_HEAD(difftest_signal));
   npc->inst = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(out_inst));
   npc->gpr = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(REG_FILE__DOT__regs));
   npc->cpc = (uint32_t *)&(CONCAT_YSYXSOC_HEAD(pc));

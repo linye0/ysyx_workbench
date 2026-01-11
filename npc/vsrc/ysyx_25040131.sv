@@ -97,6 +97,8 @@ wire [31:0] imm_32;
 wire [31:0] out_inst /*verilator public_flat*/;
 wire difftest_signal /*verilator public_flat*/; // 用于判断在仿真环境当中什么时候能进行difftest_step()的信号（1位信号）
 
+reg difftest_sync_reg;
+
 // ------------------------------
 // 数据信号
 wire [31: 0] write_is_imm_data;
@@ -218,8 +220,19 @@ wire [31:0] gpr_rs = (csr_use_imm) ? {27'h0, ifu_inst[19:15]} : read_rs1_data;
 wire [31:0] write_rd_data = (is_csr) ? csr_rdata : write_is_imm_data;
 
 assign pc = ifu_pc;
-assign difftest_signal = wbu_valid;  // CPU输出有效就是WBU完成
 assign out_inst = ifu_inst;
+
+always @(posedge clock) begin
+    if (reset) begin
+        difftest_sync_reg <= 1'b0;
+    end else begin
+        // 当 WBU 完成时，在下一个周期拉高 difftest 信号
+        // 此时寄存器堆已经完成了同步写入，PC 也已更新
+        difftest_sync_reg <= wbu_valid;
+    end
+end
+
+assign difftest_signal = difftest_sync_reg;
 
 // ============================================================================
 // IFU阶段：取指

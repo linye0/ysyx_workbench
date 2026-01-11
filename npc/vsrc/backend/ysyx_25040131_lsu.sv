@@ -19,32 +19,32 @@ module ysyx_25040131_lsu #(
     // 流水线握手信号
     input prev_valid,      // 上游数据有效
     input next_ready,       // 下游可以接收数据
-    output out_valid,       // 输出数据有效
-    output out_ready,       // 可以接收上游数据
+    output logic out_valid,       // 输出数据有效
+    output logic out_ready,       // 可以接收上游数据
 
     // 与 BUS 的接口（读通道）
-    output [XLEN - 1: 0] lsu_araddr,    // 读地址
-    output lsu_arvalid,                  // 读地址有效
+    output logic [XLEN - 1: 0] lsu_araddr,    // 读地址
+    output logic lsu_arvalid,                  // 读地址有效
     input lsu_arready,                    // BUS 准备好接收读地址
     input [XLEN - 1: 0] lsu_rdata,      // BUS 返回的读数据（out_lsu_rdata）
     input [1:0] lsu_rresp,               // BUS 返回的读响应（00=OKAY）
     input lsu_rvalid,                    // BUS 返回的读数据有效（out_lsu_rvalid）
-    output lsu_rready,                   // LSU 准备好接收读数据
+    output logic lsu_rready,                   // LSU 准备好接收读数据
 
     // 与 BUS 的接口（写通道）
-    output [XLEN - 1: 0] lsu_awaddr,    // 写地址
-    output lsu_awvalid,                  // 写地址有效
+    output logic [XLEN - 1: 0] lsu_awaddr,    // 写地址
+    output logic lsu_awvalid,                  // 写地址有效
     input lsu_awready,                   // BUS 准备好接收写地址
-    output [XLEN - 1: 0] lsu_wdata,      // 写数据
-    output [7:0] lsu_wstrb,              // 写字节掩码
-    output lsu_wvalid,                   // 写数据有效
+    output logic [XLEN - 1: 0] lsu_wdata,      // 写数据
+    output logic [7:0] lsu_wstrb,              // 写字节掩码
+    output logic lsu_wvalid,                   // 写数据有效
     input lsu_wready,                    // BUS 准备好接收写数据
     input lsu_bvalid,                    // BUS 写响应有效
     input [1:0] lsu_bresp,               // BUS 返回的写响应（00=OKAY）
-    output lsu_bready,                   // LSU 准备好接收写响应（由 LSU 内部控制）
+    output logic lsu_bready,                   // LSU 准备好接收写响应（由 LSU 内部控制）
 
     // Access Fault 输出
-    output access_fault                  // 访问错误信号（当 resp != 00 时置1）
+    output logic access_fault                  // 访问错误信号（当 resp != 00 时置1）
 );
 
   // ------------------------------
@@ -55,8 +55,8 @@ module ysyx_25040131_lsu #(
   // Done: 完成（rready=1，数据已接收）
   typedef enum logic [1:0] {
     LOAD_IDLE = 2'b00,      // Idle
-    LOAD_REQ_AR = 2'b01,   // ReqAr
-    LOAD_WAIT_R = 2'b10,   // WaitR
+    LOAD_ADDR = 2'b01,   // ReqAr
+    LOAD_DATA = 2'b10,   // WaitR
     LOAD_DONE = 2'b11      // Done
   } state_load_t;
 
@@ -68,15 +68,14 @@ module ysyx_25040131_lsu #(
   // STORE_WAIT_B: 等待 bvalid && bready
   typedef enum logic [2:0] {
     STORE_IDLE = 3'b000,              // 1. 无请求
-    STORE_ADDR_REQUESTED = 3'b001,   // 2. awvalid=1，等 awready
-    STORE_DATA_REQUESTED = 3'b010,   // 3. wvalid=1，等 wready（可与 2 并行）
-    STORE_ADDR_DATA_SENT = 3'b011,   // 4. aw && w 均握手完成
-    STORE_WAIT_B = 3'b100             // 5. 等 bvalid && bready
+    STORE_ADDR = 3'b001,   // 2. awvalid=1，等 awready
+    STORE_DATA = 3'b010,   // 3. wvalid=1，等 wready（可与 2 并行）
+    STORE_RESP = 3'b011,   // 4. aw && w 均握手完成
+    STORE_DONE = 3'b100             // 5. 等 bvalid && bready
   } state_store_t;
 
   state_load_t state_load;
   state_store_t state_store;
-
 
   reg [XLEN - 1: 0] addr_reg;
   reg [XLEN - 1: 0] data_reg;
@@ -84,22 +83,6 @@ module ysyx_25040131_lsu #(
   reg [1:0] write_mem_reg;
   reg [7:0] wstrb_reg;
   reg [XLEN - 1: 0] raw_read_data;  // 从BUS读取的原始数据
-  reg access_fault_reg;              // Access Fault 寄存器
-
-  // 将read_mem转换为类似write_mem的格式（用于生成wstrb）
-  function [1:0] read_mem_to_write_mem;
-    input [2:0] read_mem;
-    begin
-      case (read_mem)
-        3'b001: read_mem_to_write_mem = 2'b01;  // lw -> sw (4字节)
-        3'b010: read_mem_to_write_mem = 2'b10;  // lhu -> sh (2字节)
-        3'b011: read_mem_to_write_mem = 2'b11;  // lbu -> sb (1字节)
-        3'b110: read_mem_to_write_mem = 2'b10;  // lh -> sh (2字节)
-        3'b111: read_mem_to_write_mem = 2'b11;  // lb -> sb (1字节)
-        default: read_mem_to_write_mem = 2'b00;
-      endcase
-    end
-  endfunction
 
   // 根据write_mem和addr生成wstrb（用于写操作），只使用低4位（对应32bit数据的4个字节）
   // 也可以用于读操作，通过read_mem_to_write_mem转换后使用
@@ -242,41 +225,16 @@ module ysyx_25040131_lsu #(
       wstrb_reg <= 8'h0;
       raw_read_data <= {XLEN{1'b0}};
       read_data <= {XLEN{1'b0}};
-      access_fault_reg <= 1'b0;
-    end else begin
-      // 读操作：在 LOAD_IDLE 状态保存地址和read_mem，准备发送读地址
-      if (state_load == LOAD_IDLE && prev_valid && next_ready && read_mem != 3'b0) begin
-        addr_reg <= addr;
-        read_mem_reg <= read_mem;
-        access_fault_reg <= 1'b0;  // 清除之前的错误标志
-        // 根据read_mem和地址生成wstrb（规则与写操作相同）
-        wstrb_reg <= gen_wstrb(read_mem_to_write_mem(read_mem), addr);
-      end
-      // 读操作：保存读回的数据并处理，检测访问错误
-      if (state_load == LOAD_WAIT_R && lsu_rvalid) begin
-        raw_read_data <= lsu_rdata;
-        read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
-        // 检测读响应错误（resp != 2'b00 表示错误）
-        if (lsu_rresp != 2'b00) begin
-          access_fault_reg <= 1'b1;
-        end
-      end
-      // 写操作：在 STORE_IDLE 状态保存地址和对齐后的数据，准备发送写地址
-      if (state_store == STORE_IDLE && prev_valid && next_ready && write_mem != 2'b0) begin
-        addr_reg <= addr;
-        // 根据地址低2位对写数据进行对齐（SRAM 四字节对齐）
-        data_reg <= gen_wdata_aligned(write_mem, addr, data);
-        write_mem_reg <= write_mem;
-        wstrb_reg <= gen_wstrb(write_mem, addr);
-        access_fault_reg <= 1'b0;  // 清除之前的错误标志
-      end
-      // 写操作：检测写响应错误
-      if (state_store == STORE_WAIT_B && lsu_bvalid && lsu_bready) begin
-        // 检测写响应错误（resp != 2'b00 表示错误）
-        if (lsu_bresp != 2'b00) begin
-          access_fault_reg <= 1'b1;
-        end
-      end
+      lsu_araddr <= {XLEN{1'b0}}; 
+      lsu_arvalid <= 1'b0;
+      lsu_rready <= 1'b0;
+      lsu_awaddr <= {XLEN{1'b0}};
+      lsu_awvalid <= 1'b0;
+      lsu_wdata <= {XLEN{1'b0}};
+      lsu_wstrb <= 8'h0;
+      lsu_wvalid <= 1'b0;
+      lsu_bready <= 1'b0;
+      access_fault <= 1'b0;
     end
   end
 
@@ -290,25 +248,39 @@ module ysyx_25040131_lsu #(
         LOAD_IDLE: begin
           // 当有读请求时（read_mem有效且流水线允许），进入 ReqAr 状态
           if (prev_valid && next_ready && read_mem != 3'b0) begin
-            state_load <= LOAD_REQ_AR;
+            addr_reg <= addr;
+            read_mem_reg <= read_mem;
+            access_fault <= 1'b0;
+            lsu_araddr <= addr;
+            lsu_arvalid <= 1'b1;
+            state_load <= LOAD_ADDR;
           end
         end
-        LOAD_REQ_AR: begin
+        LOAD_ADDR: begin
           // 等待读地址握手完成
-          if (lsu_arready) begin
-            state_load <= LOAD_WAIT_R;
+          if (lsu_arvalid && lsu_arready) begin
+            lsu_araddr <= {XLEN{1'b0}};
+            lsu_arvalid <= 1'b0;
+            state_load <= LOAD_DATA;
+            lsu_rready <= 1'b1;
           end
         end
-        LOAD_WAIT_R: begin
+        LOAD_DATA: begin
           // 等待BUS返回读数据
-          if (lsu_rvalid) begin
+          if (lsu_rready && lsu_rvalid) begin
+            raw_read_data <= lsu_rdata;
+            read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
+            if (lsu_rresp != 2'b00) begin
+              access_fault <= 1'b1;
+            end
             state_load <= LOAD_DONE;
+            lsu_rready <= 1'b0;
           end
         end
         LOAD_DONE: begin
           // 数据已接收（rready=1），等待prev_valid变为0后再回到空闲
           // 这样可以确保同一条指令的读操作只执行一次
-          if (!prev_valid && lsu_rready) begin
+          if (out_valid && next_ready) begin
             state_load <= LOAD_IDLE;
           end
         end
@@ -329,34 +301,52 @@ module ysyx_25040131_lsu #(
         STORE_IDLE: begin
           // 有写请求：进入发送写地址状态
           if (prev_valid && next_ready && write_mem != 2'b0) begin
-            state_store <= STORE_ADDR_REQUESTED;
+            addr_reg <= addr;
+            data_reg <= gen_wdata_aligned(write_mem, addr, data);
+            write_mem_reg <= write_mem;
+            wstrb_reg <= gen_wstrb(write_mem, addr);
+            access_fault <= 1'b0;
+            lsu_awaddr <= addr;
+            lsu_awvalid <= 1'b1;
+            state_store <= STORE_ADDR;
           end
         end
-        STORE_ADDR_REQUESTED: begin
+        STORE_ADDR: begin
           // 等待写地址握手完成
-          if (lsu_awready) begin
+          if (lsu_awvalid && lsu_awready) begin
+            lsu_awvalid <= 1'b0;
+            lsu_awaddr <= {XLEN{1'b0}};
+            lsu_wvalid <= 1'b1;
+            lsu_wdata <= data_reg;
+            lsu_wstrb <= wstrb_reg;
             // 地址握手完成，进入发送写数据状态
-            state_store <= STORE_DATA_REQUESTED;
+            state_store <= STORE_DATA;
           end
         end
-        STORE_DATA_REQUESTED: begin
+        STORE_DATA: begin
           // 等待写数据握手完成
-          if (lsu_wready) begin
+          if (lsu_wvalid && lsu_wready) begin
             // 数据握手完成，进入等待写响应状态
-            state_store <= STORE_ADDR_DATA_SENT;
+            lsu_wvalid <= 1'b0;
+            lsu_wdata <= {XLEN{1'b0}};
+            lsu_wstrb <= 8'h0;
+            lsu_bready <= 1'b1;
+            state_store <= STORE_RESP;
           end
         end
-        STORE_ADDR_DATA_SENT: begin
+        STORE_RESP: begin
           // aw 和 w 均握手完成，进入等待写响应状态
-          state_store <= STORE_WAIT_B;
+          if (lsu_bready && lsu_bvalid) begin
+            lsu_bready <= 1'b0;
+            state_store <= STORE_DONE;
+            if (lsu_bresp != 2'b00) begin
+              access_fault <= 1'b1;
+            end
+          end
         end
-        STORE_WAIT_B: begin
-          // 等待写响应握手完成
-          if (lsu_bvalid && lsu_bready) begin
-            // 等待prev_valid变为0后再回到空闲
-            // if (!prev_valid) begin
-              state_store <= STORE_IDLE;
-            //end
+        STORE_DONE: begin
+          if (out_valid && next_ready) begin
+            state_store <= STORE_IDLE;
           end
         end
         default: begin
@@ -378,30 +368,29 @@ module ysyx_25040131_lsu #(
     // 读操作完成
     (state_load == LOAD_DONE) ||
     // 写操作完成
-    (state_store == STORE_WAIT_B && lsu_bvalid && lsu_bready)
+    (state_store == STORE_DONE)
   );
   assign out_ready = (state_load == LOAD_IDLE) && (state_store == STORE_IDLE);
 
   // 与 BUS 的读接口
   // 在 LOAD_REQ_AR 状态保持 arvalid 和地址，直到握手完成
-  assign lsu_araddr = addr_reg;
-  assign lsu_arvalid = (state_load == LOAD_REQ_AR);
+  // assign lsu_araddr = addr_reg;
+  // assign lsu_arvalid = (state_load == LOAD_REQ_AR);
   // 在 LOAD_DONE 状态保持 rready，直到数据接收完成
-  assign lsu_rready = (state_load == LOAD_DONE);
+  // assign lsu_rready = (state_load == LOAD_DONE);
 
   // 与 BUS 的写接口
   // 在 STORE_ADDR_REQUESTED 状态保持 awvalid 和地址，直到握手完成
-  assign lsu_awaddr = addr_reg;
-  assign lsu_awvalid = (state_store == STORE_ADDR_REQUESTED);
+  // assign lsu_awaddr = addr_reg;
+  // assign lsu_awvalid = (state_store == STORE_ADDR_REQUESTED);
   // 在 STORE_DATA_REQUESTED 状态保持 wvalid 和数据，直到握手完成
-  assign lsu_wdata = data_reg;
-  assign lsu_wstrb = wstrb_reg;
-  assign lsu_wvalid = (state_store == STORE_DATA_REQUESTED);
+  // assign lsu_wdata = data_reg;
+  // assign lsu_wstrb = wstrb_reg;
+  // assign lsu_wvalid = (state_store == STORE_DATA_REQUESTED);
   // 在 STORE_WAIT_B 状态保持 bready，直到写响应接收完成
-  assign lsu_bready = (state_store == STORE_WAIT_B);
+  // assign lsu_bready = (state_store == STORE_WAIT_B);
 
   // Access Fault 输出：当检测到 resp 错误时置1
-  assign access_fault = access_fault_reg;
 
 endmodule
 

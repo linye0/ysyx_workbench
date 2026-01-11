@@ -40,7 +40,7 @@ typedef struct
   //uint32_t *ret;
   uint32_t *pc;
 
-  uint8_t *valid_signal;
+  uint8_t *difftest_signal;
 
   // for itrace
   uint32_t *inst;

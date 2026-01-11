@@ -395,7 +395,7 @@ module ysyx_25040131_bus #(
           (io_master_awaddr >= 'hc0000000) ||
           (0))
         begin
-        // $display("DIFTEST: skip write to %h", io_master_awaddr);
+        // $display("[Verilog] DIFTEST: skip write to %h", io_master_awaddr);
         `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
       end
     end
@@ -409,7 +409,7 @@ module ysyx_25040131_bus #(
           (io_master_araddr >= 'hc0000000) ||
           (0))
         begin
-        // $display("DIFTEST: skip read from %h", io_master_araddr);
+        // $display("[Verilog] DIFTEST: skip read from %h", io_master_araddr);
         `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
       end
     end

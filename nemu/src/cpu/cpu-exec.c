@@ -43,7 +43,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, 
     IFDEF(CONFIG_NPC, 
-      if (*(nemu_state.valid_signal) == 1) {
+      if (*(nemu_state.difftest_signal) == 1) {
         // printf("difftest_step\n");
         // printf("_this->pc: 0x%x, dnpc: 0x%x\n", _this->pc, dnpc);
         difftest_step(_this->pc, dnpc);
@@ -82,7 +82,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   #endif
 #ifdef CONFIG_ITRACE
 #ifdef CONFIG_NPC
-if (*(nemu_state.valid_signal) == 1) {
+if (*(nemu_state.difftest_signal) == 1) {
 #endif
   char *p = s->logbuf;
   #ifndef CONFIG_NPC
@@ -128,7 +128,7 @@ static void execute(uint64_t n) {
   static vaddr_t last_pc = 0;
   static uint64_t last_pc_time = 0;
   static uint64_t same_pc_count = 0;
-  const uint64_t PC_STUCK_THRESHOLD = 10000000; // 10秒 (微秒)
+  const uint64_t PC_STUCK_THRESHOLD = 1000000; // 10秒 (微秒)
   #endif
   
   for (;n > 0; n --) {
@@ -140,11 +140,11 @@ static void execute(uint64_t n) {
       same_pc_count++;
       // 每隔一定次数检查一次时间（避免频繁调用 get_time）
       if (same_pc_count % 100000 == 0) {
-        printf("same_pc_count check.\n");
+        //printf("same_pc_count check.\n");
         uint64_t current_time = get_time();
         uint64_t time_elapsed = current_time - last_pc_time;
         if (time_elapsed > PC_STUCK_THRESHOLD) {
-          printf("\n" ANSI_FMT("ERROR: PC stuck at 0x%08x for more than 10 seconds!", ANSI_FG_RED) "\n", current_pc);
+          printf("\n" ANSI_FMT("ERROR: PC stuck at 0x%08x for more than 1 seconds!", ANSI_FG_RED) "\n", current_pc);
           printf("Time elapsed: %lu us (%.2f seconds)\n", time_elapsed, time_elapsed / 1000000.0);
           printf("Instruction count at same PC: %lu\n", same_pc_count);
           isa_reg_display();
@@ -163,7 +163,11 @@ static void execute(uint64_t n) {
     exec_once(&s, cpu.pc);
     #endif
     g_nr_guest_inst ++;
+    #ifdef CONFIG_NPC
+    trace_and_difftest(&s, cpu.cpc);
+    #else
     trace_and_difftest(&s, cpu.pc);
+    #endif
 
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
