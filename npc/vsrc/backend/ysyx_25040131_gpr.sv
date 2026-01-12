@@ -17,7 +17,6 @@ module ysyx_25040131_gpr(
     
     // 关键：识别 JALR 指令的信号（从顶层 Controller 接入）
     // 通常对应 pcImm_NEXTPC_rs1Imm == 2'b10
-    input is_jalr,
 
     // 流水线握手信号
     input prev_valid,      

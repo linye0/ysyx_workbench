@@ -66,6 +66,7 @@ module ysyx_25040131_ifu #(
           // 当可以发送请求时（流水线允许且需要取指）
           if (next_ready) begin
             // 进入 ReqAr 状态，发送读地址请求
+            `YSYX_DPI_C_CYCLE_RECORD;
             ifu_state <= IFU_REQ_AR;
             ifu_arvalid <= 1'b1;
           end
@@ -89,6 +90,8 @@ module ysyx_25040131_ifu #(
             ifu_state <= IFU_DONE;
             out_valid <= 1'b1; 
             out_ready <= 1'b1;
+            `YSYX_DPI_C_IFU_FETCH_COUNT;
+            `YSYX_DPI_C_IFU_INST(ifu_rdata);
           end
         end
         IFU_DONE: begin

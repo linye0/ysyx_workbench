@@ -19,6 +19,7 @@
 void nvboard_bind_all_pins(TOP_NAME* top);
 #endif
 
+PerfMetrics perf = {};
 
 void reset(TOP_NAME* top, int n) {
 	top->reset = 1;
@@ -270,6 +271,90 @@ extern "C" void npc_write(int waddr, int wdata, int wmask) {
     }
 }
 
+extern "C" void npc_ifu_fetch_count() {
+    perf.ifu_fetch_count++;
+}
 
+extern "C" void npc_lsu_read_count() {
+    perf.lsu_read_count++;
+}
 
+extern "C" void npc_lsu_write_count() {
+    perf.lsu_write_count++;
+}
+
+extern "C" void npc_ifu_inst(int inst) {
+    uint32_t opcode = inst & 0x7F; // 提取 Opcode
+    uint32_t funct3 = (inst >> 12) & 0x7;
+
+    switch (opcode) {
+        // 1. 访存指令 (Memory)
+        case 0x03: // Load
+        case 0x23: // Store
+            perf.cur_inst_type = MEM_INST;
+            break;
+
+        // 2. 计算指令 (Calculation)
+        case 0x33: // OP (R-type)
+        case 0x13: // OP-IMM (I-type)
+        case 0x37: // LUI
+        case 0x17: // AUIPC
+            perf.cur_inst_type = CAL_INST;
+            break;
+
+        // 3. 控制流指令 (Control Flow)
+        case 0x63: // Branch (B-type)
+        case 0x6F: // JAL (J-type)
+        case 0x67: // JALR
+            perf.cur_inst_type = CTRL_INST;
+            break;
+
+        // 4. 系统指令 (System)
+        case 0x73: 
+            perf.cur_inst_type = SYS_INST;
+            break;
+
+        // 5. 其他指令 (Others)
+        default:
+            perf.cur_inst_type = OTHER_INST;
+            break;
+    }
+
+    perf.inst_count[perf.cur_inst_type]++;
+}
+
+extern "C" void npc_cycle_record() {
+    if (perf.prev_cycle != 0)perf.inst_cycle[perf.cur_inst_type] += perf.total_cycle - perf.prev_cycle;
+    perf.prev_cycle = perf.total_cycle;
+}
+
+#define PCT(count) ((perf.total_inst > 0) ? (double)(count) * 100.0 / perf.total_inst : 0.0)
+#define BLUE_START "\033[1;34m"
+#define COLOR_END  "\033[0m"
+
+void print_performance_metrics() {
+    printf(BLUE_START);
+    printf("\n======================= Performance Analysis =======================\n");
+    
+    // 效率概览
+    printf("%-20s: %-12d | %-20s: %-12d\n", "Total Cycles", perf.total_cycle, "Total Instructions", perf.total_inst);
+    printf("%-20s: %-12.4f | %-20s: %-12.4f\n", "IPC (Higher, better)", (double)perf.total_inst / perf.total_cycle, 
+                                            "CPI (Lower, better)", (double)perf.total_cycle / perf.total_inst);
+
+    printf("----------------------- Instruction Distribution -------------------\n");
+    
+    // 互斥分类打印，确保总和 100%
+    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Calculation", perf.inst_count[CAL_INST], PCT(perf.inst_count[CAL_INST]), (double)perf.inst_cycle[CAL_INST] / perf.inst_count[CAL_INST]);
+    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Memory", perf.inst_count[MEM_INST], PCT(perf.inst_count[MEM_INST]), (double)perf.inst_cycle[MEM_INST] / perf.inst_count[MEM_INST]);
+    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Control Flow", perf.inst_count[CTRL_INST], PCT(perf.inst_count[CTRL_INST]), (double)perf.inst_cycle[CTRL_INST] / perf.inst_count[CTRL_INST]);
+    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "System", perf.inst_count[SYS_INST], PCT(perf.inst_count[SYS_INST]), (double)perf.inst_cycle[SYS_INST] / perf.inst_count[SYS_INST]);
+    if (perf.inst_count[OTHER_INST] > 0) printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Others", perf.inst_count[OTHER_INST], PCT(perf.inst_count[OTHER_INST]), (double)perf.inst_cycle[OTHER_INST] / perf.inst_count[OTHER_INST]);
+
+    printf("----------------------- Bus Activity -------------------------------\n");
+    printf("%-20s: %-12d | %-20s: %-12d\n", "IFU Fetch", perf.ifu_fetch_count, "LSU Read", perf.lsu_read_count);
+    printf("%-20s: %-12d | %-20s: %-12d\n", "LSU Write", perf.lsu_write_count, "Mem/Inst Ratio", (perf.inst_count[MEM_INST] > 0 ? perf.total_inst / perf.inst_count[MEM_INST] : 0));
+
+    printf("====================================================================\n");
+    printf(COLOR_END);
+}
 #endif

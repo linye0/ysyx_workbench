@@ -19,3 +19,19 @@ import "DPI-C" function void npc_write(
     input int wdata, 
     input int wmask
 );
+
+import "DPI-C" function void npc_ifu_fetch_count(
+);
+
+import "DPI-C" function void npc_lsu_read_count(
+);
+
+import "DPI-C" function void npc_lsu_write_count(
+);
+
+import "DPI-C" function void npc_ifu_inst(
+    input int inst
+);
+
+import "DPI-C" function void npc_cycle_record(
+);

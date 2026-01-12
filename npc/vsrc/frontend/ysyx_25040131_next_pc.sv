@@ -2,12 +2,8 @@ module ysyx_25040131_next_pc(
     input [1: 0] pcImm_NEXTPC_rs1Imm,
     input condition_branch, is_mret, exc_valid, access_fault,
     input [31: 0] pc, offset, rs1Data, mepc, mtvec,
-    output reg [31: 0] next_pc,
+    output reg [31: 0] next_pc
     // 流水线握手信号
-    input prev_valid,      // 上游数据有效（MEM阶段有效）
-    input next_ready,       // 下游可以接收数据（WBU阶段是最后阶段，在模块内定义为1）
-    output out_valid,       // 输出数据有效（next_pc有效，组合逻辑，总是1）
-    output out_ready        // 可以接收上游数据（next_pc ready，组合逻辑，总是1）
 );
 
 /*
@@ -52,7 +48,5 @@ end
 // 流水线握手信号
 // next_pc是组合逻辑，总是有效和ready
 // next_ready作为input传入（遵循统一握手协议），但在模块内不需要使用（因为总是ready）
-assign out_valid = 1'b1;
-assign out_ready = 1'b1;
 
 endmodule

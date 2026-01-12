@@ -73,6 +73,10 @@ void check_pc_bound() {
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
+  #ifdef CONFIG_NPC
+  if (*(nemu_state.difftest_signal) == 1) perf.total_inst++;
+  perf.total_cycle++;
+  #endif
   isa_exec_once(s);
   #ifdef CONFIG_NPC
   check_pc_bound();
@@ -193,6 +197,8 @@ void assert_fail_msg() {
   #endif
 }
 
+
+
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
@@ -236,6 +242,7 @@ void cpu_exec(uint64_t n) {
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
+      print_performance_metrics();
       #endif
       // fall through
     case NEMU_QUIT:

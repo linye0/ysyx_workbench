@@ -210,14 +210,13 @@ wire wbu_gpr_valid;        // WBU阶段GPR写操作完成
 wire wbu_gpr_ready;        // WBU阶段GPR写通道ready
 wire wbu_csr_valid;        // WBU阶段CSR写操作完成
 wire wbu_csr_ready;        // WBU阶段CSR写通道ready
-wire next_pc_valid;        // WBU阶段next_pc有效（组合逻辑，总是1）
-wire next_pc_ready;        // WBU阶段next_pc ready（组合逻辑，总是1）
 
 // ------------------------------
 // 辅助信号
-wire[6:0] lui_opcode = 7'b0110111;
 wire [31:0] gpr_rs = (csr_use_imm) ? {27'h0, ifu_inst[19:15]} : read_rs1_data;
 wire [31:0] write_rd_data = (is_csr) ? csr_rdata : write_is_imm_data;
+wire [31:0] write_is_imm_data = (opcode == 7'b0110111) ? imm_32 : write_aluormem_rd_data;
+wire [31:0] write_aluormem_rd_data = (aluOut_WB_memOut) ? lsu_read_data : out_alu;
 
 assign pc = ifu_pc;
 assign out_inst = ifu_inst;
@@ -233,12 +232,6 @@ always @(posedge clock) begin
 end
 
 assign difftest_signal = difftest_sync_reg;
-
-// ============================================================================
-// IFU阶段：取指
-// ============================================================================
-// 多周期执行：WBU完成后才取下一条指令
-// 复位后允许取第一条指令（wbu_valid初始为0，但复位后应该开始取第一条指令）
 reg first_instruction;
 always @(posedge clock) begin
     if (reset) begin
@@ -248,6 +241,18 @@ always @(posedge clock) begin
     end
 end
 assign ifu_prev_valid = wbu_valid || first_instruction;
+assign idu_valid = idu_id_valid && idu_controller_valid && idu_imm_valid;
+assign exu_valid = exu_alu_valid && exu_gpr_valid && exu_csr_valid;
+assign exu_ready = mem_ready;  // EXU可以接收当MEM ready时
+assign wbu_ready = wbu_gpr_ready && wbu_csr_ready;
+// WBU阶段valid：三个子模块都完成时，WBU才完成
+assign wbu_valid = wbu_gpr_valid && wbu_csr_valid;
+
+// ============================================================================
+// IFU阶段：取指
+// ============================================================================
+// 多周期执行：WBU完成后才取下一条指令
+// 复位后允许取第一条指令（wbu_valid初始为0，但复位后应该开始取第一条指令）
 
 ysyx_25040131_ifu IFU(
     .clock(clock),
@@ -331,8 +336,6 @@ ysyx_25040131_imm IMM(
 );
 
 // IDU阶段输出有效：所有子模块都有效
-assign idu_valid = idu_id_valid && idu_controller_valid && idu_imm_valid;
-
 // ============================================================================
 // EXU阶段：执行（ALU、GPR读、CSR读）
 // ============================================================================
@@ -351,7 +354,6 @@ ysyx_25040131_alu ALU(
 
 // GPR读通道（EXU阶段）
 ysyx_25040131_gpr REG_FILE(
-    .is_jalr(pcImm_NEXTPC_rs1Imm == 2'b10),
     .rst(reset),
     .clk(clock),
     // 读通道（EXU阶段）
@@ -368,7 +370,7 @@ ysyx_25040131_gpr REG_FILE(
     .write_rd_data(write_rd_data),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
+    .next_ready(1'b1),   // WBU阶段next_ready（总是1，因为是最后阶段）
     .out_valid(wbu_gpr_valid),  // GPR写操作完成
     .out_ready(wbu_gpr_ready)   // GPR写通道ready
 );
@@ -390,7 +392,7 @@ ysyx_25040131_csr u_csr (
     .csr_wdata(gpr_rs),
     // 流水线握手信号
     .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，因为是最后阶段）
+    .next_ready(1'b1),   // WBU阶段next_ready（总是1，因为是最后阶段）
     .out_valid(wbu_csr_valid),  // CSR写操作完成
     .out_ready(wbu_csr_ready),  // CSR写通道ready
     // 异常/中断控制信号
@@ -402,8 +404,6 @@ ysyx_25040131_csr u_csr (
 );
 
 // EXU阶段输出有效：所有子模块都有效
-assign exu_valid = exu_alu_valid && exu_gpr_valid && exu_csr_valid;
-assign exu_ready = mem_ready;  // EXU可以接收当MEM ready时
 
 // ============================================================================
 // MEM阶段：访存（LSU）
@@ -447,36 +447,6 @@ ysyx_25040131_lsu LSU(
 // WBU阶段：写回（GPR写、CSR写）
 // ============================================================================
 // WBU阶段总是ready（因为是最后阶段）
-assign wbu_ready = 1'b1; // 不知道能不能改成下面那种定义
-
-// MUX选择写回数据
-ysyx_25040131_mux_2 MUX_ALUORMEM_WB(
-    .signal(aluOut_WB_memOut),
-    .a(out_alu),
-    .b(lsu_read_data),  // 使用LSU输出的读数据
-    .out(write_aluormem_rd_data)
-);
-
-ysyx_25040131_comparator_7bit lui_judge(
-    .a(opcode),
-    .b(lui_opcode),
-    .equal(equal)
-);
-
-ysyx_25040131_mux_2 MUX_WB(
-    .signal(equal),
-    .a(write_aluormem_rd_data),
-    .b(imm_32),
-    .out(write_is_imm_data)
-);
-
-// ============================================================================
-// WBU阶段输出有效：三个部分都完成
-// ============================================================================
-// WBU阶段由三个部分组成：
-// 1. GPR写通道：如果write_reg=0，立即完成；如果write_reg=1，需要状态机完成写操作
-// 2. CSR写通道：如果csr_we=0且exc_valid=0，立即完成；否则需要状态机完成写操作
-// 3. next_pc模块：组合逻辑，总是有效
 
 // next_pc模块（WBU阶段，组合逻辑）
 ysyx_25040131_next_pc NEXT_PC(
@@ -490,23 +460,9 @@ ysyx_25040131_next_pc NEXT_PC(
     .access_fault(access_fault),  // Access Fault 信号
     .offset(imm_32),
     .rs1Data(read_rs1_data), // 使用锁存的 rs1Data，确保跳转目标地址计算正确
-    .next_pc(next_pc),
+    .next_pc(next_pc)
     // 流水线握手信号
-    .prev_valid(mem_valid),  // MEM阶段有效
-    .next_ready(ifu_ready),   // WBU阶段next_ready（总是1，在next_pc模块内使用）
-    .out_valid(next_pc_valid),  // next_pc有效（组合逻辑，总是1）
-    .out_ready(next_pc_ready)   // next_pc ready（组合逻辑，总是1）
 );
-
-// WBU阶段ready：三个子模块都ready时，WBU才ready
-// 注意：WBU是最后阶段，所以next_ready应该总是1
-// 但是为了遵循统一的握手协议，next_ready仍然作为input传入
-// 对于WBU阶段的子模块，next_ready在模块内部定义为1
-// wire wbu_next_ready = 1'b1;  /// WBU阶段是最后阶段，next_ready总是1
-assign wbu_ready = wbu_gpr_ready && wbu_csr_ready && next_pc_ready;
-
-// WBU阶段valid：三个子模块都完成时，WBU才完成
-assign wbu_valid = wbu_gpr_valid && wbu_csr_valid && next_pc_valid;
 
 // ============================================================================
 // 其他模块
