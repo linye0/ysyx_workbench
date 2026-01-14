@@ -1,5 +1,7 @@
 `include "ysyx_25040131_dpi_c.svh"
 
+`ifdef CONFIG_USE_DPI_C
+
 import "DPI-C" function void npc_exu_ebreak();
 
 import "DPI-C" function void npc_difftest_skip_ref();
@@ -35,3 +37,5 @@ import "DPI-C" function void npc_ifu_inst(
 
 import "DPI-C" function void npc_cycle_record(
 );
+
+`endif

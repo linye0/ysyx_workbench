@@ -134,7 +134,9 @@ module ysyx_25040131_uart #(
               s_axi_wready <= 1'b0;
               // 输出字符（取低8位）
               $write("%c", s_axi_wdata[7:0]);
-              $fflush();
+              `ifdef CONFIG_SYS_NPC 
+                $fflush();
+              `endif
               s_axi_bresp <= AXI_RESP_OKAY;
               s_axi_bvalid <= 1'b1;
               write_state <= B_VALID;

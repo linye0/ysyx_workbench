@@ -34,18 +34,20 @@ VSRC_INCLUDE_DIRS_NPC = $(NPC_HOME)/vsrc/include $(shell find -L $(NPC_HOME)/vsr
 # 初始化 SOC 额外源文件为空
 VSRCS_SOC_EXTRA =
 
+
+INC_PATH += $(VSRC_INCLUDE_DIRS_SOC)
+VERILATOR_CFLAGS += -DCONFIG_USE_DPI_C
+
 # 根据配置设置不同的选项
 ifeq ($(CONFIG_SYS_SOC),y)
   # CONFIG_SOC=y 配置
-  # INC_PATH: vsrc/include 下除了 npc 以外的所有目录及子目录
-  INC_PATH += $(VSRC_INCLUDE_DIRS_SOC)
-  INC_PATH += $(shell find -L $(VSRC_INCLUDE_DIRS_NPC) -type d)
   # 加上 ysyxSoC 外设路径
   INC_PATH += $(YSYX_HOME)/ysyxSoC/perip/uart16550/rtl
   INC_PATH += $(YSYX_HOME)/ysyxSoC/perip/spi/rtl
   
   # VERILATOR_CFLAGS: 添加时序相关选项
   VERILATOR_CFLAGS += --timescale "1ns/1ns" --no-timing
+  VERILATOR_CFLAGS += -DCONFIG_SYS_SOC
   
   # 顶层模块改为 ysyxSoCFull
   TOPNAME = ysyxSoCFull
@@ -55,8 +57,7 @@ ifeq ($(CONFIG_SYS_SOC),y)
 else ifeq ($(CONFIG_SYS_NPC),y)
   # CONFIG_NPC=y 配置
   # INC_PATH: vsrc/include 下除了 soc 以外的所有目录及子目录
-  INC_PATH += $(VSRC_INCLUDE_DIRS_NPC)
-  INC_PATH += $(shell find -L $(VSRC_INCLUDE_DIRS_SOC) -type d)
+  VERILATOR_CFLAGS += -DCONFIG_SYS_NPC
   # 顶层模块保持 ysyx_25040131（已在上面定义）
   VSRCS_SOC_EXTRA =
 endif

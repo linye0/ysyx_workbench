@@ -214,10 +214,14 @@ module ysyx_25040131_lsu #(
     end
   endfunction
 
+// ------------------------------
+  // 彻底合并后的时序逻辑：一个块驱动所有寄存器
   // ------------------------------
-  // 共享寄存器管理
   always @(posedge clock) begin
     if (reset) begin
+      // 1. 统一初始化所有寄存器
+      state_load <= LOAD_IDLE;
+      state_store <= STORE_IDLE;
       addr_reg <= {XLEN{1'b0}};
       data_reg <= {XLEN{1'b0}};
       read_mem_reg <= 3'b0;
@@ -235,18 +239,12 @@ module ysyx_25040131_lsu #(
       lsu_wvalid <= 1'b0;
       lsu_bready <= 1'b0;
       access_fault <= 1'b0;
-    end
-  end
-
-  // ------------------------------
-  // 读状态机
-  always @(posedge clock) begin
-    if (reset) begin
-      state_load <= LOAD_IDLE;
     end else begin
+      // 2. 在 else 块中，同时处理两个状态机的逻辑
+      
+      // --- 读状态机 ---
       unique case (state_load)
         LOAD_IDLE: begin
-          // 当有读请求时（read_mem有效且流水线允许），进入 ReqAr 状态
           if (prev_valid && next_ready && read_mem != 3'b0) begin
             addr_reg <= addr;
             read_mem_reg <= read_mem;
@@ -257,7 +255,6 @@ module ysyx_25040131_lsu #(
           end
         end
         LOAD_ADDR: begin
-          // 等待读地址握手完成
           if (lsu_arvalid && lsu_arready) begin
             lsu_araddr <= {XLEN{1'b0}};
             lsu_arvalid <= 1'b0;
@@ -266,41 +263,23 @@ module ysyx_25040131_lsu #(
           end
         end
         LOAD_DATA: begin
-          // 等待BUS返回读数据
           if (lsu_rready && lsu_rvalid) begin
             raw_read_data <= lsu_rdata;
             read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
-            if (lsu_rresp != 2'b00) begin
-              access_fault <= 1'b1;
-            end
+            if (lsu_rresp != 2'b00) access_fault <= 1'b1;
             state_load <= LOAD_DONE;
             lsu_rready <= 1'b0;
-            `YSYX_DPI_C_LSU_READ_COUNT;
           end
         end
         LOAD_DONE: begin
-          // 数据已接收（rready=1），等待prev_valid变为0后再回到空闲
-          // 这样可以确保同一条指令的读操作只执行一次
-          if (out_valid && next_ready) begin
-            state_load <= LOAD_IDLE;
-          end
+          if (out_valid && next_ready) state_load <= LOAD_IDLE;
         end
-        default: begin
-          state_load <= LOAD_IDLE;
-        end
+        default: state_load <= LOAD_IDLE;
       endcase
-    end
-  end
 
-  // ------------------------------
-  // 写状态机（串行：先地址，再数据）
-  always @(posedge clock) begin
-    if (reset) begin
-      state_store <= STORE_IDLE;
-    end else begin
+      // --- 写状态机 ---
       unique case (state_store)
         STORE_IDLE: begin
-          // 有写请求：进入发送写地址状态
           if (prev_valid && next_ready && write_mem != 2'b0) begin
             addr_reg <= addr;
             data_reg <= gen_wdata_aligned(write_mem, addr, data);
@@ -313,21 +292,17 @@ module ysyx_25040131_lsu #(
           end
         end
         STORE_ADDR: begin
-          // 等待写地址握手完成
           if (lsu_awvalid && lsu_awready) begin
             lsu_awvalid <= 1'b0;
             lsu_awaddr <= {XLEN{1'b0}};
             lsu_wvalid <= 1'b1;
             lsu_wdata <= data_reg;
             lsu_wstrb <= wstrb_reg;
-            // 地址握手完成，进入发送写数据状态
             state_store <= STORE_DATA;
           end
         end
         STORE_DATA: begin
-          // 等待写数据握手完成
           if (lsu_wvalid && lsu_wready) begin
-            // 数据握手完成，进入等待写响应状态
             lsu_wvalid <= 1'b0;
             lsu_wdata <= {XLEN{1'b0}};
             lsu_wstrb <= 8'h0;
@@ -336,27 +311,20 @@ module ysyx_25040131_lsu #(
           end
         end
         STORE_RESP: begin
-          // aw 和 w 均握手完成，进入等待写响应状态
           if (lsu_bready && lsu_bvalid) begin
             lsu_bready <= 1'b0;
             state_store <= STORE_DONE;
-            if (lsu_bresp != 2'b00) begin
-              access_fault <= 1'b1;
-            end
-            `YSYX_DPI_C_LSU_WRITE_COUNT;
+            if (lsu_bresp != 2'b00) access_fault <= 1'b1;
           end
         end
         STORE_DONE: begin
-          if (out_valid && next_ready) begin
-            state_store <= STORE_IDLE;
-          end
+          if (out_valid && next_ready) state_store <= STORE_IDLE;
         end
-        default: begin
-          state_store <= STORE_IDLE;
-        end
+        default: state_store <= STORE_IDLE;
       endcase
     end
   end
+
 
   // ------------------------------
   // 输出信号

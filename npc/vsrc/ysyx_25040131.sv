@@ -101,8 +101,6 @@ reg difftest_sync_reg;
 
 // ------------------------------
 // 数据信号
-wire [31: 0] write_is_imm_data;
-wire [31: 0] write_rd_data; // 寄存器 rd数据
 
 wire [31: 0] read_rs1_data; // 寄存器 rs1的数据
 wire [31: 0] read_rs2_data; // 寄存器 rs2的数据
@@ -139,7 +137,6 @@ wire exc_valid;
 wire is_csr;
 wire [31:0] mepc;
 wire [31:0] mtvec;
-wire [31:0] write_aluormem_rd_data;
 
 
 // ------------------------------

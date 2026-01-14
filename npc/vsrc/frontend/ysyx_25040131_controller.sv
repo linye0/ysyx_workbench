@@ -385,4 +385,4 @@ end
 assign out_valid = prev_valid;
 assign out_ready = next_ready;
 
-endmodule;
+endmodule

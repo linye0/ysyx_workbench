@@ -114,7 +114,9 @@ module ysyx_25040131_sram #(
           // Delay cycles before reading data
           if (`YSYX_SRAM_DELAY == 1 || delay_counter >= (`YSYX_SRAM_DELAY - 1)) begin
             // Delay complete, read data and enter R state
+            `ifdef CONFIG_SYS_NPC
             io_master_rdata_reg <= `YSYX_DPI_C_NPC_READ(read_addr_reg, 32'hf);
+            `endif
             io_master_rresp_reg <= AXI_RESP_OKAY;
             state_read <= R;
             delay_counter <= 0;
