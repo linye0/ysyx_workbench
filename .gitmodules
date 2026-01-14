@@ -7,3 +7,8 @@
     path = rt-thread-am
     url = git@github.com:linye0/rt-thread-am.git
 	branch = master
+
+[submodule "yosys-sta"]
+	path = yosys-sta
+	url = git@github.com:linye0/yosys-sta.git
+	branch = master
