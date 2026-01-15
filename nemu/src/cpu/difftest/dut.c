@@ -120,9 +120,11 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   ref_difftest_init(port);
   ref_difftest_memcpy(CONFIG_MBASE, guest_to_host(CONFIG_MBASE), img_size, DIFFTEST_TO_REF);
   #ifdef CONFIG_NPC
+  #ifdef CONFIG_SYS_SOC
   ref_difftest_memcpy(CONFIG_MROM_BASE, guest_to_host(CONFIG_MROM_BASE), CONFIG_MROM_SIZE, DIFFTEST_TO_REF);
   ref_difftest_memcpy(CONFIG_FLASH_BASE, guest_to_host(CONFIG_FLASH_BASE), CONFIG_FLASH_SIZE, DIFFTEST_TO_REF);
   ref_difftest_memcpy(CONFIG_SRAM_BASE, guest_to_host(CONFIG_SRAM_BASE), CONFIG_SRAM_SIZE, DIFFTEST_TO_REF);
+  #endif
   #endif
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 }

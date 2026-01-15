@@ -40,9 +40,9 @@ image: image-dep
 run: insert-arg
 	# echo "TODO: add command here to run simulation"
 	$(MAKE) -C $(YSYX_HOME)/ysyxSoC verilog
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 	
 gdb: insert-arg
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 
 .PHONY: insert-arg, run

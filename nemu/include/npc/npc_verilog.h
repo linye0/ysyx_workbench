@@ -19,7 +19,6 @@
 #define SYS_INST 3
 #define OTHER_INST 4
 
-
 #include CONCAT_HEAD(TOP_NAME)
 #include CONCAT_HEAD(CONCAT(TOP_NAME, ___024root))
 #include CONCAT_HEAD(CONCAT(TOP_NAME, __Dpi))
@@ -28,15 +27,15 @@
 #define VERILOG_RESET top->reset
 
 typedef struct perfmetrics {
-    int prev_cycle;
-    int total_cycle;
-    int total_inst;
-    int ifu_fetch_count;
-    int lsu_read_count;
-    int lsu_write_count;
-    int inst_count[5];
-    int inst_cycle[5];
-    int cur_inst_type;
+    uint64_t prev_cycle;      // 修改为 uint64_t
+    uint64_t total_cycle;     // 修改为 uint64_t
+    uint64_t total_inst;      // 修改为 uint64_t
+    uint64_t ifu_fetch_count;
+    uint64_t lsu_read_count;
+    uint64_t lsu_write_count;
+    uint64_t inst_count[5];
+    uint64_t inst_cycle[5];
+    int cur_inst_type;        // 类型可以用 int
 } PerfMetrics;
 
 extern PerfMetrics perf;

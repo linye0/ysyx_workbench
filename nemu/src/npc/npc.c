@@ -9,6 +9,7 @@
 #include <difftest-def.h>
 #include <cpu/difftest.h>
 #include <memory/paddr.h>
+#include <inttypes.h> // 必须包含，用于 PRIu64 宏
 #ifdef CONFIG_NVBOARD
 #include <nvboard.h>
 #endif
@@ -82,8 +83,8 @@ void cpu_exec_once() {
 void update_cpu_state(NPCState npc) {
     // cpu.pc = *(npc.pc);
     // cpu.pc = top->pc;
-    cpu.cpc = *(nemu_state.cpc);
-    cpu.pc = *(nemu_state.pc);
+    cpu.cpc = *(npc.cpc);
+    cpu.pc = *(npc.pc);
     for (int i = 0; i < 32; i++) {
         cpu.gpr[i] = npc.gpr[i];
         // printf("cpu->gpr[%d]: %d\n", i, cpu.gpr[i]);
@@ -123,6 +124,8 @@ void verilog_connect(TOP_NAME *top, NPCState *npc)
   npc->mepc = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mepc);
   npc->mcause = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mcause);
   npc->mtval = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mtval);
+  npc->mvendorid = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__mvendorid);
+  npc->marchid = (uint32_t*)&(top->rootp->ysyx_25040131__DOT__u_csr__DOT__marchid);
   #else
   #ifdef CONFIG_SYS_SOC
   npc->difftest_signal = &(CONCAT_YSYXSOC_HEAD(difftest_signal));
@@ -191,6 +194,7 @@ extern "C" int npc_read(int raddr, int wmask) {
         return 0;
     }
     */
+    /*
     switch(wmask) {
         case 15:
             //printf("case 0xff\n");
@@ -214,61 +218,48 @@ extern "C" int npc_read(int raddr, int wmask) {
             // Assert(0, "Invalid mask = %02x", wmask);
             break;
     }
-    return 0;
+    */
+    return paddr_read(raddr & ~0x3u, 4);
 }
 
 extern "C" void npc_write(int waddr, int wdata, int wmask) {
-    /*
-    #ifdef CONFIG_SOFT_MMIO
-        if (waddr == SERIAL_PORT) {
-            putchar(wdata);
-            difftest_skip_ref();
-            return;
-        }
-    #endif
-    */
-    // printf("pmem_write: addr = %d, data = %d, mask = %d\n", waddr, wdata, wmask);
-    // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
-    // `wmask`中每比特表示`wdata`中1个字节的掩码,
-    // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
-    // printf("pmem_write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x\n", waddr, wdata, wmask & 0xff);
-    /*
-    uint8_t *host_addr = guest_to_host(waddr);
-    if (host_addr == NULL) {
-        //Log(FMT_RED("Invalid write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x"),
-        // waddr, wdata, wmask & 0xff);
-        // npc_abort();
-        return;
-    }
-    */
+    // 1. 如果掩码为0，表示没有写入操作，直接返回
+    if (wmask == 0) return;
+
+    int len = 0;
+    // 2. 根据 wmask 确定写入长度 (len)
+    // 这里采用简单判断，适配 SB, SH, SW 指令
     switch (wmask) {
-        case 1:
-            paddr_write(waddr, 1, wdata);
-            break;
-        case 3:
-            paddr_write(waddr & ~0x1u, 2, wdata);
-            break;
-        case 15:
-            paddr_write(waddr, 4, wdata);
-            break;
-        case 12:
-            paddr_write(waddr, 2, wdata);
-            break;
-        /*
-        case 0xff:
-            host_write(host_addr, 8, wdata);
-            break;
-        */
-        /*
-        case 0xff:
-            host_write(host_addr, 8, wdata);
-            break;
-        */
+        case 0b0001: case 0b0010: case 0b0100: case 0b1000: 
+            len = 1; break;
+        case 0b0011: case 0b1100: 
+            len = 2; break;
+        case 0b1111: 
+            len = 4; break;
         default:
-            // Log(FMT_RED("Invalid write: addr = " FMT_WORD ", data = " FMT_WORD ", mask = %02x"),
-                // waddr, wdata, wmask & 0xff);
+            // 处理可能的非标准掩码（可选）
+            // 如果是 ysyxSoC 的 AXI 可能会有更复杂的掩码，这里计算 1 的个数
+            len = 0;
+            for (int i = 0; i < 4; i++) {
+                if ((wmask >> i) & 1) len++;
+            }
             break;
     }
+
+    // 3. 计算偏移并还原数据
+    // Verilog 中：wdata = data << (addr[1:0] * 8)
+    // C++ 中还原：data = wdata >> (addr[1:0] * 8)
+    int offset = waddr & 0x3;
+    uint32_t actual_data = ((uint32_t)wdata) >> (offset * 8);
+
+    // 4. 调用仿真环境接口写入物理内存
+    // waddr 是不对齐的原始地址（如 0x800008f1）
+    paddr_write(waddr, len, actual_data);
+
+    // 调试打印（可选）
+    // printf("NPC Write: addr=0x%08x, len=%d, raw_data=0x%08x, aligned_wdata=0x%08x, wmask=0x%x\n", 
+    //        waddr, len, actual_data, wdata, wmask);
+    return ;
 }
 
 extern "C" void npc_ifu_fetch_count() {
@@ -328,7 +319,8 @@ extern "C" void npc_cycle_record() {
     perf.prev_cycle = perf.total_cycle;
 }
 
-#define PCT(count) ((perf.total_inst > 0) ? (double)(count) * 100.0 / perf.total_inst : 0.0)
+// 修改后的百分比宏，确保使用 double 计算
+#define PCT(count) ((perf.total_inst > 0) ? (double)(count) * 100.0 / (double)perf.total_inst : 0.0)
 #define BLUE_START "\033[1;34m"
 #define COLOR_END  "\033[0m"
 
@@ -336,23 +328,50 @@ void print_performance_metrics() {
     printf(BLUE_START);
     printf("\n======================= Performance Analysis =======================\n");
     
-    // 效率概览
-    printf("%-20s: %-12d | %-20s: %-12d\n", "Total Cycles", perf.total_cycle, "Total Instructions", perf.total_inst);
-    printf("%-20s: %-12.4f | %-20s: %-12.4f\n", "IPC (Higher, better)", (double)perf.total_inst / perf.total_cycle, 
-                                            "CPI (Lower, better)", (double)perf.total_cycle / perf.total_inst);
+    // 1. 效率概览 - 使用 PRIu64 打印 64 位无符号整数
+    printf("%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
+           "Total Cycles", perf.total_cycle, 
+           "Total Instructions", perf.total_inst);
+
+    // 计算 IPC 和 CPI (增加防零除检查)
+    double ipc = (perf.total_cycle > 0) ? (double)perf.total_inst / perf.total_cycle : 0.0;
+    double cpi = (perf.total_inst > 0) ? (double)perf.total_cycle / perf.total_inst : 0.0;
+
+    printf("%-20s: %-12.4f | %-20s: %-12.4f\n", 
+           "IPC (Higher, better)", ipc, 
+           "CPI (Lower, better)",  cpi);
 
     printf("----------------------- Instruction Distribution -------------------\n");
     
-    // 互斥分类打印，确保总和 100%
-    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Calculation", perf.inst_count[CAL_INST], PCT(perf.inst_count[CAL_INST]), (double)perf.inst_cycle[CAL_INST] / perf.inst_count[CAL_INST]);
-    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Memory", perf.inst_count[MEM_INST], PCT(perf.inst_count[MEM_INST]), (double)perf.inst_cycle[MEM_INST] / perf.inst_count[MEM_INST]);
-    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Control Flow", perf.inst_count[CTRL_INST], PCT(perf.inst_count[CTRL_INST]), (double)perf.inst_cycle[CTRL_INST] / perf.inst_count[CTRL_INST]);
-    printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "System", perf.inst_count[SYS_INST], PCT(perf.inst_count[SYS_INST]), (double)perf.inst_cycle[SYS_INST] / perf.inst_count[SYS_INST]);
-    if (perf.inst_count[OTHER_INST] > 0) printf("%-20s: %-12d (%6.2f%%) , CPI: %-12.4f\n", "Others", perf.inst_count[OTHER_INST], PCT(perf.inst_count[OTHER_INST]), (double)perf.inst_cycle[OTHER_INST] / perf.inst_count[OTHER_INST]);
+    // 2. 分类统计 (注意：每行都要检查 count > 0 防止计算 CPI 时除以 0)
+    #define PRINT_INST_LINE(name, type) \
+        printf("%-20s: %-12" PRIu64 " (%6.2f%%) , CPI: %-12.4f\n", \
+               name, perf.inst_count[type], PCT(perf.inst_count[type]), \
+               (perf.inst_count[type] > 0) ? (double)perf.inst_cycle[type] / perf.inst_count[type] : 0.0)
+
+    PRINT_INST_LINE("Calculation",  CAL_INST);
+    PRINT_INST_LINE("Memory",       MEM_INST);
+    PRINT_INST_LINE("Control Flow", CTRL_INST);
+    PRINT_INST_LINE("System",       SYS_INST);
+
+    if (perf.inst_count[OTHER_INST] > 0) {
+        PRINT_INST_LINE("Others", OTHER_INST);
+    }
 
     printf("----------------------- Bus Activity -------------------------------\n");
-    printf("%-20s: %-12d | %-20s: %-12d\n", "IFU Fetch", perf.ifu_fetch_count, "LSU Read", perf.lsu_read_count);
-    printf("%-20s: %-12d | %-20s: %-12d\n", "LSU Write", perf.lsu_write_count, "Mem/Inst Ratio", (perf.inst_count[MEM_INST] > 0 ? perf.total_inst / perf.inst_count[MEM_INST] : 0));
+    
+    // 3. 总线活动统计
+    printf("%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
+           "IFU Fetch", perf.ifu_fetch_count, 
+           "LSU Read",  perf.lsu_read_count);
+
+    // 计算访存/指令比率 (Mem/Inst Ratio)
+    // 修正：通常是 (Read+Write) / Total_Inst，或者 Total_Inst / Mem_Inst
+    double mem_ratio = (perf.inst_count[MEM_INST] > 0) ? (double)perf.total_inst / perf.inst_count[MEM_INST] : 0.0;
+
+    printf("%-20s: %-12" PRIu64 " | %-20s: %-12.2f\n", 
+           "LSU Write", perf.lsu_write_count, 
+           "Inst/Mem Ratio", mem_ratio);
 
     printf("====================================================================\n");
     printf(COLOR_END);

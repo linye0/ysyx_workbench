@@ -92,7 +92,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
-  panic("address = " FMT_PADDR " is out of bound at pc = " FMT_WORD,
+  panic("Memory check bound: address = " FMT_PADDR " is out of bound at pc = " FMT_WORD,
       addr, cpu.pc);
 }
 
@@ -107,12 +107,18 @@ void init_mem() {
 
 word_t paddr_read(paddr_t addr, int len) {
   #ifdef CONFIG_NPC
+  #ifdef CONFIG_SYS_SOC
   if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr))) return pmem_read(addr, len);
   #endif
+  #ifdef CONFIG_SYS_NPC
+  if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  #endif
+  #else
   #ifdef CONFIG_TARGET_SHARE
   if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr))) return pmem_read(addr, len);
   #else
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  #endif
   #endif
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
@@ -122,12 +128,18 @@ word_t paddr_read(paddr_t addr, int len) {
 void paddr_write(paddr_t addr, int len, word_t data) {
   //printf("paddr_write: addr = 0x%x, len = %d, data = 0x%x, in_sdram: %d\n", addr, len, data, in_sdram(addr));
   #ifdef CONFIG_NPC
+  #ifdef CONFIG_SYS_SOC
   if (likely(in_pmem(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) { pmem_write(addr, len, data); return; }
   #endif
+  #ifdef CONFIG_SYS_NPC
+  if (likely(in_pmem(addr))) return pmem_write(addr, len, data);
+  #endif
+  #else
   #ifdef CONFIG_TARGET_SHARE
   if (likely(in_pmem(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) { pmem_write(addr, len, data); return; }
   #else
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  #endif
   #endif
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);

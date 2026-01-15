@@ -5,13 +5,14 @@
 module ysyx_25040131 #(
     parameter bit [7:0] XLEN = `YSYX_XLEN
 )(
-    input clock, reset, io_interrupt,
+    input clock, reset, io_interrupt
 
-     `ifdef YSYX_USE_SLAVE
+    `ifdef CONFIG_SYS_SOC
+    `ifdef YSYX_USE_SLAVE
     // ========== AXI4 Slave 接口（从设备接口，用于外部访问 CPU 内部资源）==========
     // verilator lint_off UNDRIVEN
     // verilator lint_off UNUSEDSIGNAL
-    input [1:0] io_slave_arburst,    // AXI 读突发类型
+    ,input [1:0] io_slave_arburst,    // AXI 读突发类型
     input [2:0] io_slave_arsize,    // AXI 读传输大小
     input [7:0] io_slave_arlen,     // AXI 读突发长度
     input [3:0] io_slave_arid,      // AXI 读事务 ID
@@ -83,7 +84,7 @@ module ysyx_25040131 #(
     input io_master_bvalid,
     input [1:0] io_master_bresp,
     input [3:0] io_master_bid
-   
+    `endif
 );
 
 // ============================================================================
@@ -480,50 +481,82 @@ ysyx_25040131_mux_2 MUX_EX_A(
     .out(in_alu_a)
 );
 
+
 // ============================================================================
 // BUS 实例（总线仲裁和地址路由）
 // ============================================================================
-// 注意：BUS 的 AXI4 Master 接口直接连接到顶层端口，用于接入外部 SoC
+// 定义BUS到外部的中间信号（用于条件路由）
+wire [31:0] bus_master_araddr;
+wire [3:0] bus_master_arid;
+wire [7:0] bus_master_arlen;
+wire [2:0] bus_master_arsize;
+wire [1:0] bus_master_arburst;
+wire bus_master_arvalid;
+wire bus_master_arready;
+wire [31:0] bus_master_rdata;
+wire [1:0] bus_master_rresp;
+wire bus_master_rvalid;
+wire bus_master_rready;
+wire bus_master_rlast;
+wire [3:0] bus_master_rid;
+wire [31:0] bus_master_awaddr;
+wire [3:0] bus_master_awid;
+wire [7:0] bus_master_awlen;
+wire [2:0] bus_master_awsize;
+wire [1:0] bus_master_awburst;
+wire bus_master_awvalid;
+wire bus_master_awready;
+wire [31:0] bus_master_wdata;
+wire [3:0] bus_master_wstrb;
+wire bus_master_wvalid;
+wire bus_master_wready;
+wire bus_master_wlast;
+wire [1:0] bus_master_bresp;
+wire bus_master_bvalid;
+wire bus_master_bready;
+wire [3:0] bus_master_bid;
+
+// BUS 的 AXI4 Master 接口连接到中间信号
 ysyx_25040131_bus BUS(
     .clock(clock),
     .reset(reset),
     .flush_pipeline(1'b0),  // TODO: 如果需要流水线冲刷，连接相应信号
 
-    // AXI4 Master bus (直接连接到顶层端口) - Full AXI4
+    // AXI4 Master bus (连接到中间信号) - Full AXI4
     // Read Address Channel (AR)
-    .io_master_araddr(io_master_araddr),
-    .io_master_arid(io_master_arid),
-    .io_master_arlen(io_master_arlen),
-    .io_master_arsize(io_master_arsize),
-    .io_master_arburst(io_master_arburst),
-    .io_master_arvalid(io_master_arvalid),
-    .io_master_arready(io_master_arready),
+    .io_master_araddr(bus_master_araddr),
+    .io_master_arid(bus_master_arid),
+    .io_master_arlen(bus_master_arlen),
+    .io_master_arsize(bus_master_arsize),
+    .io_master_arburst(bus_master_arburst),
+    .io_master_arvalid(bus_master_arvalid),
+    .io_master_arready(bus_master_arready),
     // Read Data Channel (R)
-    .io_master_rdata(io_master_rdata),
-    .io_master_rresp(io_master_rresp),
-    .io_master_rvalid(io_master_rvalid),
-    .io_master_rready(io_master_rready),
-    .io_master_rlast(io_master_rlast),
-    .io_master_rid(io_master_rid),
+    .io_master_rdata(bus_master_rdata),
+    .io_master_rresp(bus_master_rresp),
+    .io_master_rvalid(bus_master_rvalid),
+    .io_master_rready(bus_master_rready),
+    .io_master_rlast(bus_master_rlast),
+    .io_master_rid(bus_master_rid),
     // Write Address Channel (AW)
-    .io_master_awaddr(io_master_awaddr),
-    .io_master_awid(io_master_awid),
-    .io_master_awlen(io_master_awlen),
-    .io_master_awsize(io_master_awsize),
-    .io_master_awburst(io_master_awburst),
-    .io_master_awvalid(io_master_awvalid),
-    .io_master_awready(io_master_awready),
+    .io_master_awaddr(bus_master_awaddr),
+    .io_master_awid(bus_master_awid),
+    .io_master_awlen(bus_master_awlen),
+    .io_master_awsize(bus_master_awsize),
+    .io_master_awburst(bus_master_awburst),
+    .io_master_awvalid(bus_master_awvalid),
+    .io_master_awready(bus_master_awready),
     // Write Data Channel (W)
-    .io_master_wdata(io_master_wdata),
-    .io_master_wstrb(io_master_wstrb),
-    .io_master_wvalid(io_master_wvalid),
-    .io_master_wready(io_master_wready),
-    .io_master_wlast(io_master_wlast),
+    .io_master_wdata(bus_master_wdata),
+    .io_master_wstrb(bus_master_wstrb),
+    .io_master_wvalid(bus_master_wvalid),
+    .io_master_wready(bus_master_wready),
+    .io_master_wlast(bus_master_wlast),
     // Write Response Channel (B)
-    .io_master_bresp(io_master_bresp),
-    .io_master_bvalid(io_master_bvalid),
-    .io_master_bready(io_master_bready),
-    .io_master_bid(io_master_bid),
+    .io_master_bresp(bus_master_bresp),
+    .io_master_bvalid(bus_master_bvalid),
+    .io_master_bready(bus_master_bready),
+    .io_master_bid(bus_master_bid),
 
     // IFU 接口
     .ifu_arready(ifu_arready),
@@ -552,5 +585,216 @@ ysyx_25040131_bus BUS(
     .lsu_bresp(lsu_bresp),
     .lsu_bready(lsu_bready)
 );
+
+`ifdef CONFIG_SYS_SOC
+// ============================================================================
+// CONFIG_SYS_SOC模式：中间变量直接连接到顶层端口（与ysyxSoC交互）
+// ============================================================================
+assign io_master_araddr = bus_master_araddr;
+assign io_master_arid = bus_master_arid;
+assign io_master_arlen = bus_master_arlen;
+assign io_master_arsize = bus_master_arsize;
+assign io_master_arburst = bus_master_arburst;
+assign io_master_arvalid = bus_master_arvalid;
+assign bus_master_arready = io_master_arready;
+assign bus_master_rdata = io_master_rdata;
+assign bus_master_rresp = io_master_rresp;
+assign bus_master_rvalid = io_master_rvalid;
+assign io_master_rready = bus_master_rready;
+assign bus_master_rlast = io_master_rlast;
+assign bus_master_rid = io_master_rid;
+assign io_master_awaddr = bus_master_awaddr;
+assign io_master_awid = bus_master_awid;
+assign io_master_awlen = bus_master_awlen;
+assign io_master_awsize = bus_master_awsize;
+assign io_master_awburst = bus_master_awburst;
+assign io_master_awvalid = bus_master_awvalid;
+assign bus_master_awready = io_master_awready;
+assign io_master_wdata = bus_master_wdata;
+assign io_master_wstrb = bus_master_wstrb;
+assign io_master_wvalid = bus_master_wvalid;
+assign bus_master_wready = io_master_wready;
+assign io_master_wlast = bus_master_wlast;
+assign bus_master_bresp = io_master_bresp;
+assign bus_master_bvalid = io_master_bvalid;
+assign io_master_bready = bus_master_bready;
+assign bus_master_bid = io_master_bid;
+`endif
+
+`ifdef CONFIG_SYS_NPC
+// ============================================================================
+// CONFIG_SYS_NPC模式：实例化xbar、sram、uart（NPC内部精简模式）
+// ============================================================================
+
+// XBAR 到 SRAM 的信号
+wire [31:0] xbar_sram_araddr;
+wire xbar_sram_arvalid;
+wire xbar_sram_arready;
+wire [31:0] xbar_sram_rdata;
+wire [1:0] xbar_sram_rresp;
+wire xbar_sram_rvalid;
+wire xbar_sram_rready;
+wire [31:0] xbar_sram_awaddr;
+wire xbar_sram_awvalid;
+wire xbar_sram_awready;
+wire [31:0] xbar_sram_wdata;
+wire [3:0] xbar_sram_wstrb;
+wire xbar_sram_wvalid;
+wire xbar_sram_wready;
+wire [1:0] xbar_sram_bresp;
+wire xbar_sram_bvalid;
+wire xbar_sram_bready;
+
+// XBAR 到 UART 的信号
+wire [31:0] xbar_uart_araddr;
+wire xbar_uart_arvalid;
+wire xbar_uart_arready;
+wire [31:0] xbar_uart_rdata;
+wire [1:0] xbar_uart_rresp;
+wire xbar_uart_rvalid;
+wire xbar_uart_rready;
+wire [31:0] xbar_uart_awaddr;
+wire xbar_uart_awvalid;
+wire xbar_uart_awready;
+wire [31:0] xbar_uart_wdata;
+wire [3:0] xbar_uart_wstrb;
+wire xbar_uart_wvalid;
+wire xbar_uart_wready;
+wire [1:0] xbar_uart_bresp;
+wire xbar_uart_bvalid;
+wire xbar_uart_bready;
+
+// XBAR 实例：路由BUS请求到SRAM或UART
+ysyx_25040131_xbar #(
+    .XLEN(XLEN)
+) XBAR (
+    .clock(clock),
+    .reset(reset),
+    
+    // AXI4 Master 接口（来自 BUS 中间信号）
+    .m_axi_araddr(bus_master_araddr),
+    .m_axi_arid(bus_master_arid),
+    .m_axi_arlen(bus_master_arlen),
+    .m_axi_arsize(bus_master_arsize),
+    .m_axi_arburst(bus_master_arburst),
+    .m_axi_arvalid(bus_master_arvalid),
+    .m_axi_arready(bus_master_arready),
+    .m_axi_rdata(bus_master_rdata),
+    .m_axi_rresp(bus_master_rresp),
+    .m_axi_rvalid(bus_master_rvalid),
+    .m_axi_rready(bus_master_rready),
+    .m_axi_rlast(bus_master_rlast),
+    .m_axi_rid(bus_master_rid),
+    .m_axi_awaddr(bus_master_awaddr),
+    .m_axi_awid(bus_master_awid),
+    .m_axi_awlen(bus_master_awlen),
+    .m_axi_awsize(bus_master_awsize),
+    .m_axi_awburst(bus_master_awburst),
+    .m_axi_awvalid(bus_master_awvalid),
+    .m_axi_awready(bus_master_awready),
+    .m_axi_wdata(bus_master_wdata),
+    .m_axi_wstrb(bus_master_wstrb),
+    .m_axi_wvalid(bus_master_wvalid),
+    .m_axi_wready(bus_master_wready),
+    .m_axi_wlast(bus_master_wlast),
+    .m_axi_bresp(bus_master_bresp),
+    .m_axi_bvalid(bus_master_bvalid),
+    .m_axi_bready(bus_master_bready),
+    .m_axi_bid(bus_master_bid),
+    
+    // SRAM 接口
+    .sram_araddr(xbar_sram_araddr),
+    .sram_arvalid(xbar_sram_arvalid),
+    .sram_arready(xbar_sram_arready),
+    .sram_rdata(xbar_sram_rdata),
+    .sram_rresp(xbar_sram_rresp),
+    .sram_rvalid(xbar_sram_rvalid),
+    .sram_rready(xbar_sram_rready),
+    .sram_awaddr(xbar_sram_awaddr),
+    .sram_awvalid(xbar_sram_awvalid),
+    .sram_awready(xbar_sram_awready),
+    .sram_wdata(xbar_sram_wdata),
+    .sram_wstrb(xbar_sram_wstrb),
+    .sram_wvalid(xbar_sram_wvalid),
+    .sram_wready(xbar_sram_wready),
+    .sram_bresp(xbar_sram_bresp),
+    .sram_bvalid(xbar_sram_bvalid),
+    .sram_bready(xbar_sram_bready),
+    
+    // UART 接口
+    .uart_araddr(xbar_uart_araddr),
+    .uart_arvalid(xbar_uart_arvalid),
+    .uart_arready(xbar_uart_arready),
+    .uart_rdata(xbar_uart_rdata),
+    .uart_rresp(xbar_uart_rresp),
+    .uart_rvalid(xbar_uart_rvalid),
+    .uart_rready(xbar_uart_rready),
+    .uart_awaddr(xbar_uart_awaddr),
+    .uart_awvalid(xbar_uart_awvalid),
+    .uart_awready(xbar_uart_awready),
+    .uart_wdata(xbar_uart_wdata),
+    .uart_wstrb(xbar_uart_wstrb),
+    .uart_wvalid(xbar_uart_wvalid),
+    .uart_wready(xbar_uart_wready),
+    .uart_bresp(xbar_uart_bresp),
+    .uart_bvalid(xbar_uart_bvalid),
+    .uart_bready(xbar_uart_bready)
+);
+
+// SRAM 实例：模拟内存
+ysyx_25040131_sram #(
+    .XLEN(XLEN)
+) SRAM (
+    .clock(clock),
+    .reset(reset),
+    
+    // AXI4-Lite 接口（来自 XBAR）
+    .io_master_araddr(xbar_sram_araddr),
+    .io_master_arvalid(xbar_sram_arvalid),
+    .io_master_arready(xbar_sram_arready),
+    .io_master_rdata(xbar_sram_rdata),
+    .io_master_rresp(xbar_sram_rresp),
+    .io_master_rvalid(xbar_sram_rvalid),
+    .io_master_rready(xbar_sram_rready),
+    .io_master_awaddr(xbar_sram_awaddr),
+    .io_master_awvalid(xbar_sram_awvalid),
+    .io_master_awready(xbar_sram_awready),
+    .io_master_wdata(xbar_sram_wdata),
+    .io_master_wstrb(xbar_sram_wstrb),
+    .io_master_wvalid(xbar_sram_wvalid),
+    .io_master_wready(xbar_sram_wready),
+    .io_master_bresp(xbar_sram_bresp),
+    .io_master_bvalid(xbar_sram_bvalid),
+    .io_master_bready(xbar_sram_bready)
+);
+
+// UART 实例：串口输出
+ysyx_25040131_uart #(
+    .XLEN(XLEN)
+) UART (
+    .clock(clock),
+    .reset(reset),
+    
+    // AXI4-Lite 接口（来自 XBAR）
+    .s_axi_araddr(xbar_uart_araddr),
+    .s_axi_arvalid(xbar_uart_arvalid),
+    .s_axi_arready(xbar_uart_arready),
+    .s_axi_rdata(xbar_uart_rdata),
+    .s_axi_rresp(xbar_uart_rresp),
+    .s_axi_rvalid(xbar_uart_rvalid),
+    .s_axi_rready(xbar_uart_rready),
+    .s_axi_awaddr(xbar_uart_awaddr),
+    .s_axi_awvalid(xbar_uart_awvalid),
+    .s_axi_awready(xbar_uart_awready),
+    .s_axi_wdata(xbar_uart_wdata),
+    .s_axi_wstrb(xbar_uart_wstrb),
+    .s_axi_wvalid(xbar_uart_wvalid),
+    .s_axi_wready(xbar_uart_wready),
+    .s_axi_bresp(xbar_uart_bresp),
+    .s_axi_bvalid(xbar_uart_bvalid),
+    .s_axi_bready(xbar_uart_bready)
+);
+
+`endif
 
 endmodule

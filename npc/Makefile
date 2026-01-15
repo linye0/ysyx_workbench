@@ -12,6 +12,7 @@ GUEST_ISA = riscv32
 
 default: $(BIN)
 
+
 -include $(NPC_HOME)/include/config/auto.conf
 -include $(NPC_HOME)/include/config/auto.conf.cmd
 include ../Makefile
@@ -39,7 +40,7 @@ INC_PATH += $(VSRC_INCLUDE_DIRS_SOC)
 VERILATOR_CFLAGS += -DCONFIG_USE_DPI_C
 
 # 根据配置设置不同的选项
-ifeq ($(CONFIG_SYS_SOC),y)
+ifeq ($(PLATFORM),ysyxsoc)
   # CONFIG_SOC=y 配置
   # 加上 ysyxSoC 外设路径
   INC_PATH += $(YSYX_HOME)/ysyxSoC/perip/uart16550/rtl
@@ -48,18 +49,21 @@ ifeq ($(CONFIG_SYS_SOC),y)
   # VERILATOR_CFLAGS: 添加时序相关选项
   VERILATOR_CFLAGS += --timescale "1ns/1ns" --no-timing
   VERILATOR_CFLAGS += -DCONFIG_SYS_SOC
+  CXXFLAGS += -DCONFIG_SYS_SOC
   
   # 顶层模块改为 ysyxSoCFull
   TOPNAME = ysyxSoCFull
   
   # 添加 ysyxSoCFull.v 和 ysyxSoC/perip 目录及其子目录下的所有 .v 文件到源文件列表
   VSRCS_SOC_EXTRA = $(YSYX_HOME)/ysyxSoC/build/ysyxSoCFull.v $(shell find -L $(YSYX_HOME)/ysyxSoC/perip -type f -name "*.v")
-else ifeq ($(CONFIG_SYS_NPC),y)
+else ifeq ($(PLATFORM),npc)
   # CONFIG_NPC=y 配置
   # INC_PATH: vsrc/include 下除了 soc 以外的所有目录及子目录
   VERILATOR_CFLAGS += -DCONFIG_SYS_NPC
+  CXXFLAGS += -DCONFIG_SYS_NPC
   # 顶层模块保持 ysyx_25040131（已在上面定义）
   VSRCS_SOC_EXTRA =
+  # 可选：如果既不是 npc 也不是 ysyxsoc，可以报错提示
 endif
 
 # 更新 BIN 和 BIN_GDB 路径（基于 TOPNAME）
@@ -81,13 +85,15 @@ DIRS-BLACKLIST-y += $(DIRS-BLACKLIST)
 SRCS-BLACKLIST-y += $(SRCS-BLACKLIST) $(shell find -L $(DIRS-BLACKLIST-y) -name "*.c")
 SRCS-y += $(shell find -L $(DIRS-y) -name "*.c")
 SRCS = $(filter-out $(SRCS-BLACKLIST-y),$(SRCS-y))
-SRCS += $(SRC_AUTO_BIND)
 # $(info SRCS: $(SRCS))
 ARGS ?= -l $(OBJ_DIR)/npc-log.txt -d $(NEMU_HOME)/build/riscv32-nemu-interpreter-so
 
+
+ifeq ($(PLATFORM),ysyxsoc)
 # NVBoard interop: rules
 include $(NVBOARD_HOME)/scripts/nvboard.mk
 SRCS += $(SRC_AUTO_BIND)
+endif
 
 INC_PATH += $(OBJ_DIR)
 

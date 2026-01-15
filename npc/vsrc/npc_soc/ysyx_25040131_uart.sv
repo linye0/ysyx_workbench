@@ -157,4 +157,3 @@ module ysyx_25040131_uart #(
   end
 
 endmodule
-

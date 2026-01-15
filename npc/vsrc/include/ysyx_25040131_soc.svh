@@ -45,6 +45,8 @@
 // random test setting
 `define YSYX_IFSR_ENABLE 0
 
+`define YSYX_AM_DEVICE 1
+
 `endif
 
 `endif
