@@ -12,4 +12,7 @@
 !.gitignore
 !README.md
 !perf_record.log
+!*.sby
+!*.smto
+!*.sbyh
 build/
