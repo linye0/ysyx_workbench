@@ -26,7 +26,7 @@ endef
 
 perf:
 	@echo "run performance evaluation."
-	@$(MAKE) -C $(YSYX_HOME)/am-kernels/benchmarks/microbench ARCH=riscv32-ysyxsoc run mainargs=train
+	@$(MAKE) -C $(YSYX_HOME)/am-kernels/benchmarks/microbench RECORD=y ARCH=riscv32-ysyxsoc run mainargs=train
 
 
 .git_commit:

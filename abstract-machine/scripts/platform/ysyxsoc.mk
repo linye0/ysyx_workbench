@@ -25,6 +25,7 @@ NPCFLAGS  += -b
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = The insert-arg rule in Makefile will insert mainargs here.
 CFLAGS += -DMAINARGS_MAX_LEN=$(MAINARGS_MAX_LEN) -DMAINARGS_PLACEHOLDER=\""$(MAINARGS_PLACEHOLDER)"\"
+RECORD ?=
 
 insert-arg: image
 	@python $(AM_HOME)/tools/insert-arg.py $(IMAGE).bin $(MAINARGS_MAX_LEN) "$(MAINARGS_PLACEHOLDER)" "$(mainargs)"
@@ -38,9 +39,8 @@ image: image-dep
 ## run调用insert-arg调用image，此时IMAGE.bin里面应该已经包含了AM提供的程序运行所需的库函数
 ## elf文件是由$(AM_HOME)/Makefile生成的
 run: insert-arg
-	# echo "TODO: add command here to run simulation"
 	$(MAKE) -C $(YSYX_HOME)/ysyxSoC verilog
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	$(MAKE) -C $(NPC_HOME) RECORD=$(RECORD) ISA=$(ISA) PLATFORM=$(PLATFORM) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 	
 gdb: insert-arg
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin

@@ -10,6 +10,7 @@
 #include <cpu/difftest.h>
 #include <memory/paddr.h>
 #include <inttypes.h> // 必须包含，用于 PRIu64 宏
+#include <time.h>      // 必须包含
 #ifdef CONFIG_NVBOARD
 #include <nvboard.h>
 #endif
@@ -325,55 +326,97 @@ extern "C" void npc_cycle_record() {
 #define COLOR_END  "\033[0m"
 
 void print_performance_metrics() {
-    printf(BLUE_START);
-    printf("\n======================= Performance Analysis =======================\n");
+    // 1. 确定输出流
+    FILE *out = stdout;
+    int is_file = 0;
+
+    // --- 1. 获取并格式化当前时间 ---
+    time_t rawtime;
+    struct tm *timeinfo;
+    char time_buffer[64];
+
+    time(&rawtime);                         // 获取原始时间戳
+    timeinfo = localtime(&rawtime);         // 转换为本地时间结构体
+    // 格式化为: 2024-05-20 14:30:05
+    strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+
+    #define STRIFY(x) #x
+    #define TOSTRING(x) STRIFY(x)
+#ifdef CONFIG_RECORD_PERF
+    // 自动拼接路径：NPC_HOME_PATH 是 Makefile 传进来的 "/home/.../npc"
+    // 拼接后变为 "/home/.../npc/perf_record.log"
+    const char *log_path = TOSTRING(NPC_HOME_PATH) "/perf_record.log";
+
+    out = fopen(log_path, "a");
+    if (out == NULL) {
+        // 如果打开失败，打印错误原因并退回到标准输出
+        perror("Failed to open perf_record.log at " TOSTRING(NPC_HOME_PATH));
+        out = stdout;
+    } else {
+        is_file = 1;
+    }
+#endif
+
+    // 如果输出到控制台，打印颜色；如果输出到文件，跳过颜色代码（防止日志出现乱码）
+    if (!is_file) fprintf(out, "%s", BLUE_START);
+
+    fprintf(out, "\n======================= Performance Analysis =======================\n");
+    fprintf(out, "Record Time         : %s\n", time_buffer); // 在这里打印时间
+    fprintf(out, "--------------------------------------------------------------------\n");
     
-    // 1. 效率概览 - 使用 PRIu64 打印 64 位无符号整数
-    printf("%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
+    // 2. 效率概览 - 将 printf 改为 fprintf(out, ...)
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
            "Total Cycles", perf.total_cycle, 
            "Total Instructions", perf.total_inst);
 
-    // 计算 IPC 和 CPI (增加防零除检查)
     double ipc = (perf.total_cycle > 0) ? (double)perf.total_inst / perf.total_cycle : 0.0;
     double cpi = (perf.total_inst > 0) ? (double)perf.total_cycle / perf.total_inst : 0.0;
 
-    printf("%-20s: %-12.4f | %-20s: %-12.4f\n", 
+    fprintf(out, "%-20s: %-12.4f | %-20s: %-12.4f\n", 
            "IPC (Higher, better)", ipc, 
            "CPI (Lower, better)",  cpi);
 
-    printf("----------------------- Instruction Distribution -------------------\n");
+    fprintf(out, "----------------------- Instruction Distribution -------------------\n");
     
-    // 2. 分类统计 (注意：每行都要检查 count > 0 防止计算 CPI 时除以 0)
-    #define PRINT_INST_LINE(name, type) \
-        printf("%-20s: %-12" PRIu64 " (%6.2f%%) , CPI: %-12.4f\n", \
+    // 3. 局部定义的宏也需要改为 fprintf(out, ...)
+    #define FPRINT_INST_LINE(stream, name, type) \
+        fprintf(stream, "%-20s: %-12" PRIu64 " (%6.2f%%) , CPI: %-12.4f\n", \
                name, perf.inst_count[type], PCT(perf.inst_count[type]), \
                (perf.inst_count[type] > 0) ? (double)perf.inst_cycle[type] / perf.inst_count[type] : 0.0)
 
-    PRINT_INST_LINE("Calculation",  CAL_INST);
-    PRINT_INST_LINE("Memory",       MEM_INST);
-    PRINT_INST_LINE("Control Flow", CTRL_INST);
-    PRINT_INST_LINE("System",       SYS_INST);
+    FPRINT_INST_LINE(out, "Calculation",  CAL_INST);
+    FPRINT_INST_LINE(out, "Memory",       MEM_INST);
+    FPRINT_INST_LINE(out, "Control Flow", CTRL_INST);
+    FPRINT_INST_LINE(out, "System",       SYS_INST);
 
     if (perf.inst_count[OTHER_INST] > 0) {
-        PRINT_INST_LINE("Others", OTHER_INST);
+        FPRINT_INST_LINE(out, "Others", OTHER_INST);
     }
 
-    printf("----------------------- Bus Activity -------------------------------\n");
+    fprintf(out, "----------------------- Bus Activity -------------------------------\n");
     
-    // 3. 总线活动统计
-    printf("%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
            "IFU Fetch", perf.ifu_fetch_count, 
            "LSU Read",  perf.lsu_read_count);
 
-    // 计算访存/指令比率 (Mem/Inst Ratio)
-    // 修正：通常是 (Read+Write) / Total_Inst，或者 Total_Inst / Mem_Inst
     double mem_ratio = (perf.inst_count[MEM_INST] > 0) ? (double)perf.total_inst / perf.inst_count[MEM_INST] : 0.0;
 
-    printf("%-20s: %-12" PRIu64 " | %-20s: %-12.2f\n", 
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12.2f\n", 
            "LSU Write", perf.lsu_write_count, 
            "Inst/Mem Ratio", mem_ratio);
 
-    printf("====================================================================\n");
-    printf(COLOR_END);
+    fprintf(out, "====================================================================\n");
+
+    if (!is_file) fprintf(out, "%s", COLOR_END);
+
+    // 4. 如果是文件，记得关闭并刷盘
+#ifdef CONFIG_RECORD_PERF
+    if (is_file) {
+        fflush(out);
+        fclose(out);
+        // 打印提示，告诉用户文件存到哪了
+        printf("Performance metrics fixed recorded to: %s\n", log_path);
+    }
+#endif
 }
 #endif

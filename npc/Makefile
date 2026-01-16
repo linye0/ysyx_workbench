@@ -56,6 +56,9 @@ ifeq ($(PLATFORM),ysyxsoc)
   
   # 添加 ysyxSoCFull.v 和 ysyxSoC/perip 目录及其子目录下的所有 .v 文件到源文件列表
   VSRCS_SOC_EXTRA = $(YSYX_HOME)/ysyxSoC/build/ysyxSoCFull.v $(shell find -L $(YSYX_HOME)/ysyxSoC/perip -type f -name "*.v")
+  ifeq ($(RECORD), y)
+  	CXXFLAGS += -DCONFIG_RECORD_PERF
+  endif
 else ifeq ($(PLATFORM),npc)
   # CONFIG_NPC=y 配置
   # INC_PATH: vsrc/include 下除了 soc 以外的所有目录及子目录
@@ -117,6 +120,7 @@ INC_PATH += $(NVBOARD_HOME)/include
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 # 根据配置设置相应的宏定义
 CXXFLAGS += -fpermissive $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -DCONFIG_NPC -D__GUEST_ISA__=$(GUEST_ISA)
+CXXFLAGS += -DNPC_HOME_PATH=$(NPC_HOME)
 GDBFLAGS = $(CXXFLAGS) -g -O0
 LDFLAGS += -lreadline -lncurses -lpthread -latomic -lSDL2
 
