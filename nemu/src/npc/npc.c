@@ -11,14 +11,18 @@
 #include <memory/paddr.h>
 #include <inttypes.h> // 必须包含，用于 PRIu64 宏
 #include <time.h>      // 必须包含
+#ifdef CONFIG_SYS_SOC
 #ifdef CONFIG_NVBOARD
 #include <nvboard.h>
+#endif
 #endif
 
 
 #ifdef CONFIG_NPC
+#ifdef CONFIG_SYS_SOC
 #ifdef CONFIG_NVBOARD
 void nvboard_bind_all_pins(TOP_NAME* top);
+#endif
 #endif
 
 PerfMetrics perf = {};
@@ -44,9 +48,11 @@ void init_verilog(int argc, char* argv[]) {
     top->trace(tfp, 0);
     tfp->open("wave.vcd");
 
+    #ifdef CONFIG_SYS_SOC
     #ifdef CONFIG_NVBOARD
     nvboard_bind_all_pins(top);
     nvboard_init();
+    #endif
     #endif
 
 	reset(top, 32);  // 这个值如果设的太小的话，在接入SoC的时候，由于SoC里面的一个傻逼延迟器，会导致reset在复位之后又被短暂的设为1,导致出现bug

@@ -154,6 +154,13 @@ wire [31:0] ifu_rdata;     // BUS返回给IFU的数据
 wire ifu_rvalid;           // BUS返回给IFU的数据有效
 wire ifu_rready;           // IFU准备好接收读数据
 
+wire [31:0] icache_araddr;  // ICACHE发送给BUS的读地址
+wire icache_arvalid;        // ICACHE读地址有效
+wire icache_arready;        // BUS准备好接收ICACHE读地址
+wire [31:0] icache_rdata;   // BUS返回给ICACHE的数据
+wire icache_rvalid;         // BUS返回给ICACHE的数据有效
+wire icache_rready;         // ICACHE准备好接收读数据
+
 // ------------------------------
 // LSU相关信号
 wire [31:0] lsu_read_data; // LSU输出的读数据
@@ -269,6 +276,33 @@ ysyx_25040131_ifu IFU(
     .next_ready(idu_ready),        // IDU可以接收时，IFU才能发送
     .out_valid(ifu_valid),
     .out_ready(ifu_ready)
+);
+
+// ============================================================================
+// ICACHE：指令缓存（位于IFU和BUS之间）
+// ============================================================================
+// 简易指令缓存：16个cache块，每块4B，直接映射方式
+ysyx_25040131_icache #(
+    .INDEX_WIDTH(4),    // 4位索引 = 16个cache块
+    .BLOCK_SIZE(4),     // 块大小4B = 1条指令
+    .XLEN(XLEN)
+) ICACHE (
+    .clock(clock),
+    .reset(reset),
+    // IFU接口
+    .ifu_araddr(ifu_araddr),
+    .ifu_arvalid(ifu_arvalid),
+    .ifu_arready(ifu_arready),
+    .ifu_rdata(ifu_rdata),
+    .ifu_rvalid(ifu_rvalid),
+    .ifu_rready(ifu_rready),
+    // BUS接口
+    .bus_araddr(icache_araddr),
+    .bus_arvalid(icache_arvalid),
+    .bus_arready(icache_arready),
+    .bus_rdata(icache_rdata),
+    .bus_rvalid(icache_rvalid),
+    .bus_rready(icache_rready)
 );
 
 // ============================================================================
@@ -558,13 +592,13 @@ ysyx_25040131_bus BUS(
     .io_master_bready(bus_master_bready),
     .io_master_bid(bus_master_bid),
 
-    // IFU 接口
-    .ifu_arready(ifu_arready),
-    .ifu_araddr(ifu_araddr),
-    .ifu_arvalid(ifu_arvalid),
-    .ifu_rdata(ifu_rdata),
-    .ifu_rvalid(ifu_rvalid),
-    .ifu_rready(ifu_rready),
+    // ICACHE 接口（原IFU接口，现在通过ICACHE连接）
+    .ifu_arready(icache_arready),
+    .ifu_araddr(icache_araddr),
+    .ifu_arvalid(icache_arvalid),
+    .ifu_rdata(icache_rdata),
+    .ifu_rvalid(icache_rvalid),
+    .ifu_rready(icache_rready),
 
     // LSU 接口
     .lsu_araddr(lsu_araddr),

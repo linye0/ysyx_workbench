@@ -6,7 +6,7 @@ VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc -trace --Wno-LATCH -Wno-WIDTHEXPAND\
 			-O3 --x-assign fast --x-initial fast --noassert -sv --autoflush
 
-BUILD_DIR = $(abspath build)
+BUILD_DIR = $(abspath build/$(PLATFORM))
 OBJ_DIR = $(BUILD_DIR)
 GUEST_ISA = riscv32
 
@@ -103,7 +103,8 @@ INC_PATH += $(OBJ_DIR)
 $(shell mkdir -p $(BUILD_DIR))
 
 ## VSRCS = $(shell find $(abspath ./vsrc) $(abspath ./template) -name "*.v")
-VSRCS = $(shell find -L ./vsrc -type f -name "*.sv")
+# VSRCS = $(shell find -L ./vsrc -type f -name "*.sv")
+VSRCS = $(shell find -L $(abspath $(NPC_HOME)/vsrc) -type f -name "*.sv")
 # 添加 SOC 配置的额外源文件（如果存在）
 VSRCS += $(VSRCS_SOC_EXTRA)
 ## INC_PATH += $(shell find $(NPC_HOME)/vsrc/include -type d)
