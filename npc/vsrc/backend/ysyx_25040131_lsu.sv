@@ -269,6 +269,7 @@ module ysyx_25040131_lsu #(
             if (lsu_rresp != 2'b00) access_fault <= 1'b1;
             state_load <= LOAD_DONE;
             lsu_rready <= 1'b0;
+            `YSYX_DPI_C_LSU_READ_COUNT;
           end
         end
         LOAD_DONE: begin
@@ -315,6 +316,7 @@ module ysyx_25040131_lsu #(
             lsu_bready <= 1'b0;
             state_store <= STORE_DONE;
             if (lsu_bresp != 2'b00) access_fault <= 1'b1;
+            `YSYX_DPI_C_LSU_WRITE_COUNT;
           end
         end
         STORE_DONE: begin
