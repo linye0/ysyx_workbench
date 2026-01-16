@@ -1,0 +1,18 @@
+# 形式化验证临时产物
+# 忽略所有 depth 相关的临时目录
+icache_formal_depth*/
+icache_formal/
+
+# 忽略日志文件
+*.log
+
+# 忽略波形文件
+*.vcd
+*.yw
+*.vlogtb
+*.smtc
+
+# 忽略其他临时文件
+*.bak
+*~
+
