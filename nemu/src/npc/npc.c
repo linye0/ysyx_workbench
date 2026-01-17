@@ -326,6 +326,23 @@ extern "C" void npc_cycle_record() {
     perf.prev_cycle = perf.total_cycle;
 }
 
+extern "C" void npc_icache_hit() {
+    perf.icache_hit_count++;
+}
+
+extern "C" void npc_icache_miss(int flag) {
+    static uint64_t cur_cycle;
+    if (flag == 0) {
+        perf.icache_miss_count++;
+        cur_cycle = perf.total_cycle;
+        return;
+    }
+    if (flag == 1) {
+        perf.icache_miss_cycle += perf.total_cycle - cur_cycle;
+        return;
+    }
+}
+
 // 修改后的百分比宏，确保使用 double 计算
 #define PCT(count) ((perf.total_inst > 0) ? (double)(count) * 100.0 / (double)perf.total_inst : 0.0)
 #define BLUE_START "\033[1;34m"
@@ -410,6 +427,23 @@ void print_performance_metrics() {
     fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12.2f\n", 
            "LSU Write", perf.lsu_write_count, 
            "Inst/Mem Ratio", mem_ratio);
+
+    fprintf(out, "----------------------- ICACHE Activity ----------------------------\n");
+
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
+           "ICache Hit", perf.icache_hit_count, 
+           "ICache Miss", perf.icache_miss_count);
+
+    double perf_miss_ratio = (double)perf.icache_miss_count / (perf.icache_hit_count + perf.icache_miss_count);
+    double perf_miss_average_cycle = (double)perf.icache_miss_cycle / perf.icache_miss_count;
+
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12.2f\n",
+            "ICache Miss Cycle", perf.icache_miss_cycle,
+            "Miss Cycle Average", perf_miss_average_cycle);
+
+    fprintf(out, "%-20s: %-12.2f | %-20s: %-12.2f\n", 
+           "ICache Miss Ratio", perf_miss_ratio, 
+           "AMAT", 1 + perf_miss_ratio * perf_miss_average_cycle);
 
     fprintf(out, "====================================================================\n");
 

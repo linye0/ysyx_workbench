@@ -88,10 +88,12 @@ module ysyx_25040131_icache #(
                 if (cache_hit) begin
                     // 命中，等待IFU接收数据
                     if (ifu_rready) begin
+                        `YSYX_DPI_C_ICACHE_HIT;
                         next_state = IDLE;
                     end
                 end else begin
                     // 未命中，开始缺失处理
+                    `YSYX_DPI_C_ICACHE_MISS(0);
                     next_state = MISS_AR;
                 end
             end
@@ -104,6 +106,7 @@ module ysyx_25040131_icache #(
             MISS_R: begin
                 // 等待总线返回数据
                 if (bus_rvalid && bus_rready) begin
+                    `YSYX_DPI_C_ICACHE_MISS(1);
                     next_state = IDLE;
                 end
             end

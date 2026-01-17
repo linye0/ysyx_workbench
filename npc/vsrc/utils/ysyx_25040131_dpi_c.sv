@@ -38,4 +38,11 @@ import "DPI-C" function void npc_ifu_inst(
 import "DPI-C" function void npc_cycle_record(
 );
 
+import "DPI-C" function void npc_icache_hit(
+);
+
+import "DPI-C" function void npc_icache_miss(
+    input int flag
+);
+
 `endif

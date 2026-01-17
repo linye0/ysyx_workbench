@@ -15,6 +15,8 @@
 `define YSYX_DPI_C_LSU_WRITE_COUNT npc_lsu_write_count()
 `define YSYX_DPI_C_IFU_INST(inst) npc_ifu_inst(inst)
 `define YSYX_DPI_C_CYCLE_RECORD npc_cycle_record()
+`define YSYX_DPI_C_ICACHE_HIT npc_icache_hit()
+`define YSYX_DPI_C_ICACHE_MISS(flag) npc_icache_miss(flag)
 
 `define YSYX_ASSERT(cond, msg) `ASSERT(cond, msg)
 
@@ -31,6 +33,8 @@
 `define YSYX_DPI_C_LSU_WRITE_COUNT 
 `define YSYX_DPI_C_IFU_INST(inst) 
 `define YSYX_DPI_C_CYCLE_RECORD 
+`define YSYX_DPI_C_ICACHE_HIT
+`define YSYX_DPI_C_ICACHE_MISS(flag)
 
 `define YSYX_ASSERT(cond, msg) 
 

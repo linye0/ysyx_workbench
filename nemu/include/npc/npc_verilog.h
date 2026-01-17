@@ -35,6 +35,9 @@ typedef struct perfmetrics {
     uint64_t lsu_write_count;
     uint64_t inst_count[5];
     uint64_t inst_cycle[5];
+    uint64_t icache_hit_count;
+    uint64_t icache_miss_count;
+    uint64_t icache_miss_cycle;
     int cur_inst_type;        // 类型可以用 int
 } PerfMetrics;
 
