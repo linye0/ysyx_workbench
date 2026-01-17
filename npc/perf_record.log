@@ -3,12 +3,12 @@ Total Cycles        : 7323470904   | Total Instructions  : 187034520
 IPC (Higher, better): 0.0255       | CPI (Lower, better) : 39.1557     
 ----------------------- Instruction Distribution -------------------
 Calculation         : 114299679    ( 61.11%) , CPI: 36.0640     
-Memory              : 16152448     (  8.64%) , CPI: 71.9970     
+Memory              : 16152448     (  8.64																			%) , CPI: 71.9970     
 Control Flow        : 56582391     ( 30.25%) , CPI: 36.0260     
 System              : 3            (  0.00%) , CPI: 4.0000      
 ----------------------- Bus Activity -------------------------------
-IFU Fetch           : 187034521    | LSU Read            : 0           
-LSU Write           : 0            | Inst/Mem Ratio      : 11.58       
+IFU Fetch           : 187034521    | LSU Read            : 10936822         
+LSU Write           : 5218593      | Inst/Mem Ratio      : 11.58       
 ====================================================================
 
 ======================= Performance Analysis =======================
@@ -22,6 +22,58 @@ Memory              : 16152448     (  8.64%) , CPI: 71.9970
 Control Flow        : 56582391     ( 30.25%) , CPI: 36.0260     
 System              : 3            (  0.00%) , CPI: 4.0000      
 ----------------------- Bus Activity -------------------------------
-IFU Fetch           : 187034521    | LSU Read            : 0           
-LSU Write           : 0            | Inst/Mem Ratio      : 11.58       
+IFU Fetch           : 187034521    | LSU Read            : 10936822           
+LSU Write           : 5218593      | Inst/Mem Ratio      : 11.58       
 ====================================================================
+
+======================= Performance Analysis =======================
+Record Time         : 2026-01-16 23:06:43
+--------------------------------------------------------------------
+Total Cycles        : 2845095349   | Total Instructions  : 187040070   
+IPC (Higher, better): 0.0657       | CPI (Lower, better) : 15.2112     
+----------------------- Instruction Distribution -------------------
+Calculation         : 114299565    ( 61.11%) , CPI: 12.3040     
+Memory              : 16155415     (  8.64%) , CPI: 55.5951     
+Control Flow        : 56585088     ( 30.25%) , CPI: 9.5535      
+System              : 3            (  0.00%) , CPI: 5.3333      
+----------------------- Bus Activity -------------------------------
+IFU Fetch           : 187040071    | LSU Read            : 10936822    
+LSU Write           : 5218593      | Inst/Mem Ratio      : 11.58       
+====================================================================
+
+
+
+======================= Performance Analysis =======================
+Record Time         : 2026-01-17 00:09:29
+--------------------------------------------------------------------
+Total Cycles        : 2845095349   | Total Instructions  : 187040070   
+IPC (Higher, better): 0.0657       | CPI (Lower, better) : 15.2112     
+----------------------- Instruction Distribution -------------------
+Calculation         : 114299565    ( 61.11%) , CPI: 12.3040     
+Memory              : 16155415     (  8.64%) , CPI: 55.5951     
+Control Flow        : 56585088     ( 30.25%) , CPI: 9.5535      
+System              : 3            (  0.00%) , CPI: 5.3333      
+----------------------- Bus Activity -------------------------------
+IFU Fetch           : 187040071    | LSU Read            : 10936822    
+LSU Write           : 5218593      | Inst/Mem Ratio      : 11.58       
+====================================================================
+
+
+
+======================= Performance Analysis =======================
+Record Time         : 2026-01-17 12:49:57
+--------------------------------------------------------------------
+Total Cycles        : 21958786     | Total Instructions  : 572801      
+IPC (Higher, better): 0.0261       | CPI (Lower, better) : 38.3358     
+----------------------- Instruction Distribution -------------------
+Calculation         : 310510       ( 54.21%) , CPI: 17.9396     
+Memory              : 118024       ( 20.60%) , CPI: 119.5752    
+Control Flow        : 144265       ( 25.19%) , CPI: 15.7738     
+System              : 3            (  0.00%) , CPI: 5.3333      
+----------------------- Bus Activity -------------------------------
+IFU Fetch           : 572802       | LSU Read            : 63271       
+LSU Write           : 54753        | Inst/Mem Ratio      : 4.85        
+====================================================================
+Matched Commit ID   : 682e6b1
+====================================================================
+
