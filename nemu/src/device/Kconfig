@@ -7,6 +7,19 @@ menuconfig DEVICE
 
 if DEVICE
 
+# --- 新增：平台选择逻辑 ---
+choice
+    prompt "Device Layout / Platform"
+    default DEVICE_PLATFORM_NATIVE
+
+config DEVICE_PLATFORM_NATIVE
+    bool "NEMU Native"
+
+config DEVICE_PLATFORM_YSYXSOC
+    bool "ysyxSoC (for running ysyxsoc program on nemu)"
+endchoice
+# -----------------------
+
 config HAS_PORT_IO
   bool
   default y if ISA_x86
@@ -14,6 +27,7 @@ config HAS_PORT_IO
 
 menuconfig HAS_SERIAL
   bool "Enable serial"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_SERIAL
@@ -33,6 +47,7 @@ endif # HAS_SERIAL
 
 menuconfig HAS_TIMER
   bool "Enable timer"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_TIMER
@@ -48,6 +63,7 @@ endif # HAS_TIMER
 
 menuconfig HAS_KEYBOARD
   bool "Enable keyboard"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_KEYBOARD
@@ -63,6 +79,7 @@ endif # HAS_KEYBOARD
 
 menuconfig HAS_VGA
   bool "Enable VGA"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_VGA
@@ -96,6 +113,7 @@ endif # HAS_VGA
 if !TARGET_AM
 menuconfig HAS_AUDIO
   bool "Enable audio"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_AUDIO
@@ -119,6 +137,7 @@ endif # HAS_AUDIO
 
 menuconfig HAS_DISK
   bool "Enable disk"
+  depends on DEVICE_PLATFORM_NATIVE
   default y
 
 if HAS_DISK
@@ -138,6 +157,7 @@ endif # HAS_DISK
 
 menuconfig HAS_SDCARD
   bool "Enable sdcard"
+  depends on DEVICE_PLATFORM_NATIVE
   default n
 
 if HAS_SDCARD
@@ -149,6 +169,33 @@ config SDCARD_IMG_PATH
   string "The path of sdcard image"
   default ""
 endif # HAS_SDCARD
+
+endif
+
+menuconfig HAS_UART16550
+  bool "Enable uart16550"
+  depends on DEVICE_PLATFORM_YSYXSOC
+  default y
+
+if HAS_UART16550
+
+config UART_MMIO
+  hex "MMIO address of the uart16550"
+  default 0x10000000
+
+endif # HAS_SERIAL
+
+menuconfig HAS_CLINT
+  bool "Enable clint"
+  depends on DEVICE_PLATFORM_YSYXSOC
+  default y
+
+if HAS_CLINT
+
+config CLINT_MMIO
+  hex "MMIO address for the clint"
+  default 0x02000000
+
 endif
 
 endif # DEVICE

@@ -26,6 +26,8 @@ int is_exit_status_bad() {
     tfp->close();
   }
   #endif
+  void finalize_itrace_bin();
+  finalize_itrace_bin();
   int good = (nemu_state.state == NEMU_END && nemu_state.halt_ret == 0) ||
     (nemu_state.state == NEMU_QUIT);
   return !good;

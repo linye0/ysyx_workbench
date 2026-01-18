@@ -217,7 +217,7 @@ source "src/device/Kconfig"
 endif
 
 
-menu "Miscellaneous"
+menu "Miscellaneou"
 choice
   depends on !TARGET_AM
   prompt "Host timer"

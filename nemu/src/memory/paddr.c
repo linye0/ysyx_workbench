@@ -117,10 +117,15 @@ word_t paddr_read(paddr_t addr, int len) {
   #ifdef CONFIG_TARGET_SHARE
   if (likely(in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr))) return pmem_read(addr, len);
   #else
+  #ifdef YSYXSOC_ON_NEMU
+  if (likely(in_pmem(addr) || in_mrom(addr) || in_flash(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) return pmem_read(addr, len);
+  #else
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
   #endif
   #endif
+  #endif
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
+  //IFDEF(CONFIG_YSYXSOC, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
 }
@@ -138,10 +143,15 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   #ifdef CONFIG_TARGET_SHARE
   if (likely(in_pmem(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) { pmem_write(addr, len, data); return; }
   #else
+  #ifdef YSYXSOC_ON_NEMU
+  if (likely(in_pmem(addr) || in_sram(addr) || in_psram(addr) || in_sdram(addr))) { pmem_write(addr, len, data); return; }
+  #else
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
   #endif
   #endif
+  #endif
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
+  //IFDEF(CONFIG_YSYXSOC, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
 

@@ -50,17 +50,13 @@ static void fail(void *buf) { panic("access nonexist register"); }
 bool ioe_init() {
   for (int i = 0; i < LENGTH(lut); i++)
     if (!lut[i]) lut[i] = fail;
-  printf("ioe_init\n");
   __am_gpu_init();
   __am_timer_init();
   __am_audio_init();
-  printf("ioe_init finished\n");
   return true;
 }
 
 void ioe_read (int reg, void *buf) { 
-  printf("ioe_read: %d", reg);
   ((handler_t)lut[reg])(buf); }
 void ioe_write(int reg, void *buf) { 
-  printf("ioe_write: %d", reg);
   ((handler_t)lut[reg])(buf); }

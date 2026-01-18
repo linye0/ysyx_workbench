@@ -70,6 +70,7 @@ void check_pc_bound() {
 }
 #endif
 
+
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
@@ -77,6 +78,8 @@ static void exec_once(Decode *s, vaddr_t pc) {
   if (*(nemu_state.difftest_signal) == 1) perf.total_inst++;
   perf.total_cycle++;
   #endif
+  void itrace_bin_record(vaddr_t pc);
+  itrace_bin_record(cpu.pc); 
   isa_exec_once(s);
   #ifdef CONFIG_NPC
   check_pc_bound();

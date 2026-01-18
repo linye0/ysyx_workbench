@@ -20,7 +20,11 @@
 
 #define PMEM_LEFT  ((paddr_t)CONFIG_MBASE)
 #define PMEM_RIGHT ((paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1)
+#ifdef YSYXSOC_ON_NEMU
+#define RESET_VECTOR (CONFIG_FLASH_BASE)
+#else
 #define RESET_VECTOR (PMEM_LEFT + CONFIG_PC_RESET_OFFSET)
+#endif
 
 
 typedef struct {

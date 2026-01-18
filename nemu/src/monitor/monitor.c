@@ -51,6 +51,7 @@ static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static char *flash_img_file = NULL;
 static char *mrom_img_file = NULL;
+static char *itrace_bin_file = NULL;
 static int difftest_port = 1234;
 
 long load_file(const char *filename, void *buf)
@@ -119,7 +120,7 @@ static int parse_args(int argc, char *argv[]) {
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:f:m:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:e:f:m:c:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
@@ -128,6 +129,7 @@ static int parse_args(int argc, char *argv[]) {
 	    case 'e': elf_file = optarg; break;
       case 'f': flash_img_file = optarg; break;
       case 'm': mrom_img_file = optarg; break;
+      case 'c': itrace_bin_file = optarg; break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -138,6 +140,7 @@ static int parse_args(int argc, char *argv[]) {
 		    printf("\t-e,--elf=FILE           elf file to be parsed\n");
         printf("\t-f,--flash=FILE          flash image file to be loaded\n");
         printf("\t-m,--mrom=FILE           mrom image file to be loaded\n");
+        printf("\t-c,--itrace=FILE         itrace binary file for npc sim\n");
         printf("\n");
         exit(0);
     }
@@ -156,6 +159,10 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Open the log file. */
   init_log(log_file);
+
+  /* Open the itrace binary file. */
+  void init_itrace_bin(const char *path);
+  init_itrace_bin(itrace_bin_file);
 
   /* Initialize elf */
   parse_elf(elf_file);
