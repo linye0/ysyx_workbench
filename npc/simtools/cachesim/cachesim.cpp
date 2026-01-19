@@ -79,9 +79,10 @@ int main(int argc, char *argv[]) {
     std::string trace_file = "";
     int opt;
 
-    while ((opt = getopt(argc, argv, "s:w:b:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:S:w:b:t:")) != -1) {
         switch (opt) {
             case 's': s = atoi(optarg) * 1024; break;
+            case 'S': s = atoi(optarg); break;
             case 'w': w = atoi(optarg); break;
             case 'b': b = atoi(optarg); break;
             case 't': trace_file = optarg; break;

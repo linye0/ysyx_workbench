@@ -428,7 +428,7 @@ void print_performance_metrics() {
            "LSU Write", perf.lsu_write_count, 
            "Inst/Mem Ratio", mem_ratio);
 
-    fprintf(out, "----------------------- ICACHE Activity ----------------------------\n");
+    fprintf(out, "----------------------- ICache Activity ----------------------------\n");
 
     fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
            "ICache Hit", perf.icache_hit_count, 
