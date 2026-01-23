@@ -48,3 +48,47 @@ LSU Write           : 5218593      | Inst/Mem Ratio      : 11.58
 
 
 
+
+======================= Performance Analysis =======================
+Record Time         : 2026-01-24 14:51:38
+--------------------------------------------------------------------
+Total Cycles        : 6312941      | Total Instructions  : 572344      
+IPC (Higher, better): 0.0907       | CPI (Lower, better) : 11.0300     
+----------------------- Instruction Distribution -------------------
+Calculation         : 310223       ( 54.20%) , CPI: 5.4646      
+Memory              : 118047       ( 20.63%) , CPI: 31.5633     
+Control Flow        : 144072       ( 25.17%) , CPI: 6.1893      
+System              : 3            (  0.00%) , CPI: 4.6667      
+----------------------- Bus Activity -------------------------------
+IFU Fetch           : 572345       | LSU Read            : 63318       
+LSU Write           : 54729        | Inst/Mem Ratio      : 4.85        
+----------------------- ICache Activity ----------------------------
+ICache Hit          : 479903       | ICache Miss         : 92442       
+ICache Miss Cycle   : 945548       | Miss Cycle Average  : 10.23       
+ICache Miss Ratio   : 0.16         | AMAT                : 2.65        
+====================================================================
+Matched Commit ID   : 1612694
+====================================================================
+
+
+======================= Performance Analysis =======================
+Record Time         : 2026-01-24 14:52:14
+--------------------------------------------------------------------
+Total Cycles        : 6312941      | Total Instructions  : 572344      
+IPC (Higher, better): 0.0907       | CPI (Lower, better) : 11.0300     
+----------------------- Instruction Distribution -------------------
+Calculation         : 310223       ( 54.20%) , CPI: 5.4646      
+Memory              : 118047       ( 20.63%) , CPI: 31.5633     
+Control Flow        : 144072       ( 25.17%) , CPI: 6.1893      
+System              : 3            (  0.00%) , CPI: 4.6667      
+----------------------- Bus Activity -------------------------------
+IFU Fetch           : 572345       | LSU Read            : 63318       
+LSU Write           : 54729        | Inst/Mem Ratio      : 4.85        
+----------------------- ICache Activity ----------------------------
+ICache Hit          : 479903       | ICache Miss         : 92442       
+ICache Miss Cycle   : 945548       | Miss Cycle Average  : 10.23       
+ICache Miss Ratio   : 0.16         | AMAT                : 2.65        
+====================================================================
+Matched Commit ID   : c7b84c2
+====================================================================
+

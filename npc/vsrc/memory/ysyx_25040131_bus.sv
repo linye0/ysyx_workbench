@@ -56,8 +56,12 @@ module ysyx_25040131_bus #(
     input ifu_arvalid,              // IFU 读地址有效
     output ifu_arready,       // 对 IFU：bus 是否处于能接收 IFU 读地址的状态（state_load==IF_A）
     input [XLEN-1:0] ifu_araddr,    // IFU 发起的读地址（取指地址）
+    input [7:0] ifu_arlen,
+    input [2:0] ifu_arsize,
+    input [1:0] ifu_arburst,
     output [XLEN-1:0] ifu_rdata, // 返回给 IFU 的读数据（取回的指令）
     output ifu_rvalid,          // 返回给 IFU 的读数据有效（处于 IF_B）
+    output ifu_rlast,
     input ifu_rready,           // IFU 准备好接收读数据
 
     // lsu:load
@@ -133,6 +137,9 @@ module ysyx_25040131_bus #(
   logic [7:0] io_master_wstrb_reg;  // 写字节掩码寄存器
   logic [3:0] io_master_arid_reg;         // 读事务ID寄存器
   logic [3:0] io_master_awid_reg;         // 写事务ID寄存器
+  logic [7:0] io_master_arlen_reg;
+  logic [2:0] io_master_arsize_reg;
+  logic [1:0] io_master_arburst_reg;
 
   logic io_master_rready_reg;
   logic io_master_arvalid_reg;
@@ -169,9 +176,9 @@ module ysyx_25040131_bus #(
 
   assign io_master_araddr = io_master_araddr_reg;
   assign io_master_arid = io_master_arid_reg;
-  assign io_master_arlen = 8'b0;        // 单次传输，长度为0
-  assign io_master_arsize = 3'b010;     // 32位 = 4字节
-  assign io_master_arburst = 2'b01;     // INCR突发类型
+  assign io_master_arlen = io_master_arlen_reg;
+  assign io_master_arsize = io_master_arsize_reg;
+  assign io_master_arburst = io_master_arburst_reg;
   assign io_master_arvalid = !reset && io_master_arvalid_reg;
   assign io_master_rready = io_master_rready_reg;
 
@@ -189,11 +196,12 @@ module ysyx_25040131_bus #(
 
   assign io_master_bready = io_master_bready_reg;
 
-  assign ifu_rdata = ifu_rdata_reg;
-  assign ifu_rvalid = ifu_rvalid_reg;
 
   assign io_rdata = io_master_rdata;
   assign lsu_rdata = lsu_rdata_reg;
+  assign ifu_rlast = io_master_rlast;
+  assign ifu_rdata = (state_load == IFU_WAIT_R) ? io_master_rdata : ifu_rdata_reg;
+  assign ifu_rvalid = (state_load == IFU_WAIT_R) ? io_master_rvalid : ifu_rvalid_reg;
   assign lsu_rvalid = lsu_rvalid_reg;
   assign lsu_rresp = lsu_rresp_reg;
 
@@ -224,6 +232,9 @@ module ysyx_25040131_bus #(
       lsu_rresp_reg <= 2'b00;
       io_master_araddr_reg <= {XLEN{1'b0}};
       io_master_arid_reg <= 4'b0;
+      io_master_arlen_reg <= 8'b0;
+      io_master_arsize_reg <= 3'b010;
+      io_master_arburst_reg <= 2'b01;
       io_master_arvalid_reg <= 1'b0;
       io_master_rready_reg <= 1'b0;
     end else begin
@@ -234,6 +245,9 @@ module ysyx_25040131_bus #(
               // 地址握手完成，锁存地址
               io_master_araddr_reg <= ifu_araddr;
               io_master_arid_reg <= 4'b0;
+              io_master_arlen_reg <= ifu_arlen;
+              io_master_arsize_reg <= ifu_arsize;
+              io_master_arburst_reg <= ifu_arburst;
               io_master_arvalid_reg <= 1'b1;
               state_load <= IFU_REQ_AR;
             // end
@@ -248,6 +262,9 @@ module ysyx_25040131_bus #(
             end else begin
               io_master_araddr_reg <= lsu_araddr;
               io_master_arid_reg <= 4'b0;
+              io_master_arlen_reg <= 8'b0;
+              io_master_arsize_reg <= 3'b010;
+              io_master_arburst_reg <= 2'b01;
               io_master_arvalid_reg <= 1'b1;
               state_load <= LSU_REQ_AR;
             end
@@ -266,17 +283,10 @@ module ysyx_25040131_bus #(
         IFU_WAIT_R: begin
           // 等待读数据返回
           if (io_master_rready && io_master_rvalid) begin
-            ifu_rdata_reg <= io_master_rdata;
-            io_master_rready_reg <= 1'b0;
-            ifu_rvalid_reg <= 1'b1;
-            state_load <= IFU_DONE;
-          end
-        end
-        IFU_DONE: begin
-          // 等待 IFU 接收数据（rready）
-          if (ifu_rvalid && ifu_rready) begin
-            ifu_rvalid_reg <= 1'b0;
-            state_load <= BUS_IDLE;
+            if (io_master_rlast) begin
+              io_master_rready_reg <= 1'b0;
+              state_load <= BUS_IDLE;
+            end
           end
         end
         LSU_REQ_AR: begin
@@ -367,8 +377,8 @@ module ysyx_25040131_bus #(
           end
           if (slave_aw_done && slave_w_done) begin
             state_store <= BUS_WRITE_B;
-            lsu_aw_done <= 1'b0;
-            lsu_w_done <= 1'b0;
+            slave_aw_done <= 1'b0;
+            slave_w_done <= 1'b0;
             io_master_bready_reg <= 1'b1;
           end
         end
@@ -379,6 +389,7 @@ module ysyx_25040131_bus #(
             lsu_bresp_reg <= io_master_bresp;  // 锁存写响应
             lsu_bvalid_reg <= 1'b1;
             state_store <= BUS_WRITE_DONE;
+            io_master_bready_reg <= 1'b0;
           end
         end
         BUS_WRITE_DONE: begin

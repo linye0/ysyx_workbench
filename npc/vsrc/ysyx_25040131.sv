@@ -161,6 +161,11 @@ wire [31:0] icache_rdata;   // BUS返回给ICACHE的数据
 wire icache_rvalid;         // BUS返回给ICACHE的数据有效
 wire icache_rready;         // ICACHE准备好接收读数据
 
+wire [7:0] icache_arlen;
+wire [2:0] icache_arsize;
+wire [1:0] icache_arburst;
+wire icache_rlast;
+
 // ------------------------------
 // LSU相关信号
 wire [31:0] lsu_read_data; // LSU输出的读数据
@@ -284,7 +289,7 @@ ysyx_25040131_ifu IFU(
 // 简易指令缓存：16个cache块，每块4B，直接映射方式
 ysyx_25040131_icache #(
     .INDEX_WIDTH(4),    // 4位索引 = 16个cache块
-    .BLOCK_SIZE(4),     // 块大小4B = 1条指令
+    .BLOCK_WIDTH(4),     // 块大小4B = 1条指令
     .XLEN(XLEN)
 ) ICACHE (
     .clock(clock),
@@ -298,9 +303,13 @@ ysyx_25040131_icache #(
     .ifu_rready(ifu_rready),
     // BUS接口
     .bus_araddr(icache_araddr),
+    .bus_arlen(icache_arlen),
+    .bus_arsize(icache_arsize),
+    .bus_arburst(icache_arburst),
     .bus_arvalid(icache_arvalid),
     .bus_arready(icache_arready),
     .bus_rdata(icache_rdata),
+    .bus_rlast(icache_rlast),
     .bus_rvalid(icache_rvalid),
     .bus_rready(icache_rready)
 );
@@ -595,9 +604,13 @@ ysyx_25040131_bus BUS(
     // ICACHE 接口（原IFU接口，现在通过ICACHE连接）
     .ifu_arready(icache_arready),
     .ifu_araddr(icache_araddr),
+    .ifu_arlen(icache_arlen),
+    .ifu_arsize(icache_arsize),
+    .ifu_arburst(icache_arburst),
     .ifu_arvalid(icache_arvalid),
     .ifu_rdata(icache_rdata),
     .ifu_rvalid(icache_rvalid),
+    .ifu_rlast(icache_rlast),
     .ifu_rready(icache_rready),
 
     // LSU 接口
