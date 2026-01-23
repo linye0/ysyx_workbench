@@ -151,7 +151,7 @@ static void execute(uint64_t n) {
         uint64_t current_time = get_time();
         uint64_t time_elapsed = current_time - last_pc_time;
         if (time_elapsed > PC_STUCK_THRESHOLD) {
-          printf("\n" ANSI_FMT("ERROR: PC stuck at 0x%08x for more than 1 seconds!", ANSI_FG_RED) "\n", current_pc);
+          printf("\n" ANSI_FMT("ERROR: PC stuck at 0x%08x for more than 1 seconds!", ANSI_FG_RED) "\n", *(nemu_state.cpc));
           printf("Time elapsed: %lu us (%.2f seconds)\n", time_elapsed, time_elapsed / 1000000.0);
           printf("Instruction count at same PC: %lu\n", same_pc_count);
           isa_reg_display();
