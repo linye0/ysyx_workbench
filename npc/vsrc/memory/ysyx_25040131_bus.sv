@@ -111,9 +111,10 @@ module ysyx_25040131_bus #(
   // BUS_WRITE_B: 等待写响应
   typedef enum logic [2:0] {
     BUS_WRITE_IDLE = 3'b000,
-    BUS_WRITE_AW = 3'b001,
-    BUS_WRITE_W_LSU = 3'b010,
-    BUS_WRITE_W_SLAVE = 3'b011,
+    // BUS_WRITE_AW = 3'b001,
+    // BUS_WRITE_W_LSU = 3'b010,
+    // BUS_WRITE_W_SLAVE = 3'b011,
+    BUS_SYNC = 3'b010,
     BUS_WRITE_B = 3'b100,
     BUS_WRITE_DONE = 3'b101
   } state_store_t;
@@ -121,15 +122,15 @@ module ysyx_25040131_bus #(
   // 通用寄存信号
   logic [XLEN-1:0] ifu_rdata_reg;  // IFU 读数据寄存器
   logic [XLEN-1:0] lsu_rdata_reg;   // LSU 读数据寄存器
-  logic [XLEN-1:0] lsu_wdata_reg;
   logic ifu_rvalid_reg;
   logic lsu_rvalid_reg;
-  logic lsu_wready_reg;
   logic lsu_bvalid_reg;
 
   // 地址锁存寄存器
   logic [XLEN-1:0] io_master_araddr_reg;  // 读地址寄存器
   logic [XLEN-1:0] io_master_awaddr_reg;  // 写地址寄存器
+  logic [XLEN-1:0] io_master_wdata_reg;  // 写数据寄存器
+  logic [7:0] io_master_wstrb_reg;  // 写字节掩码寄存器
   logic [3:0] io_master_arid_reg;         // 读事务ID寄存器
   logic [3:0] io_master_awid_reg;         // 写事务ID寄存器
 
@@ -158,7 +159,10 @@ module ysyx_25040131_bus #(
   reg [1:0] lsu_rresp_reg;
   reg [1:0] lsu_bresp_reg;
   // 寄存器：锁存wstrb（读操作和写操作都需要）
-  reg [7:0] lsu_wstrb_reg;
+  reg lsu_w_done;
+  reg lsu_aw_done;
+  reg slave_w_done;
+  reg slave_aw_done;
 
   assign ifu_arready = (state_load == BUS_IDLE);
   assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid;
@@ -178,9 +182,9 @@ module ysyx_25040131_bus #(
   assign io_master_awburst = 2'b01;    // INCR突发类型
   assign io_master_awvalid = !reset && io_master_awvalid_reg;
 
-  assign io_master_wdata = lsu_wdata_reg;
+  assign io_master_wdata = io_master_wdata_reg;
   assign io_master_wvalid = io_master_wvalid_reg;
-  assign io_master_wstrb = lsu_wstrb_reg[3:0];  // 使用锁存的wstrb（读操作和写操作都使用）
+  assign io_master_wstrb = io_master_wstrb_reg[3:0];  // 使用锁存的wstrb（读操作和写操作都使用）
   assign io_master_wlast = io_master_wlast_reg;  // 单次传输，wlast=1
 
   assign io_master_bready = io_master_bready_reg;
@@ -193,9 +197,9 @@ module ysyx_25040131_bus #(
   assign lsu_rvalid = lsu_rvalid_reg;
   assign lsu_rresp = lsu_rresp_reg;
 
-  assign lsu_awready = (state_store == BUS_WRITE_AW); 
+  assign lsu_awready = (state_store == BUS_IDLE); 
 
-  assign lsu_wready = lsu_wready_reg;
+  assign lsu_wready = (state_store == BUS_IDLE);
 
   assign lsu_bvalid = lsu_bvalid_reg;
   assign lsu_bresp = lsu_bresp_reg;
@@ -218,7 +222,6 @@ module ysyx_25040131_bus #(
       ifu_rvalid_reg <= 1'b0;
       lsu_rvalid_reg <= 1'b0;
       lsu_rresp_reg <= 2'b00;
-      lsu_wstrb_reg <= 8'h0;
       io_master_araddr_reg <= {XLEN{1'b0}};
       io_master_arid_reg <= 4'b0;
       io_master_arvalid_reg <= 1'b0;
@@ -236,7 +239,6 @@ module ysyx_25040131_bus #(
             // end
           end else if (lsu_arvalid) begin
             // 锁存wstrb（读操作时也需要，由LSU在LOAD_IDLE状态生成）
-            lsu_wstrb_reg <= lsu_wstrb;
             if (clint_en) begin
               // CLINT 旁路，直接进入 LSU_DONE
               lsu_rdata_reg <= clint_rdata;
@@ -311,8 +313,8 @@ module ysyx_25040131_bus #(
   always @(posedge clock) begin
     if (reset) begin
       state_store <= BUS_WRITE_IDLE;
-      lsu_wready_reg <= 1'b0;
-      lsu_wdata_reg <= {XLEN{1'b0}};
+      io_master_wdata_reg <= {XLEN{1'b0}};
+      io_master_wstrb_reg <= 8'h0;
       lsu_bresp_reg <= 2'b00;
       io_master_awaddr_reg <= {XLEN{1'b0}};
       io_master_awid_reg <= 4'b0;
@@ -320,41 +322,54 @@ module ysyx_25040131_bus #(
       io_master_wvalid_reg <= 1'b0;
       io_master_wlast_reg <= 1'b0;
       io_master_bready_reg <= 1'b0;
+      lsu_aw_done <= 1'b0;
+      lsu_w_done <= 1'b0;
+      slave_aw_done <= 1'b0;
+      slave_w_done <= 1'b0;
     end else begin
       unique case (state_store)
         BUS_WRITE_IDLE: begin
           // 等待写地址请求
-          if (lsu_awvalid) begin
+          if (lsu_awvalid && lsu_awready) begin
+            lsu_aw_done <= 1'b1;
             io_master_awaddr_reg <= lsu_awaddr;
             io_master_awid_reg <= 4'b0;
-            io_master_awvalid_reg <= 1'b1;
-            state_store <= BUS_WRITE_AW;
           end
-        end
-        BUS_WRITE_AW: begin
-          // 进入等待写数据状态
-          if (io_master_awvalid && io_master_awready) begin
-            lsu_wready_reg <= 1'b1;
-            io_master_awvalid_reg <= 1'b0;
-            state_store <= BUS_WRITE_W_LSU;
+
+          if (lsu_wvalid && lsu_wready) begin
+            lsu_w_done <= 1'b1;
+            io_master_wdata_reg <= lsu_wdata;
+            io_master_wstrb_reg <= lsu_wstrb;
+            io_master_wlast_reg <= 1'b1;
           end
-        end
-        BUS_WRITE_W_LSU: begin
-          // 等待写数据握手完成
-          if (lsu_wready && lsu_wvalid) begin
-            lsu_wdata_reg <= lsu_wdata;
-            lsu_wstrb_reg <= lsu_wstrb;  // 锁存写操作的wstrb
+
+          if (lsu_w_done && lsu_aw_done) begin
+            state_store <= BUS_SYNC;
             io_master_wvalid_reg <= 1'b1;
-            io_master_wlast_reg <= 1'b1;  // 单次传输，wlast=1
-            lsu_wready_reg <= 1'b0;
-            state_store <= BUS_WRITE_W_SLAVE;
+            io_master_awvalid_reg <= 1'b1;
+            lsu_w_done <= 1'b0;
+            lsu_aw_done <= 1'b0;
           end
         end
-        BUS_WRITE_W_SLAVE: begin
+        BUS_SYNC: begin
+          if (io_master_awvalid && io_master_awready) begin
+            slave_aw_done <= 1'b1;
+            io_master_awvalid_reg <= 1'b0;
+            io_master_awaddr_reg <= {XLEN{1'b0}};
+            io_master_awid_reg <= 4'b0;
+          end
           if (io_master_wvalid && io_master_wready) begin
-            io_master_bready_reg <= 1'b1;
+            slave_w_done <= 1'b1;
             io_master_wvalid_reg <= 1'b0;
+            io_master_wdata_reg <= {XLEN{1'b0}};
+            io_master_wstrb_reg <= 8'h0;
+            io_master_wlast_reg <= 1'b0;
+          end
+          if (slave_aw_done && slave_w_done) begin
             state_store <= BUS_WRITE_B;
+            lsu_aw_done <= 1'b0;
+            lsu_w_done <= 1'b0;
+            io_master_bready_reg <= 1'b1;
           end
         end
         BUS_WRITE_B: begin

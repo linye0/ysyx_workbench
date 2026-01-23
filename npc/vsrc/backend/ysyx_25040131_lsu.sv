@@ -68,8 +68,9 @@ module ysyx_25040131_lsu #(
   // STORE_WAIT_B: 等待 bvalid && bready
   typedef enum logic [2:0] {
     STORE_IDLE = 3'b000,              // 1. 无请求
-    STORE_ADDR = 3'b001,   // 2. awvalid=1，等 awready
-    STORE_DATA = 3'b010,   // 3. wvalid=1，等 wready（可与 2 并行）
+    // STORE_ADDR = 3'b001,   // 2. awvalid=1，等 awready
+    // STORE_DATA = 3'b010,   // 3. wvalid=1，等 wready（可与 2 并行）
+    STORE_SYNC = 3'b001,
     STORE_RESP = 3'b011,   // 4. aw && w 均握手完成
     STORE_DONE = 3'b100             // 5. 等 bvalid && bready
   } state_store_t;
@@ -78,11 +79,11 @@ module ysyx_25040131_lsu #(
   state_store_t state_store;
 
   reg [XLEN - 1: 0] addr_reg;
-  reg [XLEN - 1: 0] data_reg;
   reg [2:0] read_mem_reg;
   reg [1:0] write_mem_reg;
-  reg [7:0] wstrb_reg;
   reg [XLEN - 1: 0] raw_read_data;  // 从BUS读取的原始数据
+  reg aw_done;
+  reg w_done;
 
   // 根据write_mem和addr生成wstrb（用于写操作），只使用低4位（对应32bit数据的4个字节）
   // 也可以用于读操作，通过read_mem_to_write_mem转换后使用
@@ -223,10 +224,8 @@ module ysyx_25040131_lsu #(
       state_load <= LOAD_IDLE;
       state_store <= STORE_IDLE;
       addr_reg <= {XLEN{1'b0}};
-      data_reg <= {XLEN{1'b0}};
       read_mem_reg <= 3'b0;
       write_mem_reg <= 2'b0;
-      wstrb_reg <= 8'h0;
       raw_read_data <= {XLEN{1'b0}};
       read_data <= {XLEN{1'b0}};
       lsu_araddr <= {XLEN{1'b0}}; 
@@ -239,6 +238,8 @@ module ysyx_25040131_lsu #(
       lsu_wvalid <= 1'b0;
       lsu_bready <= 1'b0;
       access_fault <= 1'b0;
+      aw_done <= 1'b0;
+      w_done <= 1'b0;
     end else begin
       // 2. 在 else 块中，同时处理两个状态机的逻辑
       
@@ -283,32 +284,33 @@ module ysyx_25040131_lsu #(
         STORE_IDLE: begin
           if (prev_valid && next_ready && write_mem != 2'b0) begin
             addr_reg <= addr;
-            data_reg <= gen_wdata_aligned(write_mem, addr, data);
             write_mem_reg <= write_mem;
-            wstrb_reg <= gen_wstrb(write_mem, addr);
             access_fault <= 1'b0;
             lsu_awaddr <= addr;
             lsu_awvalid <= 1'b1;
-            state_store <= STORE_ADDR;
+            state_store <= STORE_SYNC;
+
+            lsu_wdata <= gen_wdata_aligned(write_mem, addr, data);
+            lsu_wstrb <= gen_wstrb(write_mem, addr);
+            lsu_wvalid <= 1'b1;
+            state_store <= STORE_SYNC;
           end
         end
-        STORE_ADDR: begin
+        STORE_SYNC: begin
           if (lsu_awvalid && lsu_awready) begin
             lsu_awvalid <= 1'b0;
-            lsu_awaddr <= {XLEN{1'b0}};
-            lsu_wvalid <= 1'b1;
-            lsu_wdata <= data_reg;
-            lsu_wstrb <= wstrb_reg;
-            state_store <= STORE_DATA;
+            aw_done <= 1'b1;
           end
-        end
-        STORE_DATA: begin
           if (lsu_wvalid && lsu_wready) begin
-            lsu_wvalid <= 1'b0;
-            lsu_wdata <= {XLEN{1'b0}};
-            lsu_wstrb <= 8'h0;
+            lsu_wvalid <= 1'b0;  
+            w_done <= 1'b1;
+          end
+          if ((aw_done || (lsu_awready)) && 
+               (w_done || (lsu_wready))) begin
             lsu_bready <= 1'b1;
             state_store <= STORE_RESP;
+            w_done <= 1'b0;
+            aw_done <= 1'b0;
           end
         end
         STORE_RESP: begin
@@ -357,7 +359,6 @@ module ysyx_25040131_lsu #(
   // assign lsu_awvalid = (state_store == STORE_ADDR_REQUESTED);
   // 在 STORE_DATA_REQUESTED 状态保持 wvalid 和数据，直到握手完成
   // assign lsu_wdata = data_reg;
-  // assign lsu_wstrb = wstrb_reg;
   // assign lsu_wvalid = (state_store == STORE_DATA_REQUESTED);
   // 在 STORE_WAIT_B 状态保持 bready，直到写响应接收完成
   // assign lsu_bready = (state_store == STORE_WAIT_B);
