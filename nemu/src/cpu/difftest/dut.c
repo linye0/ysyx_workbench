@@ -21,11 +21,18 @@
 #include <memory/paddr.h>
 #include <utils.h>
 #include <difftest-def.h>
+#include <cpu/difftest.h>
 
 void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) = NULL;
+#ifdef CONFIG_NPC
+void (*ref_difftest_regcpy)(void *dut, int direction) = NULL;
+#else
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
+#endif
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
+void (*ref_difftest_reg_display)(void) = NULL;
+void (*ref_difftest_mem_display)(int N, int startAddress) = NULL;
 #ifdef CONFIG_NPC
 word_t (*ref_difftest_paddr_read)(paddr_t addr, int len) = NULL;
 Mem_flag (*ref_difftest_mem_flag_to_dut)(void) = NULL;
@@ -39,6 +46,7 @@ static int skip_dut_nr_inst = 0;
 // this is used to let ref skip instructions which
 // can not produce consistent behavior with NEMU
 void difftest_skip_ref() {
+  //printf("difftest_skip_ref\n");
   is_skip_ref = true;
   // If such an instruction is one of the instruction packing in QEMU
   // (see below), we end the process of catching up with QEMU's pc to
@@ -86,6 +94,14 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   assert(ref_difftest_raise_intr);
 
   #ifdef CONFIG_NPC
+  ref_difftest_reg_display = dlsym(handle, "difftest_reg_display");
+  assert(ref_difftest_reg_display);
+
+  ref_difftest_mem_display = dlsym(handle, "difftest_mem_display");
+  assert(ref_difftest_mem_display);
+  #endif
+
+  #ifdef CONFIG_NPC
   ref_difftest_paddr_read = dlsym(handle, "difftest_paddr_read");
   assert(ref_difftest_raise_intr);
 
@@ -103,6 +119,13 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
 
   ref_difftest_init(port);
   ref_difftest_memcpy(CONFIG_MBASE, guest_to_host(CONFIG_MBASE), img_size, DIFFTEST_TO_REF);
+  #ifdef CONFIG_NPC
+  #ifdef CONFIG_SYS_SOC
+  ref_difftest_memcpy(CONFIG_MROM_BASE, guest_to_host(CONFIG_MROM_BASE), CONFIG_MROM_SIZE, DIFFTEST_TO_REF);
+  ref_difftest_memcpy(CONFIG_FLASH_BASE, guest_to_host(CONFIG_FLASH_BASE), CONFIG_FLASH_SIZE, DIFFTEST_TO_REF);
+  ref_difftest_memcpy(CONFIG_SRAM_BASE, guest_to_host(CONFIG_SRAM_BASE), CONFIG_SRAM_SIZE, DIFFTEST_TO_REF);
+  #endif
+  #endif
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 }
 
@@ -117,6 +140,8 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
 
 #ifdef CONFIG_NPC
 static void checkmems(paddr_t addr, int len, vaddr_t pc) {
+  // printf("dut data at address 0x%x: 0x%x\n", addr, paddr_read(addr, len));
+  // printf("ref data at address 0x%x: 0x%x\n", addr, ref_difftest_paddr_read(addr, len));
   if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
     printf("\nCan't pass checkmems!\n");
     nemu_state.state = NEMU_ABORT;
@@ -139,7 +164,10 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       #ifdef CONFIG_NPC
       #ifdef CONFIG_DIFFTEST_MEM
       Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-      if (dut_flag.flag != 0) checkmems(dut_flag.addr, dut_flag.len, npc);
+      if (dut_flag.flag != 0) {
+        // printf("start checkmem at address 0x%x!\n", dut_flag.addr);
+        checkmems(dut_flag.addr, dut_flag.len, npc);
+      }
       #endif
       #endif
       return;
@@ -150,9 +178,10 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     return;
   }
 
+
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
-    ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+    ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF_SKIP_REF);
     is_skip_ref = false;
     return;
   }
@@ -165,7 +194,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   #ifdef CONFIG_DIFFTEST_MEM
   Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
   if (dut_flag.flag != 0) {
-    // printf("memcheck at address 0x%x!\n", dut_flag.addr);
+    // if (dut_flag.addr >= CONFIG_SDRAM_BASE && dut_flag.addr < CONFIG_SDRAM_BASE + CONFIG_SDRAM_SIZE) printf("sdram memcheck at address 0x%x!\n", dut_flag.addr);
     checkmems(dut_flag.addr, dut_flag.len, pc);
   }
   #endif

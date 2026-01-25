@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <common.h>
 #include "local-include/reg.h"
 
 const char *regs[] = {
@@ -25,7 +26,11 @@ const char *regs[] = {
 
 void isa_reg_display() {
     bool success = false;
+    #ifdef CONFIG_NPC
+    printf("%-16s0x%-16x%d\n", "pc", cpu.cpc, cpu.cpc);
+    #else
     printf("%-16s0x%-16x%d\n", "pc", cpu.pc, cpu.pc); // 为了输出美观
+    #endif
     for (int i = 0; i < sizeof(regs) / sizeof(const char*); i++) {                                            
         word_t val = isa_reg_str2val(regs[i], &success);
         printf("%-16s0x%-16x%d\n", regs[i], val, val); // 为了输出美观
@@ -35,7 +40,11 @@ void isa_reg_display() {
 word_t isa_reg_str2val(const char *s, bool *success) {
 	if (strcmp(s, "pc") == 0) {
 		*success = true;
-		return cpu.pc;
+        #ifdef CONFIG_NPC
+		return cpu.cpc;
+        #else
+        return cpu.pc;
+        #endif
 	}
     if (strcmp(s, "mstatus") == 0)
     {

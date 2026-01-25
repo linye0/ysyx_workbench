@@ -11,7 +11,9 @@ module ysyx_25040131_imm(
     output out_ready        // 可以接收上游数据
 );
 
+
 always @(*) begin
+    imm_32 = 32'b0;
     case (extOP)
         3'b000:begin
             imm_32 = {{20{instr[31]}}, instr[31:20]};
@@ -36,7 +38,7 @@ always @(*) begin
             imm_32 = 32'b0;
         end 
         default:begin
-            
+            imm_32 = 32'b0;
         end 
     endcase
 end
@@ -45,4 +47,4 @@ end
 assign out_valid = prev_valid;
 assign out_ready = next_ready;
 
-endmodule;
+endmodule

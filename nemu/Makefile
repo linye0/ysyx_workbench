@@ -29,7 +29,12 @@ remove_quote = $(patsubst "%",%,$(1))
 # Extract variabls from menuconfig, 位于auto.conf内
 GUEST_ISA ?= $(call remove_quote,$(CONFIG_ISA))
 ENGINE ?= $(call remove_quote,$(CONFIG_ENGINE))
-NAME    = $(GUEST_ISA)-nemu-$(ENGINE)
+
+ifeq ($(YSYXSOC_ON_NEMU), y)
+  NAME = $(GUEST_ISA)-nemu-$(ENGINE)-soc
+else
+  NAME = $(GUEST_ISA)-nemu-$(ENGINE)
+endif
 
 # Include all filelist.mk to merge file lists
 FILELIST_MK = $(shell find -L ./src -name "filelist.mk")
@@ -53,6 +58,10 @@ CFLAGS_BUILD += $(if $(CONFIG_CC_DEBUG),-Og -ggdb3,)
 CFLAGS_BUILD += $(if $(CONFIG_CC_ASAN),-fsanitize=address,)
 CFLAGS_TRACE += -DITRACE_COND=$(if $(CONFIG_ITRACE_COND),$(call remove_quote,$(CONFIG_ITRACE_COND)),true)
 CFLAGS  += $(CFLAGS_BUILD) $(CFLAGS_TRACE) -D__GUEST_ISA__=$(GUEST_ISA)
+ifeq ($(YSYXSOC_ON_NEMU), y)
+$(info YSYXSOC_ON_NEMU is enabled)
+CFLAGS += -DYSYXSOC_ON_NEMU
+endif
 LDFLAGS += $(CFLAGS_BUILD)
 
 # Include rules for menuconfig

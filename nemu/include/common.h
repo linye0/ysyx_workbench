@@ -54,6 +54,8 @@ typedef MUXDEF(PMEM64, uint64_t, uint32_t) paddr_t;
 #define FMT_PADDR MUXDEF(PMEM64, "0x%016" PRIx64, "0x%08" PRIx32)
 typedef uint16_t ioaddr_t;
 
+#define MROM_BASE 0x20000000
+
 void init_monitor(int, char *[]);
 void am_init_monitor();
 void engine_start();

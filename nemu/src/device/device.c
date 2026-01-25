@@ -30,6 +30,10 @@ void init_audio();
 void init_disk();
 void init_sdcard();
 void init_alarm();
+#ifdef CONFIG_YSYXSOC
+void init_uart();
+void init_clint();
+#endif
 
 void send_key(uint8_t, bool);
 void vga_update_screen();
@@ -86,7 +90,10 @@ void init_device() {
   IFDEF(CONFIG_HAS_AUDIO, init_audio());
   IFDEF(CONFIG_HAS_DISK, init_disk());
   IFDEF(CONFIG_HAS_SDCARD, init_sdcard());
+  IFDEF(CONFIG_HAS_UART16550, init_uart());
+  IFDEF(CONFIG_HAS_CLINT, init_clint());
   #endif
+
 
   IFNDEF(CONFIG_TARGET_AM, init_alarm());
 }

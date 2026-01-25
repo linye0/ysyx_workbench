@@ -21,11 +21,11 @@ always @(*) begin
         5'b00010: out = a & b;
         5'b00011: out = a | b;
         5'b00100: out = a ^ b;
-        5'b00101: out = a << b;
+        5'b00101: out = a << b[4:0]; // SLL逻辑左移，只取低5位
         5'b00110: out = ($signed(a) < ($signed(b))) ? 32'b1 : 32'b0;
         5'b00111: out = (a < b) ? 32'b1 : 32'b0;
-        5'b01000: out = a >> b;
-        5'b01001: out = ($signed(a)) >>> b;
+        5'b01000: out = a >> b[4:0]; // SRL逻辑右移，只取低5位
+        5'b01001: out = ($signed(a)) >>> b[4:0]; // SRA算术右移，只取低5位
         5'b01010: begin 
             out = a + b;
             out[0] = 1'b0;

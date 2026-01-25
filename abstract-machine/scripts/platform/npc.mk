@@ -34,10 +34,9 @@ image: image-dep
 ## run调用insert-arg调用image，此时IMAGE.bin里面应该已经包含了AM提供的程序运行所需的库函数
 ## elf文件是由$(AM_HOME)/Makefile生成的
 run: insert-arg
-	# echo "TODO: add command here to run simulation"
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) run ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 	
 gdb: insert-arg
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) PLATFORM=$(PLATFORM) gdb ARGS="$(NPCFLAGS)" IMG=$(abspath $(IMAGE)).bin
 
-.PHONY: insert-arg, sun
+.PHONY: insert-arg, run

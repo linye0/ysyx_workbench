@@ -22,6 +22,8 @@
 #define _CONCAT(x, y) x##y
 #define CONCAT(x, y) _CONCAT(x, y)
 #define CONCAT_HEAD(x) <x.h>
+#define CONCAT_YSYXSOC_HEAD(x) CONCAT(top->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__, x)
+#define CONCAT_YSYXSOC_ASIC_HEAD(x) CONCAT(top->rootp->ysyxSoCFull__DOT__asic__DOT__, x)
 #endif
 
 // macro stringizing

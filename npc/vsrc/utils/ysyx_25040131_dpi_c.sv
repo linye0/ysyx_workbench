@@ -1,5 +1,7 @@
 `include "ysyx_25040131_dpi_c.svh"
 
+`ifdef CONFIG_USE_DPI_C
+
 import "DPI-C" function void npc_exu_ebreak();
 
 import "DPI-C" function void npc_difftest_skip_ref();
@@ -19,3 +21,28 @@ import "DPI-C" function void npc_write(
     input int wdata, 
     input int wmask
 );
+
+import "DPI-C" function void npc_ifu_fetch_count(
+);
+
+import "DPI-C" function void npc_lsu_read_count(
+);
+
+import "DPI-C" function void npc_lsu_write_count(
+);
+
+import "DPI-C" function void npc_ifu_inst(
+    input int inst
+);
+
+import "DPI-C" function void npc_cycle_record(
+);
+
+import "DPI-C" function void npc_icache_hit(
+);
+
+import "DPI-C" function void npc_icache_miss(
+    input int flag
+);
+
+`endif

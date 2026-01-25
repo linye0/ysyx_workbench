@@ -14,7 +14,7 @@
 
 #if defined(__ARCH_NATIVE) || defined(__PLATFORM_QEMU)
 # define PERF_CONFIG PERF_HIGH
-#elif defined(__PLATFORM_NEMU)
+#elif defined(__PLATFORM_NEMU) || defined(__PLATFORM_YSYXSOC)
 # define PERF_CONFIG PERF_MIDDLE
 #else
 # define PERF_CONFIG PERF_LOW

@@ -4,9 +4,9 @@ module ysyx_25040131_csr (
 
     // 读通道（EXU阶段使用）
     input [11:0] csr_addr,
-    output reg [31:0] csr_rdata,
-    output reg [31:0] mtvec_out,
-    output reg [31:0] mepc_out,
+    output logic [31:0] csr_rdata,
+    output logic [31:0] mtvec_out,
+    output logic [31:0] mepc_out,
     input idu_valid,       // IDU阶段有效（用于读操作的流水线握手）
     input mem_ready,       // MEM阶段可以接收数据
     output exu_csr_valid,  // 读操作输出有效
@@ -35,124 +35,68 @@ reg [31:0] mepc;     // 0x341
 reg [31:0] mcause;   // 0x342
 reg [31:0] mtval;    // 0x343
 
-// 复位初始值（根据 RISC-V 手册）
-initial begin
-    mstatus = 32'h00000000;  // MIE=0, MPIE=0, MPP=0 (PRV_U)
-    mtvec   = 32'h00000000;  // Trap vector base address = 0
-    mepc    = 32'h00000000;
-    mcause  = 32'h00000000;
-    mtval   = 32'h00000000;
-end
+// --- 只读 CSR 寄存器（Machine Information Registers）---
+wire [31:0] mvendorid/*verilator public_flat*/;  // 0xF11 - Vendor ID (只读)
+wire [31:0] marchid/*verilator public_flat*/;    // 0xF12 - Architecture ID (只读)
 
-// ------------------------------
-// 写通道（WBU阶段）：状态机
-// IDLE: 空闲状态
-// WRITE: 执行写操作
-// DONE: 写操作完成
-typedef enum logic [1:0] {
-    CSR_WB_IDLE = 2'b00,
-    CSR_WB_WRITE = 2'b01,
-    CSR_WB_DONE = 2'b10
-} csr_wb_state_t;
+// 设置 mvendorid 为 ysyx 的 ASCII 码
+assign mvendorid = 32'h79737978;  // 'y'=0x79, 's'=0x73, 'y'=0x79, 'x'=0x78
 
-csr_wb_state_t csr_wb_state;
-reg [11:0] csr_addr_reg;
-reg [31:0] csr_wdata_reg;
+// 设置 marchid 为学号数字部分的十进制表示
+assign marchid = 32'd25040131;  // 学号 ysyx_25040131 的数字部分
 
-always @(posedge clk) begin
-    if (rst) begin
-        mtvec   <= 32'h0;
-        mepc    <= 32'h0;
-        mcause  <= 32'h0;
-        mtval   <= 32'h0;
-        mstatus <= 32'h0;
-        csr_wb_state <= CSR_WB_IDLE;
-        csr_addr_reg <= 12'h0;
-        csr_wdata_reg <= 32'h0;
-    end else begin
-        // 异常处理优先级最高：立即更新 CSR，不等待状态机
-        unique case (csr_wb_state)
-            CSR_WB_IDLE: begin
-                // 等待MEM阶段有效
-                if (prev_valid && next_ready) begin
-                    if (csr_we) begin
-                        // 需要写操作，保存数据并进入WRITE状态
-                        csr_addr_reg <= csr_addr;
-                        csr_wdata_reg <= csr_wdata;
-                        csr_wb_state <= CSR_WB_WRITE;
-                    end else if (is_ecall) begin
-                        mepc <= exc_pc;
-                        mcause <= exc_cause;
-                        mtval <= exc_tval;
-                        csr_wb_state <= CSR_WB_WRITE; 
-                    end
-                end
+wire wb_handshake = prev_valid && next_ready;
+
+always_ff @(posedge clk) begin
+        if (rst) begin
+            mstatus <= 32'h0;
+            mtvec   <= 32'h0;
+            mepc    <= 32'h0;
+            mcause  <= 32'h0;
+            mtval   <= 32'h0;
+        end else if (wb_handshake) begin
+            // 异常处理优先级通常高于普通的 CSR 指令写入
+            if (exc_valid || is_ecall) begin
+                mepc   <= exc_pc;
+                mcause <= exc_cause;
+                mtval  <= exc_tval;
+                // 这里可以根据需要增加 mstatus 的 MPIE/MPP 等位域更新逻辑
+            end else if (csr_we) begin
+                case (csr_addr)
+                    12'h300: mstatus <= csr_wdata;
+                    12'h305: mtvec   <= csr_wdata;
+                    12'h341: mepc    <= csr_wdata;
+                    12'h342: mcause  <= csr_wdata;
+                    12'h343: mtval   <= csr_wdata;
+                    default: ; 
+                endcase
             end
-            CSR_WB_WRITE: begin
-                // 执行写操作
-                if (csr_we) begin
-                    case (csr_addr_reg)
-                        12'h300: mstatus <= csr_wdata_reg;
-                        12'h305: mtvec   <= csr_wdata_reg;
-                        12'h341: mepc    <= csr_wdata_reg;
-                        12'h342: mcause  <= csr_wdata_reg;
-                        12'h343: mtval   <= csr_wdata_reg;
-                        default: ; // 未实现 CSR 忽略
-                    endcase
-                end
-                csr_wb_state <= CSR_WB_DONE;
-            end
-            CSR_WB_DONE: begin
-                // 写操作完成，等待prev_valid变为0后再回到IDLE状态
-                // 这样可以确保同一条指令的写操作只执行一次
-                // if (!prev_valid) begin
-                    csr_wb_state <= CSR_WB_IDLE;
-                // end
-            end
-            default: begin
-                csr_wb_state <= CSR_WB_IDLE;
-            end
-        endcase
+        end
     end
-end
 
-// ------------------------------
-// 流水线握手信号
-// 如果csr_we = 1'b0，那么out_valid = prev_valid
-// 如果csr_we != 1'b0，那么out_valid = (csr_wb_state == CSR_WB_DONE)
-assign out_valid = (csr_we == 1'b0 && is_ecall == 1'b0) ? prev_valid && next_ready : (csr_wb_state == CSR_WB_DONE);
-assign out_ready = (csr_wb_state == CSR_WB_IDLE);
-
-// --- CSR 写操作（仅允许写合法 CSR）---
-/*
-always @(posedge clk) begin
-    if (csr_we) begin
+always_comb begin
+        // 默认输出
+        mtvec_out = mtvec;
+        mepc_out  = mepc;
+        
         case (csr_addr)
-            12'h305: mtvec   <= csr_wdata;
-            default: ; // 忽略非法 CSR 写（或可触发异常）
+            12'h300: csr_rdata = mstatus;
+            12'h305: csr_rdata = mtvec;
+            12'h341: csr_rdata = mepc;
+            12'h342: csr_rdata = mcause;
+            12'h343: csr_rdata = mtval;
+            12'hF11: csr_rdata = mvendorid;
+            12'hF12: csr_rdata = marchid;
+            default: csr_rdata = 32'h0;
         endcase
     end
-end
-*/
 
-// ------------------------------
-// 读通道（EXU阶段）：组合逻辑
-always @(*) begin
-    mtvec_out = mtvec;
-    mepc_out = mepc;
-    case (csr_addr)
-        12'h300: csr_rdata = mstatus;
-        12'h305: csr_rdata = mtvec;
-        12'h341: csr_rdata = mepc;
-        12'h342: csr_rdata = mcause;
-        12'h343: csr_rdata = mtval;
-        default: csr_rdata = 32'h0; // 未实现 CSR 返回 0
-    endcase
-end
+    // CSR 模块作为 WBU 级的逻辑，不产生反压
+    assign out_ready = next_ready;
+    // 只要指令到了，结果就有效
+    assign out_valid = prev_valid;
 
-// ------------------------------
-// 流水线握手：读操作是组合逻辑，立即有效
-// 读操作是组合逻辑，只要idu_valid有效，读数据就立即可用
-assign exu_csr_valid = idu_valid;
+    // 读操作在 ID/EX 级完成，idu_valid 有效即代表读出数据有效
+    assign exu_csr_valid = idu_valid;
 
 endmodule

@@ -40,7 +40,7 @@ typedef struct
   //uint32_t *ret;
   uint32_t *pc;
 
-  uint8_t *valid_signal;
+  uint8_t *difftest_signal;
 
   // for itrace
   uint32_t *inst;
@@ -51,6 +51,10 @@ typedef struct
   uint32_t* mepc;
   uint32_t* mcause;
   uint32_t* mtval;
+  uint32_t* mvendorid;
+  uint32_t* marchid;
+
+  uint8_t* sram;
   
   // difftest signal
 

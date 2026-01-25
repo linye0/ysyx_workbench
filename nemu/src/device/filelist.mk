@@ -22,6 +22,8 @@ SRCS-$(CONFIG_HAS_VGA) += $(NEMU_HOME)/src/device/vga.c
 SRCS-$(CONFIG_HAS_AUDIO) += $(NEMU_HOME)/src/device/audio.c
 SRCS-$(CONFIG_HAS_DISK) += $(NEMU_HOME)/src/device/disk.c
 SRCS-$(CONFIG_HAS_SDCARD) += $(NEMU_HOME)/src/device/sdcard.c
+SRCS-$(CONFIG_HAS_UART16550) += $(NEMU_HOME)/src/device/ysyxsoc/uart.c
+SRCS-$(CONFIG_HAS_CLINT) += $(NEMU_HOME)/src/device/ysyxsoc/clint.c
 
 SRCS-BLACKLIST-$(CONFIG_TARGET_AM) += $(NEMU_HOME)/src/device/alarm.c
 

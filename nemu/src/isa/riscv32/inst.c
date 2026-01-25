@@ -23,6 +23,11 @@
 #include <cpu/decode.h>
 #ifdef CONFIG_NPC
 #include <npc/npc_verilog.h>
+#ifdef CONFIG_SYS_SOC
+#ifdef CONFIG_NVBOARD
+#include <nvboard.h>
+#endif
+#endif
 #endif
 
 #define R(i) gpr(i)
@@ -89,6 +94,8 @@ static void decode_operand(Decode *s, int *rd, int* rs, word_t *src1, word_t *sr
 }
 
 static int decode_exec(Decode *s) {
+  //printf("decode exec at pc: 0x%x\n", s->pc);
+
   s->dnpc = s->snpc;
 
 #define INSTPAT_INST(s) ((s)->isa.inst)
@@ -236,16 +243,28 @@ static int npc_exec(Decode *s) {
   // Change temporary. LY
   cpu_exec_once();
   update_cpu_state(nemu_state);
+  #ifdef CONFIG_SYS_SOC
+  #ifdef CONFIG_NVBOARD
+  nvboard_update();
+  #endif
+  #endif
+  s->isa.inst = *(nemu_state.inst);
+  s->snpc = s->pc + 4;  // RISC-V instructions are always 4 bytes
   return 0;
 }
 #endif
 
 int isa_exec_once(Decode *s) {
+
+  #ifndef CONFIG_NPC
   s->isa.inst = inst_fetch(&s->snpc, 4);
+  #endif
+
   #ifdef CONFIG_NPC
-  if (*(nemu_state.valid_signal) == 1) {
+  if (*(nemu_state.difftest_signal) == 1) {
    // uint32_t inst = s->isa.inst;
     uint32_t inst = *(nemu_state.inst);
+    // printf("0x%x\n", inst);
     IFDEF(CONFIG_ITRACE, {
       // --- JAL: opcode = 0x6f ---
       if ((inst & 0x7f) == 0x6f) {

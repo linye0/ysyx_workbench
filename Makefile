@@ -24,6 +24,28 @@ define git_commit
 	-@sync $(LOCK_DIR)
 endef
 
+PERF_LOG = $(YSYX_HOME)/npc/perf_record.log
+
+perf:
+	@echo "run performance evaluation."
+	@touch $(NEMU_HOME)/src/npc/npc.c
+	@$(MAKE) -C $(YSYX_HOME)/am-kernels/benchmarks/microbench RECORD=y ARCH=riscv32-ysyxsoc run mainargs=train
+
+perf_commit: perf
+	@echo "Appending Git Commit ID and merging into previous commit..."
+	@if [ -f $(PERF_LOG) ]; then \
+		CUR_COMMIT=$$(git rev-parse --short HEAD); \
+		echo "Matched Commit ID   : $$CUR_COMMIT" >> $(PERF_LOG); \
+		echo "====================================================================" >> $(PERF_LOG); \
+		echo "" >> $(PERF_LOG); \
+		git add $(PERF_LOG); \
+		git commit -m "chore(perf): update performance log for commit $$CUR_COMMIT"; \
+		echo "Success: Performance data with Commit ID [$$CUR_COMMIT] merged."; \
+	else \
+		echo "Error: $(PERF_LOG) not found!"; \
+		exit 1; \
+	fi
+
 .git_commit:
 	-@while (test -e .git/index.lock); do sleep 0.1; done;               `# wait for other git instances`
 	-@git branch $(TRACER_BRANCH) -q 2>/dev/null || true                 `# create tracer branch if not existent`
@@ -41,4 +63,4 @@ endef
 _default:
 	@echo "Please run 'make' under subprojects."
 
-.PHONY: .git_commit .clean_index _default
+.PHONY: .git_commit .clean_index _default perf perf_commit
