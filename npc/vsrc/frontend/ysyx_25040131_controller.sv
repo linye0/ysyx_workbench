@@ -27,6 +27,9 @@ module ysyx_25040131_controller(
 
     // mret控制信号
     output reg is_mret,
+
+    //fence.i
+    output reg is_fence_i,
     
     // 流水线握手信号
     input prev_valid,      // 上游数据有效
@@ -58,7 +61,22 @@ always @(*) begin
     exc_tval = 32'h0;
     is_mret = 0;
     is_ecall = 0;
+    is_fence_i = 0;
     case (opcode)
+        7'b0001111:begin
+            write_reg = 0;
+            aluOut_WB_memOut = 0;
+            rs1Data_EX_PC = 0;
+            rs2Data_EX_imm32_4 = 2'b00;
+            write_mem = 2'b00;
+            read_mem = 3'b000;
+            aluc = 5'b00000;
+            pcImm_NEXTPC_rs1Imm = 2'b00;
+            extOP = 3'b000;
+            if (func3 == 3'b001) begin
+                is_fence_i = 1;
+            end
+        end
         // lui
         7'b0110111:begin
             write_reg = 1;

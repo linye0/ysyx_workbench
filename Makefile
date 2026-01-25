@@ -28,7 +28,8 @@ PERF_LOG = $(YSYX_HOME)/npc/perf_record.log
 
 perf:
 	@echo "run performance evaluation."
-	@$(MAKE) -C $(YSYX_HOME)/am-kernels/benchmarks/microbench RECORD=y ARCH=riscv32-ysyxsoc run mainargs=test
+	@touch $(NEMU_HOME)/src/npc/npc.c
+	@$(MAKE) -C $(YSYX_HOME)/am-kernels/benchmarks/microbench RECORD=y ARCH=riscv32-ysyxsoc run mainargs=train
 
 perf_commit: perf
 	@echo "Appending Git Commit ID and merging into previous commit..."
@@ -38,7 +39,7 @@ perf_commit: perf
 		echo "====================================================================" >> $(PERF_LOG); \
 		echo "" >> $(PERF_LOG); \
 		git add $(PERF_LOG); \
-		git commit --amend --no-edit; \
+		git commit -m "chore(perf): update performance log for commit $$CUR_COMMIT"; \
 		echo "Success: Performance data with Commit ID [$$CUR_COMMIT] merged."; \
 	else \
 		echo "Error: $(PERF_LOG) not found!"; \

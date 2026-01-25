@@ -34,14 +34,8 @@ module ysyx_25040131_gpr(
 
     integer i;
     always @(posedge clk) begin
-        if (rst) begin
-            for (i = 0; i < 32; i = i + 1) begin
-                regs[i] <= 32'h0;
-            end
-        end else begin
-            if (rf_we) begin
-                regs[target_reg] <= write_rd_data;
-            end
+        if (rf_we) begin
+            regs[target_reg] <= write_rd_data;
         end
     end
 

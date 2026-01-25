@@ -1,12 +1,13 @@
 `include "ysyx_25040131_soc.svh"
 `include "ysyx_25040131_config.svh"
+`include "ysyx_25040131_dpi_c.svh"
 
 // 简易指令缓存(ICache)
 // - 只读缓存（IFU只读不写）
 // - 直接映射(Direct-Mapped)
 // - 可配置块数(默认16块)和块大小(默认4B)
 module ysyx_25040131_icache #(
-    parameter INDEX_WIDTH = 4,      // 4位索引 = 16个cache块
+    parameter INDEX_WIDTH = 6,      // 4位索引 = 16个cache块
     parameter BLOCK_WIDTH = 4,       // 块大小位宽 4 = 16Bytes
     parameter XLEN = `YSYX_XLEN
 )(
@@ -31,7 +32,10 @@ module ysyx_25040131_icache #(
     input logic [XLEN-1:0] bus_rdata,
     input logic bus_rlast,
     input logic bus_rvalid,
-    output logic bus_rready
+    output logic bus_rready,
+
+    // fence.i
+    input logic is_fence_i
 );
 
     localparam int NUM_BLOCKS = 1 << INDEX_WIDTH;  // 16个cache块
@@ -173,11 +177,13 @@ module ysyx_25040131_icache #(
     // Cache填充逻辑
     // ============================================================================
     always_ff @(posedge clock) begin
-        if (reset) begin
+        if (reset || is_fence_i) begin
             // 复位时清空所有有效位
+            if (is_fence_i) begin
+                `YSYX_DPI_C_NPC_DIFFTEST_SKIP_REF
+            end
             for (int i = 0; i < NUM_BLOCKS; i++) begin
                 valid_array[i] <= 1'b0;
-                tag_array[i] <= '0;
             end
         end else begin
             // 从总线填充cache

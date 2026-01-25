@@ -289,9 +289,10 @@ ysyx_25040131_ifu IFU(
 // 简易指令缓存：16个cache块，每块4B，直接映射方式
 ysyx_25040131_icache #(
     .INDEX_WIDTH(4),    // 4位索引 = 16个cache块
-    .BLOCK_WIDTH(4),     // 块大小4B = 1条指令
+    .BLOCK_WIDTH(3),     // 块大小4B = 1条指令
     .XLEN(XLEN)
 ) ICACHE (
+    .is_fence_i(idu_is_fence_i),
     .clock(clock),
     .reset(reset),
     // IFU接口
@@ -355,6 +356,8 @@ ysyx_25040131_controller controller(
     .exc_valid(exc_valid),
     .exc_cause(exc_cause),
     .exc_tval(exc_tval),
+
+    .is_fence_i(idu_is_fence_i),
 
     .is_mret(is_mret),
     .is_ecall(is_ecall),
@@ -558,6 +561,8 @@ wire [1:0] bus_master_bresp;
 wire bus_master_bvalid;
 wire bus_master_bready;
 wire [3:0] bus_master_bid;
+
+wire idu_is_fence_i;
 
 // BUS 的 AXI4 Master 接口连接到中间信号
 ysyx_25040131_bus BUS(
