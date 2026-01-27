@@ -346,24 +346,7 @@ module ysyx_25040131_lsu #(
   );
   assign out_ready = (state_load == LOAD_IDLE) && (state_store == STORE_IDLE);
 
-  // 与 BUS 的读接口
-  // 在 LOAD_REQ_AR 状态保持 arvalid 和地址，直到握手完成
-  // assign lsu_araddr = addr_reg;
-  // assign lsu_arvalid = (state_load == LOAD_REQ_AR);
-  // 在 LOAD_DONE 状态保持 rready，直到数据接收完成
-  // assign lsu_rready = (state_load == LOAD_DONE);
 
-  // 与 BUS 的写接口
-  // 在 STORE_ADDR_REQUESTED 状态保持 awvalid 和地址，直到握手完成
-  // assign lsu_awaddr = addr_reg;
-  // assign lsu_awvalid = (state_store == STORE_ADDR_REQUESTED);
-  // 在 STORE_DATA_REQUESTED 状态保持 wvalid 和数据，直到握手完成
-  // assign lsu_wdata = data_reg;
-  // assign lsu_wvalid = (state_store == STORE_DATA_REQUESTED);
-  // 在 STORE_WAIT_B 状态保持 bready，直到写响应接收完成
-  // assign lsu_bready = (state_store == STORE_WAIT_B);
-
-  // Access Fault 输出：当检测到 resp 错误时置1
 
 endmodule
 

@@ -34,11 +34,12 @@ module ysyx_25040131_ifu #(
   // ReqAr: 请求地址（arvalid=1，等待 arready）
   // WaitR: 等待读数据（等待 rvalid）
   // Done: 完成（rready=1，数据已接收）
-  typedef enum logic [1:0] {
-    IFU_IDLE = 2'b00,      // Idle
-    IFU_REQ_AR = 2'b01,   // ReqAr
-    IFU_WAIT_R = 2'b10,   // WaitR
-    IFU_DONE = 2'b11      // Done
+  typedef enum logic [2:0] {
+    IFU_IDLE = 3'b000,      // Idle
+    IFU_REQ_AR = 3'b001,   // ReqAr
+    IFU_WAIT_R = 3'b010,   // WaitR
+    IFU_DONE = 3'b011,      // Done
+    IFU_WAIT_WB = 3'b100
   } ifu_state_t;
 
   ifu_state_t ifu_state;
@@ -96,12 +97,21 @@ module ysyx_25040131_ifu #(
         end
         IFU_DONE: begin
           // 数据已接收（rready=1），等待WBU完成（prev_valid有效）后，更新pc_reg为next_pc
-          if (prev_valid && out_ready) begin
+          if (out_valid && next_ready) begin
             // WBU完成，更新PC并切换到 Idle 状态，准备取下一条指令
-            out_pc <= next_pc;
-            ifu_state <= IFU_IDLE;
+            ifu_state <= IFU_WAIT_WB;
             out_valid <= 1'b0;
-            out_ready <= 1'b0;
+          end
+        end
+        IFU_WAIT_WB: begin
+          if (out_ready && prev_valid) begin // prev_valid 就是连在 wbu_valid 上的
+             // WBU 完成了，可以更新 PC 并取下一条了
+             out_pc <= next_pc;
+             ifu_state <= IFU_IDLE;
+             out_ready <= 1'b0;
+             
+             // 如果想追求极限性能，这里甚至可以直接跳去 IFU_REQ_AR
+             // 但为了稳妥，先回 IDLE
           end
         end
         default: begin

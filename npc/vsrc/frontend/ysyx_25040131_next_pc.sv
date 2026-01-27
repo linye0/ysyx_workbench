@@ -30,9 +30,6 @@ always @(*) begin
     else if(condition_branch) begin
         next_pc = pc + offset;
     end
-    else if(pc == 32'h94) begin
-        next_pc = 32'h94;
-    end
     else if (is_mret) begin
         next_pc = mepc;
     end

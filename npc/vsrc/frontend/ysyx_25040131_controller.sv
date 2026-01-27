@@ -85,7 +85,7 @@ always @(*) begin
             rs2Data_EX_imm32_4 = 2'b01;
             write_mem = 2'b00;
             read_mem = 3'b000;
-            aluc = 5'b00000;
+            aluc = 5'b10001;
             pcImm_NEXTPC_rs1Imm = 2'b00;
             extOP = 3'b001;
         end

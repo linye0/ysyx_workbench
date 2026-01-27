@@ -6,9 +6,6 @@ module ysyx_25040131_gpr(
     input [4: 0] rs2,
     output reg [31: 0] read_rs1_data,
     output reg [31: 0] read_rs2_data,
-    input idu_valid,       
-    input mem_ready,       
-    output exu_gpr_valid, 
     
     // 写通道（WBU阶段使用）
     input write_reg,       
@@ -63,6 +60,5 @@ module ysyx_25040131_gpr(
     // ------------------------------
     assign out_valid = prev_valid;
     assign out_ready = next_ready;
-    assign exu_gpr_valid = idu_valid;
 
 endmodule

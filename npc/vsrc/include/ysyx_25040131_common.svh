@@ -2,6 +2,7 @@
 `define YSYX_25040131_COMMON_SVH
 
 `include "ysyx_25040131_dpi_c.svh"
+`include "ysyx_25040131_pipeline_pkg.svh"
 
 // Instruction Set Opcodes
 `define YSYX_INST_FENCE_I 32'h0000100f

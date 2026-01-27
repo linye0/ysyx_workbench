@@ -36,6 +36,7 @@ always @(*) begin
         5'b01110: condition_branch = ($signed(a) >= $signed(b)) ? 1'b1 : 1'b0;
         5'b01111: condition_branch = (a < b) ? 1'b1: 1'b0;
         5'b10000: condition_branch = (a >= b) ? 1'b1: 1'b0;
+        5'b10001: out = b; // 直通（用于imm赋值指令）
         default: out = 32'b0;
     endcase
 end
