@@ -171,8 +171,8 @@ module ysyx_25040131_bus #(
   reg slave_w_done;
   reg slave_aw_done;
 
-  assign ifu_arready = (state_load == BUS_IDLE);
-  assign lsu_arready = (state_load == BUS_IDLE) && !ifu_arvalid;
+  assign lsu_arready = (state_load == BUS_IDLE);
+  assign ifu_arready = (state_load == BUS_IDLE) && !lsu_arvalid;
 
   assign io_master_araddr = io_master_araddr_reg;
   assign io_master_arid = io_master_arid_reg;
@@ -240,26 +240,17 @@ module ysyx_25040131_bus #(
     end else begin
       unique case (state_load)
         BUS_IDLE: begin
-          // 优先处理 IFU 请求
-          if (ifu_arvalid && ifu_arready) begin
-              // 地址握手完成，锁存地址
-              io_master_araddr_reg <= ifu_araddr;
-              io_master_arid_reg <= 4'b0;
-              io_master_arlen_reg <= ifu_arlen;
-              io_master_arsize_reg <= ifu_arsize;
-              io_master_arburst_reg <= ifu_arburst;
-              io_master_arvalid_reg <= 1'b1;
-              state_load <= IFU_REQ_AR;
-            // end
-          end else if (lsu_arvalid) begin
-            // 锁存wstrb（读操作时也需要，由LSU在LOAD_IDLE状态生成）
+          // 优先处理 LSU 请求
+          if (lsu_arvalid) begin
+            // 优先处理 LSU 请求（包含 CLINT）
             if (clint_en) begin
-              // CLINT 旁路，直接进入 LSU_DONE
+              // CLINT 旁路
               lsu_rdata_reg <= clint_rdata;
-              lsu_rresp_reg <= 2'b00;  // CLINT 访问总是 OKAY
+              lsu_rresp_reg <= 2'b00;
               lsu_rvalid_reg <= 1'b1;
               state_load <= LSU_DONE;
             end else begin
+              // AXI 请求
               io_master_araddr_reg <= lsu_araddr;
               io_master_arid_reg <= 4'b0;
               io_master_arlen_reg <= 8'b0;
@@ -268,6 +259,16 @@ module ysyx_25040131_bus #(
               io_master_arvalid_reg <= 1'b1;
               state_load <= LSU_REQ_AR;
             end
+          end else if (ifu_arvalid) begin
+              // 只有当 LSU 没请求时，才处理 IFU
+              // 注意：此时 ifu_arready 逻辑上是 1 (因为 lsu_arvalid=0)
+              io_master_araddr_reg <= ifu_araddr;
+              io_master_arid_reg <= 4'b0;
+              io_master_arlen_reg <= ifu_arlen;
+              io_master_arsize_reg <= ifu_arsize;
+              io_master_arburst_reg <= ifu_arburst;
+              io_master_arvalid_reg <= 1'b1;
+              state_load <= IFU_REQ_AR;
           end
         end
         IFU_REQ_AR: begin

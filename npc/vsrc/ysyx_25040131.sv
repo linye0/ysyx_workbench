@@ -257,7 +257,6 @@ assign wbu_ready = wbu_gpr_ready && wbu_csr_ready;
 // WBU阶段valid：三个子模块都完成时，WBU才完成
 assign wbu_valid = wbu_gpr_valid && wbu_csr_valid;
 
-
 // ============================================================================
 // 流水线信号定义 (Pipeline Signals)
 // ============================================================================
@@ -292,11 +291,17 @@ wire flush_id_ex = 1'b0;
 wire flush_ex_mem = 1'b0;
 wire flush_mem_wb = 1'b0;
 
+wire hazard_stall;
+wire hazard_flush;
+
+
 // ============================================================================
 // IFU阶段：取指
 // ============================================================================
 // 多周期执行：WBU完成后才取下一条指令
 // 复位后允许取第一条指令（wbu_valid初始为0，但复位后应该开始取第一条指令）
+
+wire if_id_ready_hazard = idu_ready && !hazard_stall;
 
 ysyx_25040131_ifu IFU(
     .clock(clock),
@@ -335,7 +340,7 @@ ysyx_25040131_pipcon #(
 
     .data_out(if_id_out),
     .valid_out(if_id_valid_out),
-    .ready_in(idu_ready)
+    .ready_in(if_id_ready_hazard)
 );
 
 // ============================================================================
@@ -373,6 +378,30 @@ ysyx_25040131_icache #(
 // ============================================================================
 // IDU阶段：译码
 // ============================================================================
+
+wire id_ex_flush_hazard = flush_id_ex || hazard_flush;
+
+wire ex_is_load = (|id_ex_out.ctrl_mem.read_mem);
+
+wire mem_is_load = (|ex_mem_out.ctrl_mem.read_mem);
+
+ysyx_25040131_hazard u_hazard (
+    .id_rs1      (rs1),
+    .id_rs2      (rs2),
+    .id_valid    (if_id_valid_out),   // 【新增连接】IF/ID 寄存器的输出有效位
+    
+    .ex_rd       (id_ex_out.rd_idx),
+    .ex_mem_read (ex_is_load),
+    .ex_valid    (id_ex_valid_out),   // 【新增连接】ID/EX 寄存器的输出有效位
+
+    .mem_rd      (ex_mem_out.rd_idx),
+    .mem_mem_read(mem_is_load),
+    .mem_valid   (ex_mem_valid_out),
+    
+    .stall_if_id (hazard_stall),
+    .flush_id_ex (hazard_flush)
+);
+
 ysyx_25040131_id ID(
     .instr(if_id_out.inst),
     // 译码的相关数据
@@ -467,7 +496,7 @@ end
 ysyx_25040131_pipcon #(
     .WIDTH($bits(id_ex_in))
 ) REG_ID_EX (
-    .clk(clock), .reset(reset), .flush(flush_id_ex),
+    .clk(clock), .reset(reset), .flush(id_ex_flush_hazard),
     .data_in(id_ex_in),
     .valid_in(idu_valid),
     .ready_out(id_ex_ready_out),
@@ -481,6 +510,35 @@ ysyx_25040131_pipcon #(
 // ============================================================================
 // EXU阶段：执行（ALU、GPR读、CSR读）
 // ============================================================================
+
+wire [31:0] forward_rs1_data;
+wire [31:0] forward_rs2_data;
+wire [1:0] forward_a_sel;
+wire [1:0] forward_b_sel;
+
+ysyx_25040131_forward u_forwarding(
+    .id_ex_rs1_idx(id_ex_out.rs1_idx),
+    .id_ex_rs2_idx(id_ex_out.rs2_idx),
+    
+    .ex_mem_rd_idx(ex_mem_out.rd_idx),
+    .ex_mem_reg_write(ex_mem_out.ctrl_wb.write_reg),
+    .ex_mem_valid(ex_mem_valid_out),
+
+    .mem_wb_rd_idx(mem_wb_out.rd_idx),
+    .mem_wb_reg_write(mem_wb_out.ctrl_wb.write_reg),
+    .mem_wb_valid(mem_wb_valid_out),
+
+    .forward_a_sel(forward_a_sel),
+    .forward_b_sel(forward_b_sel)
+);
+
+assign forward_rs1_data = (forward_a_sel == 2'b10) ? ex_mem_out.alu_result :
+                          (forward_a_sel == 2'b01) ? wb_final_wdata :
+                          id_ex_out.rs1_data;
+
+assign forward_rs2_data = (forward_b_sel == 2'b10) ? ex_mem_out.alu_result :
+                          (forward_b_sel == 2'b01) ? wb_final_wdata :
+                          id_ex_out.rs2_data;
 
 ysyx_25040131_alu ALU(
     .aluc(id_ex_out.ctrl_ex.aluc),
@@ -499,11 +557,11 @@ ysyx_25040131_alu ALU(
 always_comb begin
         ex_mem_in.pc         = id_ex_out.pc;
         ex_mem_in.alu_result = out_alu; // ALU 计算结果
-        ex_mem_in.mem_wdata  = id_ex_out.rs2_data; // Store 的数据
+        ex_mem_in.mem_wdata  = forward_rs2_data; // Store 的数据
         ex_mem_in.rd_idx     = id_ex_out.rd_idx;
         ex_mem_in.csr_wdata  = (id_ex_out.ctrl_ex.csr_use_imm) ? 
                                 {27'h0, id_ex_out.rs1_idx} :  // zimm 就是 rs1_idx
-                                id_ex_out.rs1_data;           // rs1 寄存器的值
+                                forward_rs1_data;           // rs1 寄存器的值
         ex_mem_in.csr_addr   = id_ex_out.csr_addr; // CSR地址
         ex_mem_in.csr_rdata = csr_rdata;
 
@@ -514,7 +572,7 @@ always_comb begin
         ex_mem_in.exc_valid  = id_ex_out.exc_valid;
         ex_mem_in.ctrl_wb    = id_ex_out.ctrl_wb;
         ex_mem_in.imm        = id_ex_out.imm;
-        ex_mem_in.rs1_data   = id_ex_out.rs1_data;
+        ex_mem_in.rs1_data   = forward_rs1_data;
 end
 
 ysyx_25040131_pipcon #(
@@ -689,14 +747,14 @@ ysyx_25040131_csr u_csr (
 
 ysyx_25040131_mux_2 MUX_EX_A(
     .signal(id_ex_out.ctrl_ex.rs1Data_EX_PC),
-    .a(id_ex_out.rs1_data),
+    .a(forward_rs1_data),
     .b(id_ex_out.pc),            // 使用IFU输出的PC
     .out(in_alu_a)
 );
 
 ysyx_25040131_mux_3 MUX_EX_B(
     .signal(id_ex_out.ctrl_ex.rs2Data_EX_imm32_4),
-    .a(id_ex_out.rs2_data),
+    .a(forward_rs2_data),
     .b(id_ex_out.imm),
     .c(32'd4),
     .out(in_alu_b)
