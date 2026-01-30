@@ -101,6 +101,9 @@ typedef struct packed {
     logic [31:0] exc_tval;
     logic        access_fault;
 
+    logic [31:0] mem_wdata;
+    logic [7:0] wstrb;
+
     // 控制信号包 (MEM的用完了，丢弃)
     ctrl_wb_t    ctrl_wb;     // 本阶段使用
 } mem_wb_data_t;

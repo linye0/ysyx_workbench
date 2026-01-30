@@ -30,6 +30,11 @@ uint32_t g_wb_cpc = 0;
 uint32_t g_wb_npc = 0;
 bool     g_wb_valid = false;
 
+uint32_t g_st_waddr = 0;
+uint32_t g_st_wdata = 0;
+uint32_t g_st_wstrb = 0;
+bool     g_st_valid = false;
+
 
 void reset(TOP_NAME* top, int n) {
 	top->reset = 1;
@@ -188,58 +193,17 @@ extern "C" void npc_difftest_commit_inst(int cpc, int npc, int valid) {
     return;
 }
 
+extern "C" void npc_difftest_commit_store(int addr, int wdata, int wstrb, int valid) {
+    g_st_waddr = addr;
+    g_st_wdata = wdata;
+    g_st_wstrb = wstrb;
+    g_st_valid = (valid != 0);
+    // printf("g_st_waddr: 0x%x, g_st_wdata: 0x%x, g_st_wstrb: %d, g_st_valid: %d\n", g_st_waddr, g_st_wdata, g_st_wstrb, g_st_valid);
+    return;
+}
+
 extern "C" int npc_read(int raddr, int wmask) {
-    /*
-    #ifdef CONFIG_HAS_TIMER
-        if (raddr == RTC_ADDR + 4) {
-            uint64_t t = get_time();
-            rtc_port_base[0] = (uint32_t)(t >> 32);
-            difftest_skip_ref();
-            return rtc_port_base[0];
-        } else if (raddr == RTC_ADDR) {
-            uint64_t t = get_time();
-            rtc_port_base[1] = (uint32_t)(t);
-            difftest_skip_ref();
-            return rtc_port_base[1];
-        }
-    #endif
-    #ifdef CONFIG_DEBUG
-    printf("pmem_read: addr = " FMT_WORD ", mask = %02x\n", raddr, wmask);
-    #endif
-    uint8_t *host_addr = guest_to_host(raddr);
-    host_addr = (uint8_t*)((size_t)host_addr);
-    if (host_addr == NULL) {
-        // Log(FMT_RED("Invalid read: addr = " FMT_WORD ", mask = %02x\n"), raddr, wmask);
-        // printf(FMT_RED("Invalid read: addr = " FMT_WORD ", mask = %02x\n"), raddr, wmask);
-        // npc_abort();
-        return 0;
-    }
-    */
-    /*
-    switch(wmask) {
-        case 15:
-            //printf("case 0xff\n");
-            //printf("return value = %02x\n", host_read(host_addr, 4));
-            return paddr_read(raddr, 4);
-            break;
-        case 12:
-            if (paddr_read(raddr, 2) & (1 << 15)) {
-                return paddr_read(raddr, 2) | 0xFFFF0000;
-            } else {
-                return paddr_read(raddr, 2) & 0x0000FFFF;
-            }
-            break;
-        case 3:
-            return paddr_read(raddr, 2);
-            break;
-        case 1:
-            return paddr_read(raddr, 1);
-            break;
-        default:
-            // Assert(0, "Invalid mask = %02x", wmask);
-            break;
-    }
-    */
+
     return paddr_read(raddr & ~0x3u, 4);
 }
 

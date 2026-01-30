@@ -696,6 +696,9 @@ always_comb begin
     mem_wb_in.exc_valid   = ex_mem_out.exc_valid;
     mem_wb_in.ctrl_wb     = ex_mem_out.ctrl_wb;
 
+    mem_wb_in.mem_wdata   = ex_mem_out.mem_wdata;
+    mem_wb_in.wstrb       = lsu_wstrb;
+
     mem_wb_in.npc        = ex_mem_out.npc;
 end
 
@@ -744,6 +747,7 @@ wire wb_trap_taken;
 always @(posedge clock) begin
     if (!reset) begin
         `YSYX_DPI_C_DIFFTEST_COMMIT_INST(mem_wb_out.pc, final_wbu_npc, wbu_valid);
+        `YSYX_DPI_C_DIFFTEST_COMMIT_STORE(mem_wb_out.alu_result, mem_wb_out.mem_wdata, mem_wb_out.wstrb, wbu_valid && (|mem_wb_out.wstrb));
     end
 end
 

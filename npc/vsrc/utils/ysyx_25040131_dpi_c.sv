@@ -51,4 +51,11 @@ import "DPI-C" function void npc_difftest_commit_inst(
     input int valid
 );
 
+import "DPI-C" function void npc_difftest_commit_store(
+    input int addr,
+    input int data,
+    input int mask,
+    input int valid
+);
+
 `endif

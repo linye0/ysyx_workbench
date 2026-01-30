@@ -59,6 +59,11 @@ extern uint32_t g_wb_cpc;
 extern uint32_t g_wb_npc;
 extern bool     g_wb_valid;
 
+extern uint32_t g_st_waddr;
+extern uint32_t g_st_wdata;
+extern uint32_t g_st_wstrb;
+extern bool     g_st_valid;
+
 #endif
 
 #endif

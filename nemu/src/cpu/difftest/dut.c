@@ -139,14 +139,31 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
 }
 
 #ifdef CONFIG_NPC
-static void checkmems(paddr_t addr, int len, vaddr_t pc) {
+static void checkmems(uint32_t addr, uint32_t wdata, uint32_t wstrb, vaddr_t pc) {
   // printf("dut data at address 0x%x: 0x%x\n", addr, paddr_read(addr, len));
   // printf("ref data at address 0x%x: 0x%x\n", addr, ref_difftest_paddr_read(addr, len));
-  if (paddr_read(addr, len) != ref_difftest_paddr_read(addr, len)) {
+  uint32_t addr_aligned = addr & ~0x03u;
+  uint32_t ref_val = ref_difftest_paddr_read(addr_aligned, 4);
+  uint32_t compare_mask = 0;
+  for (int i = 0; i < 4; i++) {
+    if ((wstrb >> i) & 1) {
+      compare_mask |= (0xFFu << (i * 8));
+    }
+  }
+
+  uint32_t dut_val_masked = wdata & compare_mask;
+  uint32_t ref_val_masked = ref_val & compare_mask;
+  if (dut_val_masked != ref_val_masked) {
     printf("\nCan't pass checkmems!\n");
     nemu_state.state = NEMU_ABORT;
     nemu_state.halt_pc = pc;
-    printf("Unconsistent at 0x%x, ref = 0x%x, dut = 0x%x\n", addr, ref_difftest_paddr_read(addr, 4), paddr_read(addr, 4));
+    printf("\n\033[1;31m[Difftest] Store Mismatch!\033[0m\n");
+    printf("PC          : 0x%08x\n", pc);
+    printf("Addr        : 0x%08x (Aligned: 0x%08x)\n", addr, addr_aligned);
+    printf("Write Mask  : 0x%x (Hex)\n", wstrb);
+    printf("Compare Mask: 0x%08x\n", compare_mask);
+    printf("DUT Data    : 0x%08x (Masked: 0x%08x)\n", wdata, dut_val_masked);
+    printf("REF Data    : 0x%08x (Masked: 0x%08x)\n", ref_val, ref_val_masked);
     isa_reg_display();
   }
   return;
@@ -164,10 +181,9 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       checkregs(&ref_r, npc);
       #ifdef CONFIG_NPC
       #ifdef CONFIG_DIFFTEST_MEM
-      Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-      if (dut_flag.flag != 0) {
+      if (g_st_valid) {
         // printf("start checkmem at address 0x%x!\n", dut_flag.addr);
-        checkmems(dut_flag.addr, dut_flag.len, npc);
+        checkmems(g_st_waddr, g_st_wdata, g_st_wstrb, g_wb_cpc);
       }
       #endif
       #endif
@@ -194,10 +210,9 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   checkregs(&ref_r, pc);
   #ifdef CONFIG_NPC
   #ifdef CONFIG_DIFFTEST_MEM
-  Mem_flag dut_flag = ref_difftest_mem_flag_to_dut();
-  if (dut_flag.flag != 0) {
+  if (g_st_valid) { 
     // if (dut_flag.addr >= CONFIG_SDRAM_BASE && dut_flag.addr < CONFIG_SDRAM_BASE + CONFIG_SDRAM_SIZE) printf("sdram memcheck at address 0x%x!\n", dut_flag.addr);
-    checkmems(dut_flag.addr, dut_flag.len, pc);
+    checkmems(g_st_waddr, g_st_wdata, g_st_wstrb, g_wb_cpc);
   }
   #endif
   #endif

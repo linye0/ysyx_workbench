@@ -64,12 +64,18 @@ module ysyx_25040131_icache #(
 
     logic bus_rlast_delay_1cycle;
     always_ff @(posedge clock) begin
-        if (reset) begin
-            bus_rlast_delay_1cycle <= 1'b0;
-        end else begin
-            bus_rlast_delay_1cycle <= bus_rlast;
+            if (reset) begin
+                bus_rlast_delay_1cycle <= 1'b0;
+            end else begin
+                // 【关键修改】只有在 ICache 处于 MISS_R 状态，且握手成功接收到 rlast 时，才拉高延迟信号
+                // 这样就过滤掉了 LSU 产生的 rlast
+                if (state == MISS_R && bus_rvalid && bus_rready && bus_rlast) begin
+                    bus_rlast_delay_1cycle <= 1'b1;
+                end else begin
+                    bus_rlast_delay_1cycle <= 1'b0;
+                end
+            end
         end
-    end
 
     // 状态机定义
     typedef enum logic [1:0] {
