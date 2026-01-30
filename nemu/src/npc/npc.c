@@ -26,6 +26,10 @@ void nvboard_bind_all_pins(TOP_NAME* top);
 #endif
 
 PerfMetrics perf = {};
+uint32_t g_wb_cpc = 0;
+uint32_t g_wb_npc = 0;
+bool     g_wb_valid = false;
+
 
 void reset(TOP_NAME* top, int n) {
 	top->reset = 1;
@@ -104,6 +108,8 @@ void update_cpu_state(NPCState npc) {
     cpu.sr[CSR_MTVAL] = *(npc.mtval);
     cpu.sr[CSR_MVENDORID] = *(npc.mvendorid);
     cpu.sr[CSR_MARCHID] = *(npc.marchid);
+    cpu.cpc_for_pipeline = g_wb_cpc;
+    cpu.npc_for_pipeline = g_wb_npc;
     return;
 }
 
@@ -172,6 +178,14 @@ extern "C" void npc_difftest_skip_ref() {
 extern "C" void npc_difftest_mem_diff(int waddr, int wdata, int wstrb) {
     // TO DO
     
+}
+
+extern "C" void npc_difftest_commit_inst(int cpc, int npc, int valid) {
+    g_wb_cpc = cpc;
+    g_wb_npc = npc;
+    g_wb_valid = (valid != 0);
+    // printf("g_wb_cpc: 0x%x, g_wb_npc: 0x%x, g_wb_valid: %d\n", g_wb_cpc, g_wb_npc, g_wb_valid);
+    return;
 }
 
 extern "C" int npc_read(int raddr, int wmask) {

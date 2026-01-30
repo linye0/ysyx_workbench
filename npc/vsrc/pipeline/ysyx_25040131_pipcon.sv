@@ -30,6 +30,5 @@ module ysyx_25040131_pipcon #(
             end
         end
     end
-        
 
 endmodule

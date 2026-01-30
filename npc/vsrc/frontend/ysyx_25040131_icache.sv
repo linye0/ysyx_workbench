@@ -35,6 +35,7 @@ module ysyx_25040131_icache #(
     output logic bus_rready,
 
     // fence.i
+    input logic flush,
     input logic is_fence_i
 );
 
@@ -43,10 +44,18 @@ module ysyx_25040131_icache #(
     localparam int WORDS_PER_BLOCK = 1 << (BLOCK_WIDTH - 2);
     localparam int TAG_WIDTH = XLEN - INDEX_WIDTH - BLOCK_WIDTH; // 26位tag
 
+
+    logic [XLEN-1:0] req_addr_reg;
+    always_ff @(posedge clock) begin
+        if (state == IDLE && ifu_arvalid) begin
+            req_addr_reg <= ifu_araddr;
+        end
+    end
+
     // 定义地址结构: [ Tag (26) | Index (4) | Offset (2) ]
-    wire [TAG_WIDTH-1:0]   req_tag   = ifu_araddr[XLEN-1 : INDEX_WIDTH + BLOCK_WIDTH];
-    wire [INDEX_WIDTH-1:0] req_index = ifu_araddr[INDEX_WIDTH + BLOCK_WIDTH - 1 : BLOCK_WIDTH];
-    wire [BLOCK_WIDTH-3:0] req_word_idx = ifu_araddr[BLOCK_WIDTH - 1 : 2];
+    wire [TAG_WIDTH-1:0]   req_tag   = req_addr_reg[XLEN-1 : INDEX_WIDTH + BLOCK_WIDTH];
+    wire [INDEX_WIDTH-1:0] req_index = req_addr_reg[INDEX_WIDTH + BLOCK_WIDTH - 1 : BLOCK_WIDTH];
+    wire [BLOCK_WIDTH-3:0] req_word_idx = req_addr_reg[BLOCK_WIDTH - 1 : 2];
 
     // 存储阵列（使用触发器实现）
     logic [TAG_WIDTH-1:0] tag_array  [NUM_BLOCKS-1:0];   // Tag存储
@@ -89,7 +98,7 @@ module ysyx_25040131_icache #(
     // 状态机：当前状态寄存器
     // ============================================================================
     always_ff @(posedge clock) begin
-        if (reset) begin
+        if (reset || flush) begin
             state <= IDLE;
         end else begin
             state <= next_state;
@@ -166,7 +175,7 @@ module ysyx_25040131_icache #(
         end else begin
             if (state == LOOKUP && !cache_hit) begin
                 // 未命中时锁存请求地址
-                miss_addr_reg <= ifu_araddr;
+                miss_addr_reg <= req_addr_reg;
                 miss_index_reg <= req_index;
                 miss_tag_reg <= req_tag;
             end

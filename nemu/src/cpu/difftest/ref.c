@@ -51,7 +51,8 @@ __EXPORT void difftest_regcpy(void *dut, int direction) {
   CPU_state *npc = (CPU_state *)dut;
   if (direction == DIFFTEST_TO_REF_SKIP_REF) {
     // only use for ref_difftest_skip, so cpu.pc = npc->pc(next_pc)
-    cpu.pc = npc->cpc;
+    // 这边这样拷贝是错的，因为已经是流水线形式了cpu.pc = npc->cpc;
+    cpu.pc = npc->npc_for_pipeline;
     for (int i = 0; i < 32; i++) {
       cpu.gpr[i] = npc->gpr[i];
     }

@@ -45,4 +45,10 @@ import "DPI-C" function void npc_icache_miss(
     input int flag
 );
 
+import "DPI-C" function void npc_difftest_commit_inst(
+    input int cpc,
+    input int npc,
+    input int valid
+);
+
 `endif

@@ -1,49 +1,36 @@
 module ysyx_25040131_next_pc(
-    input [1: 0] pcImm_NEXTPC_rs1Imm,
-    input condition_branch, is_mret, exc_valid, access_fault,
-    input [31: 0] pc, offset, rs1Data, mepc, mtvec,
-    output reg [31: 0] next_pc
-    // 流水线握手信号
+    // 输入只保留异常相关的
+    input is_mret, 
+    input exc_valid, 
+    input access_fault,
+    input [31: 0] mepc, 
+    input [31: 0] mtvec,
+    
+    // 删除了 pc, offset, rs1Data, pcImm... 等分支相关信号
+    // 甚至 pc 都不一定需要，除非某种异常跳转依赖当前 PC
+    
+    output reg [31: 0] trap_target_pc, // 改个名，叫异常目标地址
+    output reg trap_taken              // 新增：告诉外部“我要跳转”
 );
 
-/*
 always @(*) begin
-    if(pcImm_NEXTPC_rs1Imm == 2'b01) next_pc = pc + offset;
-    else if(pcImm_NEXTPC_rs1Imm == 2'b10) next_pc = rs1Data + offset;
-    else if(condition_branch) next_pc = pc + offset;
-    else if(pc == 32'h94) next_pc = 32'h94;
-    else next_pc = pc + 4;
-end
-*/
+    trap_taken = 1'b0;
+    trap_target_pc = 32'b0;
 
-always @(*) begin
-    // Access Fault 优先级最高：当检测到访问错误时，跳转到 PC=0
+    // Access Fault 优先级最高
     if (access_fault) begin
-        next_pc = 32'h0;
-    end
-    else if(pcImm_NEXTPC_rs1Imm == 2'b01) begin
-        next_pc = pc + offset;
-    end
-    else if(pcImm_NEXTPC_rs1Imm == 2'b10) begin
-        next_pc = (rs1Data + offset) & 32'hfffffffe;
-    end
-    else if(condition_branch) begin
-        next_pc = pc + offset;
+        trap_target_pc = 32'h0; // 或其他处理
+        trap_taken = 1'b1;
     end
     else if (is_mret) begin
-        next_pc = mepc;
+        trap_target_pc = mepc;
+        trap_taken = 1'b1;
     end
     else if (exc_valid) begin
-        next_pc = mtvec;
+        trap_target_pc = mtvec;
+        trap_taken = 1'b1;
     end
-    else begin
-        next_pc = pc + 4;
-    end
+    // 删除了 Branch/JAL/JALR/PC+4 的逻辑
 end
-
-// ------------------------------
-// 流水线握手信号
-// next_pc是组合逻辑，总是有效和ready
-// next_ready作为input传入（遵循统一握手协议），但在模块内不需要使用（因为总是ready）
 
 endmodule

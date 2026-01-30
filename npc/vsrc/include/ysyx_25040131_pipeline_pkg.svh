@@ -58,6 +58,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic [31:0] pc;
+    logic [31:0] npc;
     logic [31:0] alu_result;  // ALU计算结果 (也可能是访存地址)
     logic [31:0] mem_wdata;   // 存入内存的数据 (通常是 rs2_data，可能经过前递修正)
     logic [4:0]  rd_idx;      // 目标寄存器索引
@@ -81,6 +82,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic [31:0] pc;
+    logic [31:0] npc;
     logic [31:0] alu_result;  // ALU结果 (用于非Load指令写回)
     logic [31:0] mem_rdata;   // 内存读出的数据
     logic [4:0]  rd_idx;      // 目标寄存器索引

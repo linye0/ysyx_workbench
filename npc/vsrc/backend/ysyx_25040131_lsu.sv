@@ -344,7 +344,8 @@ module ysyx_25040131_lsu #(
     // 写操作完成
     (state_store == STORE_DONE)
   );
-  assign out_ready = (state_load == LOAD_IDLE) && (state_store == STORE_IDLE);
+  // assign out_ready = (state_load == LOAD_IDLE) && (state_store == STORE_IDLE);
+  assign out_ready = out_valid && next_ready;
 
 
 

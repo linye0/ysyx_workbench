@@ -154,6 +154,7 @@ static void checkmems(paddr_t addr, int len, vaddr_t pc) {
 #endif
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
+  // printf("difftest_step pc: 0x%x, npc: 0x%x\n", pc, npc);
   CPU_state ref_r;
 
   if (skip_dut_nr_inst > 0) {
@@ -181,6 +182,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
 
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
+    // printf("is_skip_ref, copy reg state to reference design, pc: 0x%x, npc: 0x%x\n", pc, npc);
     ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF_SKIP_REF);
     is_skip_ref = false;
     return;

@@ -55,6 +55,9 @@ extern VerilatedContext* contextp;
 extern VerilatedVcdC* tfp;
 extern TOP_NAME* top;
 
+extern uint32_t g_wb_cpc;
+extern uint32_t g_wb_npc;
+extern bool     g_wb_valid;
 
 #endif
 

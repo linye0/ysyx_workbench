@@ -146,7 +146,6 @@ wire [31:0] mtvec;
 wire [31:0] ifu_inst;      // IFU输出的指令
 wire [31:0] ifu_pc;        // IFU输出的PC
 wire ifu_valid;            // IFU输出有效
-wire ifu_ready;            // IFU可以接收新请求
 // IFU 与 BUS 的接口
 wire [31:0] ifu_araddr;     // IFU发送给BUS的读地址
 wire ifu_arvalid;          // IFU读地址有效
@@ -250,7 +249,7 @@ always @(posedge clock) begin
         first_instruction <= 1'b0;
     end
 end
-assign ifu_prev_valid = wbu_valid || first_instruction;
+assign ifu_prev_valid = !reset;
 assign idu_valid = idu_id_valid && idu_controller_valid && idu_imm_valid;
 assign exu_valid = exu_alu_valid && exu_csr_valid;
 assign wbu_ready = wbu_gpr_ready && wbu_csr_ready;
@@ -262,31 +261,32 @@ assign wbu_valid = wbu_gpr_valid && wbu_csr_valid;
 // ============================================================================
     
 // --- IF/ID 阶段 ---
-if_id_data_t  if_id_in;      // IFU -> IF/ID Reg
-if_id_data_t  if_id_out;     // IF/ID Reg -> IDU
+if_id_data_t  if_id_in/*verilator public_flat*/;      // IFU -> IF/ID Reg
+if_id_data_t  if_id_out/*verilator public_flat*/;     // IF/ID Reg -> IDU
 wire          if_id_valid_out; // IDU 输入有效
 wire          if_id_ready_out; // IDU 准备好
 
 // --- ID/EX 阶段 ---
-id_ex_data_t  id_ex_in;      // IDU -> ID/EX Reg
-id_ex_data_t  id_ex_out;     // ID/EX Reg -> EXU
+id_ex_data_t  id_ex_in/*verilator public_flat*/;      // IDU -> ID/EX Reg
+id_ex_data_t  id_ex_out/*verilator public_flat*/;     // ID/EX Reg -> EXU
 wire          id_ex_valid_out;
 wire          id_ex_ready_out;
 
 // --- EX/MEM 阶段 ---
-ex_mem_data_t ex_mem_in;     // EXU -> EX/MEM Reg
-ex_mem_data_t ex_mem_out;    // EX/MEM Reg -> MEM
+ex_mem_data_t ex_mem_in/*verilator public_flat*/;     // EXU -> EX/MEM Reg
+ex_mem_data_t ex_mem_out/*verilator public_flat*/;    // EX/MEM Reg -> MEM
 wire          ex_mem_valid_out;
 wire          ex_mem_ready_out;
 
 // --- MEM/WB 阶段 ---
-mem_wb_data_t mem_wb_in;     // MEM -> MEM/WB Reg
-mem_wb_data_t mem_wb_out;    // MEM/WB Reg -> WBU
+mem_wb_data_t mem_wb_in/*verilator public_flat*/;     // MEM -> MEM/WB Reg
+mem_wb_data_t mem_wb_out/*verilator public_flat*/;    // MEM/WB Reg -> WBU
 wire          mem_wb_valid_out;
 wire          mem_wb_ready_out;
 
 // --- 冲刷与暂停信号 (暂时置0，后续实现) ---
-wire flush_if_id = 1'b0;
+wire flush_if_id = ex_branch_taken;
+// wire flush_id_ex = ex_branch_taken;
 wire flush_id_ex = 1'b0;
 wire flush_ex_mem = 1'b0;
 wire flush_mem_wb = 1'b0;
@@ -294,6 +294,29 @@ wire flush_mem_wb = 1'b0;
 wire hazard_stall;
 wire hazard_flush;
 
+// ============================================================================
+// Debug 信号组 (Synthesis 阶段会被自动优化掉，不占面积)
+// ============================================================================
+
+// 1. 集中观测 PC 流向
+wire [31:0] dbg_pc_if  /* verilator public_flat */ = if_id_in.pc;
+wire [31:0] dbg_pc_id  /* verilator public_flat */ = id_ex_in.pc;
+wire [31:0] dbg_pc_ex  /* verilator public_flat */ = ex_mem_in.pc;
+wire [31:0] dbg_pc_mem /* verilator public_flat */ = mem_wb_in.pc;
+wire [31:0] dbg_pc_wb  /* verilator public_flat */ = mem_wb_out.pc;
+
+// 2. 集中观测 NPC 流向
+wire [31:0] dbg_npc_ex  /* verilator public_flat */ = ex_mem_in.npc;
+wire [31:0] dbg_npc_mem /* verilator public_flat */ = mem_wb_in.npc;
+
+// 3. 集中观测 Valid 信号
+wire dbg_valid_if  /* verilator public_flat */ = if_id_valid_out;
+wire dbg_valid_id  /* verilator public_flat */ = id_ex_valid_out;
+wire dbg_valid_ex  /* verilator public_flat */ = ex_mem_valid_out;
+wire dbg_valid_mem /* verilator public_flat */ = mem_wb_valid_out;
+wire dbg_valid_wb  /* verilator public_flat */ = wbu_valid;
+
+// 防止 Verilator 优化掉这些信号（仿真专用）
 
 // ============================================================================
 // IFU阶段：取指
@@ -302,11 +325,14 @@ wire hazard_flush;
 // 复位后允许取第一条指令（wbu_valid初始为0，但复位后应该开始取第一条指令）
 
 wire if_id_ready_hazard = idu_ready && !hazard_stall;
+wire jump_req = wb_trap_taken || ex_branch_taken;
+
 
 ysyx_25040131_ifu IFU(
     .clock(clock),
     .reset(reset),
     .next_pc(next_pc),
+    .flush_req(jump_req),
     .out_inst(ifu_inst),
     .out_pc(ifu_pc),
     // 与 BUS 的接口
@@ -318,8 +344,8 @@ ysyx_25040131_ifu IFU(
     .ifu_rready(ifu_rready),
     .prev_valid(ifu_prev_valid),   // 来自WBU的valid，实现多周期执行
     .next_ready(if_id_ready_out),        // IDU可以接收时，IFU才能发送
-    .out_valid(ifu_valid),
-    .out_ready(ifu_ready)
+    .out_valid(ifu_valid)
+    // .out_ready(ifu_ready)
 );
 
 always_comb begin
@@ -353,6 +379,7 @@ ysyx_25040131_icache #(
     .XLEN(XLEN)
 ) ICACHE (
     .is_fence_i(idu_is_fence_i),
+    .flush(jump_req),
     .clock(clock),
     .reset(reset),
     // IFU接口
@@ -516,6 +543,22 @@ wire [31:0] forward_rs2_data;
 wire [1:0] forward_a_sel;
 wire [1:0] forward_b_sel;
 
+wire [1:0] ex_pc_sel = id_ex_out.ctrl_wb.pcImm_NEXTPC_rs1Imm;
+wire ex_is_jal = (ex_pc_sel == 2'b01);
+wire ex_is_jalr = (ex_pc_sel == 2'b10);
+
+wire ex_branch_taken = id_ex_valid_out && (ex_is_jal || ex_is_jalr || condition_branch);
+
+reg [31:0] ex_branch_target;
+
+always @(*) begin
+    if (ex_is_jalr) begin
+        ex_branch_target = (forward_rs1_data + id_ex_out.imm) & 32'hfffffffe;
+    end else begin
+        ex_branch_target = id_ex_out.pc + id_ex_out.imm;
+    end
+end
+
 ysyx_25040131_forward u_forwarding(
     .id_ex_rs1_idx(id_ex_out.rs1_idx),
     .id_ex_rs2_idx(id_ex_out.rs2_idx),
@@ -553,8 +596,14 @@ ysyx_25040131_alu ALU(
     .out_ready(exu_ready)
 );
 
+logic [31:0] ex_wnpc;
 
 always_comb begin
+        if (ex_branch_taken) begin
+            ex_wnpc = ex_branch_target;
+        end else begin
+            ex_wnpc = id_ex_out.pc + 4;
+        end
         ex_mem_in.pc         = id_ex_out.pc;
         ex_mem_in.alu_result = out_alu; // ALU 计算结果
         ex_mem_in.mem_wdata  = forward_rs2_data; // Store 的数据
@@ -573,6 +622,7 @@ always_comb begin
         ex_mem_in.ctrl_wb    = id_ex_out.ctrl_wb;
         ex_mem_in.imm        = id_ex_out.imm;
         ex_mem_in.rs1_data   = forward_rs1_data;
+        ex_mem_in.npc        = ex_wnpc;
 end
 
 ysyx_25040131_pipcon #(
@@ -645,6 +695,8 @@ always_comb begin
     mem_wb_in.access_fault = access_fault;
     mem_wb_in.exc_valid   = ex_mem_out.exc_valid;
     mem_wb_in.ctrl_wb     = ex_mem_out.ctrl_wb;
+
+    mem_wb_in.npc        = ex_mem_out.npc;
 end
 
 ysyx_25040131_pipcon #(
@@ -670,25 +722,47 @@ ysyx_25040131_pipcon #(
 
 wire [31:0] wb_final_wdata;
 
+
 assign wb_final_wdata = (mem_wb_out.ctrl_wb.is_csr) ? mem_wb_out.csr_rdata :
                         (|mem_wb_out.ctrl_wb.read_mem) ? mem_wb_out.mem_rdata :
                         mem_wb_out.alu_result;
 
+logic [31:0] final_wbu_npc;
+
+always_comb begin
+    if (wb_trap_taken) begin
+        final_wbu_npc = wb_trap_target;
+    end else begin
+        final_wbu_npc = mem_wb_out.npc;
+    end
+end
+
+wire [31:0] wb_trap_target;
+wire wb_trap_taken;
+
+
+always @(posedge clock) begin
+    if (!reset) begin
+        `YSYX_DPI_C_DIFFTEST_COMMIT_INST(mem_wb_out.pc, final_wbu_npc, wbu_valid);
+    end
+end
+
 // next_pc模块（WBU阶段，组合逻辑）
 ysyx_25040131_next_pc NEXT_PC(
-    .pcImm_NEXTPC_rs1Imm(mem_wb_out.ctrl_wb.pcImm_NEXTPC_rs1Imm),
-    .condition_branch(mem_wb_out.condition_branch),
-    .pc(mem_wb_out.pc),           // 使用IFU输出的PC
     .is_mret(mem_wb_out.ctrl_wb.is_mret),
-    .mepc(mepc),
-    .mtvec(mtvec),
     .exc_valid(mem_wb_out.exc_valid),
     .access_fault(mem_wb_out.access_fault),  // Access Fault 信号
-    .offset(mem_wb_out.imm),
-    .rs1Data(mem_wb_out.rs1_data), // 使用锁存的 rs1Data，确保跳转目标地址计算正确
-    .next_pc(next_pc)
+    .mepc(mepc),
+    .mtvec(mtvec),
+
+    .trap_target_pc(wb_trap_target),
+    .trap_taken(wb_trap_taken)
     // 流水线握手信号
 );
+
+assign next_pc = (wb_trap_taken)   ? wb_trap_target :
+                 (ex_branch_taken) ? ex_branch_target :
+                                     (ifu_pc + 4);
 
 // GPR读通道（ID阶段）
 ysyx_25040131_gpr REG_FILE(

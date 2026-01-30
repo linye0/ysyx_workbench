@@ -185,6 +185,8 @@ typedef struct {
   uint32_t priv;
   uint32_t last_inst_priv;
   vaddr_t cpc;
+  IFDEF(CONFIG_NPC, vaddr_t cpc_for_pipeline; vaddr_t npc_for_pipeline;)
+  IFDEF(CONFIG_TARGET_SHARE, vaddr_t cpc_for_pipeline; vaddr_t npc_for_pipeline;)
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

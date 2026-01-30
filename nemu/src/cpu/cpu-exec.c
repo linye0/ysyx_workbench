@@ -44,6 +44,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   IFDEF(CONFIG_DIFFTEST, 
     IFDEF(CONFIG_NPC, 
       if (*(nemu_state.difftest_signal) == 1) {
+        // printf("difftest start, cpc: 0x%x, npc: 0x%x, difftest_step args: _this->pc: 0x%x, dnpc: 0x%x\n", g_wb_cpc, g_wb_npc, _this->pc, dnpc);
         // printf("difftest_step\n");
         // printf("_this->pc: 0x%x, dnpc: 0x%x\n", _this->pc, dnpc);
         difftest_step(_this->pc, dnpc);
@@ -72,8 +73,10 @@ void check_pc_bound() {
 
 
 static void exec_once(Decode *s, vaddr_t pc) {
+  #ifndef CONFIG_NPC
   s->pc = pc;
   s->snpc = pc;
+  #endif
   #ifdef CONFIG_NPC
   if (*(nemu_state.difftest_signal) == 1) perf.total_inst++;
   perf.total_cycle++;
@@ -81,6 +84,10 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void itrace_bin_record(vaddr_t pc);
   itrace_bin_record(cpu.pc); 
   isa_exec_once(s);
+  #ifdef CONFIG_NPC
+  s->pc = g_wb_npc;
+  s->snpc = g_wb_npc;
+  #endif
   #ifdef CONFIG_NPC
   check_pc_bound();
   #endif

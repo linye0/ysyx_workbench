@@ -17,6 +17,7 @@
 `define YSYX_DPI_C_CYCLE_RECORD npc_cycle_record()
 `define YSYX_DPI_C_ICACHE_HIT npc_icache_hit()
 `define YSYX_DPI_C_ICACHE_MISS(flag) npc_icache_miss(flag)
+`define YSYX_DPI_C_DIFFTEST_COMMIT_INST(cpc, npc, valid) npc_difftest_commit_inst(cpc, npc, valid)
 
 `define YSYX_ASSERT(cond, msg) `ASSERT(cond, msg)
 
@@ -35,6 +36,7 @@
 `define YSYX_DPI_C_CYCLE_RECORD 
 `define YSYX_DPI_C_ICACHE_HIT
 `define YSYX_DPI_C_ICACHE_MISS(flag)
+`define YSYX_DPI_C_DIFFTEST_COMMIT_INST(cpc, npc, valid) 
 
 `define YSYX_ASSERT(cond, msg) 
 
