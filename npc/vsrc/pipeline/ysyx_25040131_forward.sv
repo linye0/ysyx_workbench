@@ -27,7 +27,7 @@ always @(*) begin
     if (ex_mem_valid && ex_mem_reg_write && (ex_mem_rd_idx != 0) && (ex_mem_rd_idx == id_ex_rs1_idx)) begin
         forward_a_sel = 2'b10;
     end
-    else if (mem_wb_valid && mem_wb_reg_write && (mem_wb_rd_idx != 0) && (mem_wb_rd_idx == id_ex_rs1_idx)) begin
+    else if (mem_wb_reg_write && (mem_wb_rd_idx != 0) && (mem_wb_rd_idx == id_ex_rs1_idx)) begin
         forward_a_sel = 2'b01;
     end
 
@@ -35,7 +35,7 @@ always @(*) begin
     if (ex_mem_valid && ex_mem_reg_write && (ex_mem_rd_idx != 0) && (ex_mem_rd_idx == id_ex_rs2_idx)) begin
         forward_b_sel = 2'b10;
     end
-    else if (mem_wb_valid && mem_wb_reg_write && (mem_wb_rd_idx != 0) && (mem_wb_rd_idx == id_ex_rs2_idx)) begin
+    else if (mem_wb_reg_write && (mem_wb_rd_idx != 0) && (mem_wb_rd_idx == id_ex_rs2_idx)) begin
         forward_b_sel = 2'b01;
     end
 end

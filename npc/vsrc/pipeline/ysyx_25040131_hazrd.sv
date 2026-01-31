@@ -31,8 +31,9 @@ module ysyx_25040131_hazard (
     // ========================================================================
     // 逻辑：发生了冲突 && 那个阶段是 Load 指令
     
-    wire is_load_use = (conflict_ex  && ex_mem_read) || 
-                       (conflict_mem && mem_mem_read);
+    wire is_load_use = (conflict_ex  && ex_mem_read)
+                       || (conflict_mem && mem_mem_read)
+                       ;
 
     // 最终输出：只有当 ID 阶段也是有效指令时，才触发 Stall
     assign stall_if_id = id_valid && is_load_use;
