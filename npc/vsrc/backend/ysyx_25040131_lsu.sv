@@ -307,7 +307,6 @@ module ysyx_25040131_lsu #(
           end
           if ((aw_done || (lsu_awready)) && 
                (w_done || (lsu_wready))) begin
-            lsu_wstrb <= 8'b0;
             lsu_bready <= 1'b1;
             state_store <= STORE_RESP;
             w_done <= 1'b0;
@@ -323,7 +322,10 @@ module ysyx_25040131_lsu #(
           end
         end
         STORE_DONE: begin
-          if (out_valid && next_ready) state_store <= STORE_IDLE;
+          if (out_valid && next_ready) begin
+            lsu_wstrb <= 8'b0;
+            state_store <= STORE_IDLE;
+          end
         end
         default: state_store <= STORE_IDLE;
       endcase

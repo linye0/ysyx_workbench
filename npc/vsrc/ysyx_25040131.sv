@@ -406,24 +406,24 @@ ysyx_25040131_icache #(
 // IDU阶段：译码
 // ============================================================================
 
-wire id_ex_flush_hazard = flush_id_ex || hazard_flush;
+wire id_ex_flush_hazard = hazard_flush && id_ex_ready_out; // 如果id_ex_ready_out == 0，说明这时候id_ex_out的指令也在等mem读取数据，是不能flush的
 
-wire ex_is_load = (|id_ex_out.ctrl_mem.read_mem);
+wire id_ex_out_mem_read = (|id_ex_out.ctrl_mem.read_mem);
 
-wire mem_is_load = (|ex_mem_out.ctrl_mem.read_mem);
+wire ex_mem_out_mem_read = (|ex_mem_out.ctrl_mem.read_mem);
 
 ysyx_25040131_hazard u_hazard (
     .id_rs1      (rs1),
     .id_rs2      (rs2),
-    .id_valid    (if_id_valid_out),   // 【新增连接】IF/ID 寄存器的输出有效位
     
-    .ex_rd       (id_ex_out.rd_idx),
-    .ex_mem_read (ex_is_load),
-    .ex_valid    (id_ex_valid_out),   // 【新增连接】ID/EX 寄存器的输出有效位
+    .id_ex_out_rd       (id_ex_out.rd_idx),
+    .id_ex_out_mem_read (id_ex_out_mem_read),
+    // .id_ex_out_valid    (id_ex_valid_out),   // 【新增连接】ID/EX 寄存器的输出有效位
 
-    .mem_rd      (ex_mem_out.rd_idx),
-    .mem_mem_read(mem_is_load),
-    .mem_valid   (ex_mem_valid_out),
+    .ex_mem_out_rd      (ex_mem_out.rd_idx),
+    .ex_mem_out_mem_read(ex_mem_out_mem_read),
+    .ex_mem_ready_out   (ex_mem_ready_out),
+    // .ex_mem_out_valid   (ex_mem_valid_out),
     
     .stall_if_id (hazard_stall),
     .flush_id_ex (hazard_flush)
@@ -558,6 +558,7 @@ always @(*) begin
         ex_branch_target = id_ex_out.pc + id_ex_out.imm;
     end
 end
+
 
 ysyx_25040131_forward u_forwarding(
     .id_ex_rs1_idx(id_ex_out.rs1_idx),
@@ -696,7 +697,7 @@ always_comb begin
     mem_wb_in.exc_valid   = ex_mem_out.exc_valid;
     mem_wb_in.ctrl_wb     = ex_mem_out.ctrl_wb;
 
-    mem_wb_in.mem_wdata   = ex_mem_out.mem_wdata;
+    mem_wb_in.mem_wdata   = lsu_wdata;
     mem_wb_in.wstrb       = lsu_wstrb;
 
     mem_wb_in.npc        = ex_mem_out.npc;

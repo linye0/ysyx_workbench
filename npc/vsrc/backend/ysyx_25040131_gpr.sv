@@ -42,6 +42,8 @@ module ysyx_25040131_gpr(
     always @(*) begin
         if (rs1 == 5'h0) begin
             read_rs1_data = 32'h0000_0000;
+        end else if (rs1 == target_reg && rf_we) begin
+            read_rs1_data = write_rd_data;
         end else begin
             read_rs1_data = regs[rs1];
         end
@@ -50,6 +52,8 @@ module ysyx_25040131_gpr(
     always @(*) begin
         if (rs2 == 5'h0) begin
             read_rs2_data = 32'h0000_0000;
+        end else if (rs2 == target_reg && rf_we) begin
+            read_rs2_data = write_rd_data;
         end else begin
             read_rs2_data = regs[rs2];
         end
