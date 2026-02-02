@@ -171,8 +171,8 @@ module ysyx_25040131_bus #(
   reg slave_w_done;
   reg slave_aw_done;
 
-  assign lsu_arready = bus_read_idle && bus_write_idle;
-  assign ifu_arready = bus_read_idle && bus_write_idle && !lsu_arvalid;
+  assign lsu_arready = bus_read_idle;
+  assign ifu_arready = bus_read_idle && !lsu_arvalid;
 
   assign io_master_araddr = io_master_araddr_reg;
   assign io_master_arid = io_master_arid_reg;
@@ -205,14 +205,14 @@ module ysyx_25040131_bus #(
   assign lsu_rvalid = lsu_rvalid_reg;
   assign lsu_rresp = lsu_rresp_reg;
 
-  assign lsu_awready = bus_write_idle && bus_read_idle && !read_req_pending;
-  assign lsu_wready  = bus_write_idle && bus_read_idle && !read_req_pending;
+  assign lsu_awready = bus_write_idle;
+  assign lsu_wready  = bus_write_idle;
 
   assign lsu_bvalid = lsu_bvalid_reg;
   assign lsu_bresp = lsu_bresp_reg;
 
   wire bus_read_idle = (state_load == BUS_IDLE);
-  wire bus_write_idle = (state_store == BUS_WRITE_IDLE);
+  wire bus_write_idle = (state_store == BUS_IDLE);
 
   wire read_req_pending = lsu_arvalid || ifu_arvalid;
 
@@ -245,7 +245,7 @@ module ysyx_25040131_bus #(
       unique case (state_load)
         BUS_IDLE: begin
           // 优先处理 LSU 请求
-          if (lsu_arvalid && bus_write_idle) begin
+          if (lsu_arvalid) begin
             // 优先处理 LSU 请求（包含 CLINT）
             if (clint_en) begin
               // CLINT 旁路
@@ -263,7 +263,7 @@ module ysyx_25040131_bus #(
               io_master_arvalid_reg <= 1'b1;
               state_load <= LSU_REQ_AR;
             end
-          end else if (ifu_arvalid && bus_write_idle) begin
+          end else if (ifu_arvalid) begin
               // 只有当 LSU 没请求时，才处理 IFU
               // 注意：此时 ifu_arready 逻辑上是 1 (因为 lsu_arvalid=0)
               io_master_araddr_reg <= ifu_araddr;
