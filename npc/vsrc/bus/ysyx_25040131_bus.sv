@@ -212,7 +212,7 @@ module ysyx_25040131_bus #(
   assign lsu_bresp = lsu_bresp_reg;
 
   wire bus_read_idle = (state_load == BUS_IDLE);
-  wire bus_write_idle = (state_store == BUS_IDLE);
+  wire bus_write_idle = (state_store == BUS_WRITE_IDLE);
 
   wire read_req_pending = lsu_arvalid || ifu_arvalid;
 
