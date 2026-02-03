@@ -12,6 +12,7 @@
 // #endif
 #include "verilated.h"
 #include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 
 #define CAL_INST 0
 #define MEM_INST 1
@@ -52,7 +53,8 @@ void init_verilog(int argc, char* argv[]);
 void cpu_exec_once();
 
 extern VerilatedContext* contextp;
-extern VerilatedVcdC* tfp;
+//extern VerilatedVcdC* tfp;
+extern VerilatedFstC* tfp;
 extern TOP_NAME* top;
 
 extern uint32_t g_wb_cpc;

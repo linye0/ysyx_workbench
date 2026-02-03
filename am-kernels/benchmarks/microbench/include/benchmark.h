@@ -59,6 +59,7 @@ extern "C" {
 #define   MD5_L {10000000,  10 MB, 15199, 0x27286a42}
 #define   MD5_H {64000000,  64 MB, 97148, 0x41ab4d60}
 
+
 #define BENCHMARK_LIST(def) \
   def(qsort, "qsort", QSORT_S, QSORT_M, QSORT_L, QSORT_H, "Quick sort") \
   def(queen, "queen", QUEEN_S, QUEEN_M, QUEEN_L, QUEEN_H, "Queen placement") \

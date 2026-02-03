@@ -3,8 +3,10 @@ NXDC_FILES = constr/top.nxdc
 INC_PATH += $(NPC_HOME)/include/generated
 
 VERILATOR = verilator
-VERILATOR_CFLAGS += -MMD --build -cc -trace --trace-structs --Wno-LATCH -Wno-WIDTHEXPAND\
-			-O3 --x-assign fast --x-initial fast --noassert -sv --autoflush
+VERILATOR_CFLAGS += -MMD --build -cc -trace-fst --Wno-LATCH -Wno-WIDTHEXPAND \
+			-O3 --x-assign fast --x-initial fast --noassert -sv \
+			--trace-threads 1
+
 
 BUILD_DIR = $(abspath build/$(PLATFORM))
 OBJ_DIR = $(BUILD_DIR)
@@ -107,6 +109,8 @@ $(shell mkdir -p $(BUILD_DIR))
 VSRCS = $(shell find -L $(abspath $(NPC_HOME)/vsrc) -type f -name "*.sv")
 # 添加 SOC 配置的额外源文件（如果存在）
 VSRCS += $(VSRCS_SOC_EXTRA)
+# 添加wave配置
+VSRCS += $(NPC_HOME)/scripts/trace_conf.vlt
 ## INC_PATH += $(shell find $(NPC_HOME)/vsrc/include -type d)
 INC_PATH += $(NEMU_HOME)/include
 # Capstone 头文件路径
