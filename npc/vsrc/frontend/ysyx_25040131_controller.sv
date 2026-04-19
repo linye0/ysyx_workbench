@@ -395,6 +395,9 @@ always @(*) begin
             endcase
         end
         default: begin
+            exc_valid = 1'b1;
+            exc_cause = 32'd2; // Illegal instruction
+            exc_tval  = instr; // 把不认识的机器码存起来，方便内核排查
         end
     endcase
 end

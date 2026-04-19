@@ -44,7 +44,12 @@ module ysyx_25040131_lsu #(
     output logic lsu_bready,                   // LSU 准备好接收写响应（由 LSU 内部控制）
 
     // Access Fault 输出
-    output logic access_fault                  // 访问错误信号（当 resp != 00 时置1）
+    output logic access_fault,                  // 访问错误信号（当 resp != 00 时置1）
+
+    // --- 新增：LSU 异常输出载荷 ---
+    output logic exc_valid,
+    output logic [31:0] exc_cause,
+    output logic [31:0] exc_tval
 );
 
   // ------------------------------
@@ -250,6 +255,8 @@ module ysyx_25040131_lsu #(
             addr_reg <= addr;
             read_mem_reg <= read_mem;
             access_fault <= 1'b0;
+            exc_valid <= 1'b0;
+
             lsu_araddr <= addr;
             lsu_arvalid <= 1'b1;
             state_load <= LOAD_ADDR;
@@ -267,7 +274,12 @@ module ysyx_25040131_lsu #(
           if (lsu_rready && lsu_rvalid) begin
             raw_read_data <= lsu_rdata;
             read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
-            if (lsu_rresp != 2'b00) access_fault <= 1'b1;
+            if (lsu_rresp != 2'b00) begin
+              access_fault <= 1'b1;
+              exc_valid    <= 1'b1;
+              exc_cause    <= 32'd5;      // Load access fault
+              exc_tval     <= addr_reg;   // 出错的物理地址
+            end
             state_load <= LOAD_DONE;
             lsu_rready <= 1'b0;
             `YSYX_DPI_C_LSU_READ_COUNT;
@@ -286,6 +298,7 @@ module ysyx_25040131_lsu #(
             addr_reg <= addr;
             write_mem_reg <= write_mem;
             access_fault <= 1'b0;
+            exc_valid <= 1'b0;
             lsu_awaddr <= addr;
             lsu_awvalid <= 1'b1;
             state_store <= STORE_SYNC;
@@ -317,7 +330,12 @@ module ysyx_25040131_lsu #(
           if (lsu_bready && lsu_bvalid) begin
             lsu_bready <= 1'b0;
             state_store <= STORE_DONE;
-            if (lsu_bresp != 2'b00) access_fault <= 1'b1;
+            if (lsu_bresp != 2'b00) begin
+              access_fault <= 1'b1;
+              exc_valid    <= 1'b1;
+              exc_cause    <= 32'd7;      // Store access fault
+              exc_tval     <= addr_reg;   // 出错的物理地址
+            end
             `YSYX_DPI_C_LSU_WRITE_COUNT;
           end
         end

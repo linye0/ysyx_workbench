@@ -31,6 +31,9 @@ typedef struct packed {
     logic [31:0] pc;          // 当前指令PC (用于跳转计算、异常记录)
     logic [31:0] inst;        // 指令内容
     // 如果有取指异常，可以在这里加 exc_valid
+    logic        exc_valid;
+    logic [31:0] exc_cause;
+    logic [31:0] exc_tval;
 } if_id_data_t;
 
 typedef struct packed {
@@ -70,6 +73,8 @@ typedef struct packed {
 
     // 异常相关 (可能会在EX阶段新增异常，如分支对齐)
     logic        exc_valid;
+    logic [31:0] exc_cause;
+    logic [31:0] exc_tval;
 
     logic       condition_branch;
     logic [31:0] imm;

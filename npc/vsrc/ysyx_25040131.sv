@@ -285,8 +285,6 @@ wire          mem_wb_valid_out;
 wire          mem_wb_ready_out;
 
 // --- 冲刷与暂停信号 (暂时置0，后续实现) ---
-wire flush_if_id = ex_branch_taken;
-// wire flush_id_ex = ex_branch_taken;
 wire flush_id_ex = 1'b0;
 wire flush_ex_mem = 1'b0;
 wire flush_mem_wb = 1'b0;
@@ -325,8 +323,29 @@ wire dbg_valid_wb  /* verilator public_flat */ = wbu_valid;
 // 复位后允许取第一条指令（wbu_valid初始为0，但复位后应该开始取第一条指令）
 
 wire if_id_ready_hazard = idu_ready && !hazard_stall;
-wire jump_req = wb_trap_taken || ex_branch_taken;
 
+// --- WBU 级的异常提交信号 (单周期脉冲) ---
+wire wbu_trap_fire = mem_wb_valid_out && mem_wb_out.exc_valid; // WBU有效且指令带异常
+wire wbu_mret_fire = mem_wb_valid_out && mem_wb_out.ctrl_wb.is_mret;
+
+// 全局冲刷信号：分支跳转或发生 Trap
+wire global_trap_flush = wbu_trap_fire || wbu_mret_fire;
+wire jump_req = global_trap_flush || ex_branch_taken; // 组合所有需要重定向 PC 的情况 [cite: 1211]
+
+// --- 修复 flush_if_id 隐式声明 ---
+wire flush_if_id;
+
+// --- 新增：用于接收 IFU 和 LSU 异常的连线 ---
+wire ifu_exc_valid;
+wire [31:0] ifu_exc_cause;
+wire [31:0] ifu_exc_tval;
+
+wire lsu_exc_valid;
+wire [31:0] lsu_exc_cause;
+wire [31:0] lsu_exc_tval;
+
+// 注意：原有的 flush_if_id 现在也应该包含 Trap
+assign flush_if_id = jump_req;
 
 ysyx_25040131_ifu IFU(
     .clock(clock),
@@ -342,15 +361,26 @@ ysyx_25040131_ifu IFU(
     .ifu_rdata(ifu_rdata),
     .ifu_rvalid(ifu_rvalid),
     .ifu_rready(ifu_rready),
-    .prev_valid(ifu_prev_valid),   // 来自WBU的valid，实现多周期执行
+    .prev_valid(ifu_prev_valid),   // 来自/WBU的valid，实现多周期执行
     .next_ready(if_id_ready_out),        // IDU可以接收时，IFU才能发送
-    .out_valid(ifu_valid)
+    .out_valid(ifu_valid),
     // .out_ready(ifu_ready)
+
+    // --- 新增：把 IFU 的异常端口接出来 ---
+    .exc_valid(ifu_exc_valid),
+    .exc_cause(ifu_exc_cause),
+    .exc_tval(ifu_exc_tval),
+    .ifu_rresp(2'b00) // 目前 ICache 还没接 rresp，先固定传 0 (OKAY)
 );
 
 always_comb begin
+    if_id_in = '0;            // 加上这句初始化
     if_id_in.pc = ifu_pc;
     if_id_in.inst = ifu_inst;
+    // --- 新增：把 IFU 抓到的异常塞进流水线包裹 ---
+    if_id_in.exc_valid = ifu_exc_valid;
+    if_id_in.exc_cause = ifu_exc_cause;
+    if_id_in.exc_tval  = ifu_exc_tval;
 end
 
 ysyx_25040131_pipcon #(
@@ -491,6 +521,7 @@ ysyx_25040131_imm IMM(
 );
 
 always_comb begin
+    id_ex_in = '0;
     id_ex_in.pc = if_id_out.pc;
     id_ex_in.rs1_data = read_rs1_data;
     id_ex_in.rs2_data = read_rs2_data;
@@ -518,6 +549,15 @@ always_comb begin
     id_ex_in.ctrl_wb.is_ecall  = is_ecall;
     id_ex_in.ctrl_wb.is_csr    = is_csr;
     id_ex_in.ctrl_wb.read_mem  = read_mem;
+    if (if_id_out.exc_valid) begin
+        id_ex_in.exc_valid = 1'b1;
+        id_ex_in.exc_cause = if_id_out.exc_cause;
+        id_ex_in.exc_tval  = if_id_out.exc_tval;
+    end else begin
+        id_ex_in.exc_valid = exc_valid; // 来自 controller 的异常信号
+        id_ex_in.exc_cause = exc_cause;
+        id_ex_in.exc_tval  = exc_tval;
+    end
 end
 
 ysyx_25040131_pipcon #(
@@ -675,10 +715,16 @@ ysyx_25040131_lsu LSU(
     .lsu_bready(lsu_bready),
     .lsu_rready(lsu_rready),
     .lsu_rresp(lsu_rresp),
-    .access_fault(access_fault)
+    .access_fault(access_fault),
+
+    // --- 新增：把 LSU 的异常端口接出来 ---
+    .exc_valid(lsu_exc_valid),
+    .exc_cause(lsu_exc_cause),
+    .exc_tval(lsu_exc_tval)
 );
 
 always_comb begin
+    mem_wb_in = '0;
     mem_wb_in.pc          = ex_mem_out.pc;
     mem_wb_in.alu_result  = ex_mem_out.alu_result; // 透传 ALU 结果 (用于非Load指令写回)
     mem_wb_in.mem_rdata   = lsu_read_data;         // LSU 读出的数据
@@ -701,6 +747,15 @@ always_comb begin
     mem_wb_in.wstrb       = lsu_wstrb;
 
     mem_wb_in.npc        = ex_mem_out.npc;
+    if (ex_mem_out.exc_valid) begin
+        mem_wb_in.exc_valid = 1'b1;
+        mem_wb_in.exc_cause = ex_mem_out.exc_cause;
+        mem_wb_in.exc_tval  = ex_mem_out.exc_tval;
+    end else begin
+        mem_wb_in.exc_valid = lsu_exc_valid; // 来自 LSU 的异常
+        mem_wb_in.exc_cause = lsu_exc_cause;
+        mem_wb_in.exc_tval  = lsu_exc_tval;
+    end
 end
 
 ysyx_25040131_pipcon #(
@@ -765,9 +820,10 @@ ysyx_25040131_next_pc NEXT_PC(
     // 流水线握手信号
 );
 
-assign next_pc = (wb_trap_taken)   ? wb_trap_target :
-                 (ex_branch_taken) ? ex_branch_target :
-                                     (ifu_pc + 4);
+assign next_pc = (wbu_trap_fire) ? mtvec :          // 异常：跳到 mtvec
+                 (wbu_mret_fire) ? mepc  :          // mret：跳回 mepc
+                 (ex_branch_taken) ? ex_branch_target : // 分支/跳转
+                 (ifu_pc + 4);                      // 顺序执行
 
 // GPR读通道（ID阶段）
 ysyx_25040131_gpr REG_FILE(
@@ -779,7 +835,7 @@ ysyx_25040131_gpr REG_FILE(
     .read_rs1_data(read_rs1_data),
     .read_rs2_data(read_rs2_data),
     // 写通道（WBU阶段）
-    .write_reg(mem_wb_out.ctrl_wb.write_reg),
+    .write_reg(mem_wb_out.ctrl_wb.write_reg && !mem_wb_out.exc_valid), // 核心修改：异常指令拦截写回
     .target_reg(mem_wb_out.rd_idx),
     .write_rd_data(wb_final_wdata),
     // 流水线握手信号
@@ -802,7 +858,8 @@ ysyx_25040131_csr u_csr (
     .mem_ready(mem_ready),
     .exu_csr_valid(exu_csr_valid),
     // 写通道（WBU阶段）
-    .csr_we(mem_wb_out.ctrl_wb.csr_we),
+    .csr_waddr(mem_wb_out.csr_addr), // 【新增】将WBU阶段的地址连入写端口
+    .csr_we(mem_wb_out.ctrl_wb.csr_we && !mem_wb_out.exc_valid), // 异常指令不执行普通 CSR 写
     .csr_wdata(mem_wb_out.csr_wdata),
     // 流水线握手信号
     .prev_valid(mem_wb_valid_out),  // MEM阶段有效
@@ -814,7 +871,8 @@ ysyx_25040131_csr u_csr (
     .exc_pc(mem_wb_out.pc),
     .exc_cause(mem_wb_out.exc_cause),
     .exc_tval(mem_wb_out.exc_tval),
-    .is_ecall(mem_wb_out.ctrl_wb.is_ecall)
+    .is_ecall(mem_wb_out.ctrl_wb.is_ecall),
+    .is_mret(mem_wb_out.ctrl_wb.is_mret) // 新增连接
 );
 
 

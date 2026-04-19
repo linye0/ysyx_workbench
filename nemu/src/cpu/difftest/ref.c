@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <npc/npc_verilog.h>
 
+#ifdef CONFIG_TARGET_SHARE
 
 __EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
   return paddr_read(addr, len);
@@ -122,3 +123,4 @@ __EXPORT void difftest_init(int port) {
 }
 
 
+#endif

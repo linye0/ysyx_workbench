@@ -137,6 +137,21 @@
 `define YSYX_CSR_MSTATUS_MPIE 7
 `define YSYX_CSR_MSTATUS_MIE_ 3
 
+// RISC-V Exception Codes (mcause)
+`define YSYX_EXC_INST_MISALIGNED  32'd0  // 指令非对齐
+`define YSYX_EXC_INST_ACCESS      32'd1  // 指令访问错误
+`define YSYX_EXC_ILLEGAL_INST     32'd2  // 非法指令
+`define YSYX_EXC_BREAKPOINT       32'd3  // 断点 (ebreak)
+`define YSYX_EXC_LOAD_ACCESS      32'd5  // 读访存错误
+`define YSYX_EXC_STORE_ACCESS     32'd7  // 写访存错误
+`define YSYX_EXC_ECALL_M          32'd11 // M模式系统调用 (ecall)
+
+// CSR_MSTATUS 掩码与位域更新
+`define YSYX_MSTATUS_MIE_MASK  32'h00000008 // bit 3
+`define YSYX_MSTATUS_MPIE_MASK 32'h00000080 // bit 7
+`define YSYX_MSTATUS_MPP_MASK  32'h00001800 // bits 12:11
+`define YSYX_MSTATUS_MPP_M     2'b11
+
 // Macros
 `define ASSERT(signal, str) \
   if (signal == 'h0) begin \
