@@ -31,8 +31,8 @@ NPCState npc = {
 };
 
 VerilatedContext* contextp = NULL;
-//VerilatedVcdC* tfp = NULL;
-VerilatedFstC* tfp = NULL;
+VerilatedVcdC* tfp = NULL;
+//VerilatedFstC* tfp = NULL;
 TOP_NAME* top = NULL;
 #endif
 
