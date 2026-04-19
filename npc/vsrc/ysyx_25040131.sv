@@ -221,6 +221,8 @@ wire wbu_gpr_ready;        // WBU阶段GPR写通道ready
 wire wbu_csr_valid;        // WBU阶段CSR写操作完成
 wire wbu_csr_ready;        // WBU阶段CSR写通道ready
 
+
+
 // ------------------------------
 // 辅助信号
 // wire [31:0] write_rd_data = (is_csr) ? csr_rdata : write_is_imm_data;
