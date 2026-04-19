@@ -52,12 +52,10 @@ void init_verilog(int argc, char* argv[]) {
 	top = new TOP_NAME{contextp};
 	verilog_connect(top, &nemu_state);
 
-    //tfp = new VerilatedVcdC;
-    tfp = new VerilatedFstC;
+    tfp = new VerilatedVcdC;
     contextp->traceEverOn(true);
     top->trace(tfp, 0);
-    tfp->open("wave.fst");
-    //tfp->open("wave.vcd");
+    tfp->open("wave.vcd");
 
     #ifdef CONFIG_SYS_SOC
     #ifdef CONFIG_NVBOARD
@@ -78,7 +76,7 @@ void cpu_exec_once() {
     #ifdef CONFIG_GTKWAVE
     if (tfp) {
         tfp->dump(contextp->time());
-        // tfp->flush();
+        tfp->flush();
     }
     #endif
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
@@ -89,7 +87,7 @@ void cpu_exec_once() {
     #ifdef CONFIG_GTKWAVE
     if (tfp) {
         tfp->dump(contextp->time());
-        // tfp->flush();
+        tfp->flush();
     }
     #endif
     // printf("cpu_exec_once: pc = 0x%x\n", top->pc);
