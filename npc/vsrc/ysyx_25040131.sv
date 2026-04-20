@@ -587,6 +587,30 @@ wire [31:0] forward_rs2_data;
 wire [1:0] forward_a_sel;
 wire [1:0] forward_b_sel;
 
+// EX 阶段 stall 时锁存 forwarded 数据，防止 forwarding 窗口关闭后数据丢失
+reg [31:0] ex_rs1_latched;
+reg [31:0] ex_rs2_latched;
+reg        ex_data_latched;
+
+always @(posedge clock) begin
+    if (reset || !id_ex_valid_out) begin
+        ex_data_latched <= 1'b0;
+        ex_rs1_latched  <= 32'b0;
+        ex_rs2_latched  <= 32'b0;
+    end else if (id_ex_valid_out && !ex_mem_ready_out) begin
+        if (!ex_data_latched) begin
+            ex_rs1_latched  <= forward_rs1_data;
+            ex_rs2_latched  <= forward_rs2_data;
+            ex_data_latched <= 1'b1;
+        end
+    end else if (ex_mem_ready_out) begin
+        ex_data_latched <= 1'b0;
+    end
+end
+
+wire [31:0] ex_rs1_final = ex_data_latched ? ex_rs1_latched : forward_rs1_data;
+wire [31:0] ex_rs2_final = ex_data_latched ? ex_rs2_latched : forward_rs2_data;
+
 wire [1:0] ex_pc_sel = id_ex_out.ctrl_wb.pcImm_NEXTPC_rs1Imm;
 wire ex_is_jal = (ex_pc_sel == 2'b01);
 wire ex_is_jalr = (ex_pc_sel == 2'b10);
@@ -597,7 +621,7 @@ reg [31:0] ex_branch_target;
 
 always @(*) begin
     if (ex_is_jalr) begin
-        ex_branch_target = (forward_rs1_data + id_ex_out.imm) & 32'hfffffffe;
+        ex_branch_target = (ex_rs1_final + id_ex_out.imm) & 32'hfffffffe;
     end else begin
         ex_branch_target = id_ex_out.pc + id_ex_out.imm;
     end
@@ -654,16 +678,14 @@ always_comb begin
         end else begin
             ex_wnpc = id_ex_out.pc + 4;
         end
-        
         ex_mem_in.pc         = id_ex_out.pc;
-        ex_mem_in.alu_result = out_alu; // ALU 计算结果
-        ex_mem_in.mem_wdata  = forward_rs2_data; // Store 的数据
+        ex_mem_in.alu_result = out_alu;
+        ex_mem_in.mem_wdata  = ex_rs2_final; // Store 的数据
         ex_mem_in.rd_idx     = id_ex_out.rd_idx;
-        
-        // 【核心修复】：完整的 CSR ALU 逻辑
+
         // 1. 判断是用立即数 (zimm) 还是源寄存器的数据
-        csr_op_data = (id_ex_out.func3[2]) ? 
-                      {27'h0, id_ex_out.rs1_idx} : forward_rs1_data;
+        csr_op_data = (id_ex_out.func3[2]) ?
+                      {27'h0, id_ex_out.rs1_idx} : ex_rs1_final;
                       
         // 2. 利用 func3 的低两位区分是 RW, RS 还是 RC
         case (id_ex_out.func3[1:0])
@@ -683,7 +705,7 @@ always_comb begin
         ex_mem_in.exc_valid  = id_ex_out.exc_valid;
         ex_mem_in.ctrl_wb    = id_ex_out.ctrl_wb;
         ex_mem_in.imm        = id_ex_out.imm;
-        ex_mem_in.rs1_data   = forward_rs1_data;
+        ex_mem_in.rs1_data   = ex_rs1_final;
         ex_mem_in.npc        = ex_wnpc;
 end
 
@@ -910,14 +932,14 @@ ysyx_25040131_csr u_csr (
 
 ysyx_25040131_mux_2 MUX_EX_A(
     .signal(id_ex_out.ctrl_ex.rs1Data_EX_PC),
-    .a(forward_rs1_data),
-    .b(id_ex_out.pc),            // 使用IFU输出的PC
+    .a(ex_rs1_final),
+    .b(id_ex_out.pc),
     .out(in_alu_a)
 );
 
 ysyx_25040131_mux_3 MUX_EX_B(
     .signal(id_ex_out.ctrl_ex.rs2Data_EX_imm32_4),
-    .a(forward_rs2_data),
+    .a(ex_rs2_final),
     .b(id_ex_out.imm),
     .c(32'd4),
     .out(in_alu_b)

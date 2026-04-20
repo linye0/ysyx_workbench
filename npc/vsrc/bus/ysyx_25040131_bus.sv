@@ -372,10 +372,7 @@ module ysyx_25040131_bus #(
           if (io_master_awvalid && io_master_awready) begin
             slave_aw_done <= 1'b1;
             io_master_awvalid_reg <= 1'b0;
-            `ifdef CONFIG_SYS_SOC
-            io_master_awaddr_reg <= {XLEN{1'b0}};
             io_master_awid_reg <= 4'b0;
-            `endif
           end
           if (io_master_wvalid && io_master_wready) begin
             slave_w_done <= 1'b1;
