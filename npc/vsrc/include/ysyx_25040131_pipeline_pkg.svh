@@ -41,6 +41,7 @@ typedef struct packed {
     logic [31:0] rs1_data;    // 寄存器1数据
     logic [31:0] rs2_data;    // 寄存器2数据
     logic [31:0] imm;         // 扩展后的立即数
+    logic [2:0] func3;
     
     logic [4:0]  rs1_idx;     // 源寄存器1索引 (用于Forwarding检测)
     logic [4:0]  rs2_idx;     // 源寄存器2索引 (用于Forwarding检测)

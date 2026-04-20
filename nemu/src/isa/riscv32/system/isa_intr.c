@@ -17,10 +17,6 @@
 #include <isa.h>
 
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
-  /* TODO: Trigger an interrupt/exception with ``NO''.
-   * Then return the address of the interrupt/exception vector.
-   */
-
   #ifdef CONFIG_ETRACE
   printf("ETRACE | NO: %d at epc: " FMT_WORD " trap-handler base address: " FMT_WORD "\n",
          NO, epc, cpu.sr[CSR_MTVEC]);
@@ -41,15 +37,21 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
       break;
   }
 
-  word_t ret_pc = 0;
-
   cpu.sr[CSR_MTVAL] = tval;
   cpu.sr[CSR_MEPC] = epc;
   cpu.sr[CSR_MCAUSE] = NO;
 
-  ret_pc = cpu.sr[CSR_MTVEC];
+  // 补全 NEMU 缺失的 mstatus 状态机更新
+  word_t mstatus = cpu.sr[CSR_MSTATUS];
+  word_t mie = (mstatus >> 3) & 0x1;       // 提取 MIE (第3位)
+  
+  mstatus = (mstatus & ~(1 << 7)) | (mie << 7); // MPIE = MIE
+  mstatus = mstatus & ~(1 << 3);                // MIE = 0
+  mstatus = mstatus | (3 << 11);                // MPP = 3 (Machine Mode)
+  
+  cpu.sr[CSR_MSTATUS] = mstatus;           // 写回
 
-  return ret_pc;
+  return cpu.sr[CSR_MTVEC];
 }
 
 word_t isa_query_intr() {

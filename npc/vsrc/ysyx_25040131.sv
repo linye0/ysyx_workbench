@@ -286,10 +286,11 @@ mem_wb_data_t mem_wb_out/*verilator public_flat*/;    // MEM/WB Reg -> WBU
 wire          mem_wb_valid_out;
 wire          mem_wb_ready_out;
 
-// --- 冲刷与暂停信号 (暂时置0，后续实现) ---
-wire flush_id_ex = 1'b0;
-wire flush_ex_mem = 1'b0;
-wire flush_mem_wb = 1'b0;
+// --- 冲刷与暂停信号 ---
+// 【修改 1】：仅在 WBU 阶段发生真实异常或 mret 时，冲刷全流水线
+wire flush_id_ex  = global_trap_flush;
+wire flush_ex_mem = global_trap_flush;
+wire flush_mem_wb = global_trap_flush;
 
 wire hazard_stall;
 wire hazard_flush;
@@ -531,6 +532,7 @@ always_comb begin
     id_ex_in.rs1_idx = rs1;
     id_ex_in.rs2_idx = rs2;
     id_ex_in.rd_idx = rd;
+    id_ex_in.func3 = func3;  // 【新增】：将 func3 传入流水线
     id_ex_in.csr_addr = csr_addr;
     id_ex_in.exc_valid = exc_valid;
 
@@ -565,11 +567,11 @@ end
 ysyx_25040131_pipcon #(
     .WIDTH($bits(id_ex_in))
 ) REG_ID_EX (
-    .clk(clock), .reset(reset), .flush(id_ex_flush_hazard),
+    // 【修改 2】：保留原有 id_ex_flush_hazard，并入异常 flush_id_ex
+    .clk(clock), .reset(reset), .flush(id_ex_flush_hazard | flush_id_ex),
     .data_in(id_ex_in),
     .valid_in(idu_valid),
     .ready_out(id_ex_ready_out),
-
     .data_out(id_ex_out),
     .valid_out(id_ex_valid_out),
     .ready_in(exu_ready)
@@ -601,28 +603,32 @@ always @(*) begin
     end
 end
 
-
 ysyx_25040131_forward u_forwarding(
     .id_ex_rs1_idx(id_ex_out.rs1_idx),
     .id_ex_rs2_idx(id_ex_out.rs2_idx),
     
     .ex_mem_rd_idx(ex_mem_out.rd_idx),
-    .ex_mem_reg_write(ex_mem_out.ctrl_wb.write_reg),
+    // 【核心防御】：屏蔽无效的前递请求，只有 valid 为 1 才能前递
+    .ex_mem_reg_write(ex_mem_out.ctrl_wb.write_reg && ex_mem_valid_out),
     .ex_mem_valid(ex_mem_valid_out),
 
     .mem_wb_rd_idx(mem_wb_out.rd_idx),
-    .mem_wb_reg_write(mem_wb_out.ctrl_wb.write_reg),
+    // 【核心防御】：屏蔽气泡带来的幽灵前递请求！
+    .mem_wb_reg_write(mem_wb_out.ctrl_wb.write_reg && mem_wb_valid_out),
     .mem_wb_valid(mem_wb_valid_out),
 
     .forward_a_sel(forward_a_sel),
     .forward_b_sel(forward_b_sel)
 );
+// 【核心修复】：MEM 阶段前递数据的智能选择
+// 如果 MEM 阶段是一条 CSR 指令，必须前递 csr_rdata；否则前递 ALU 结果。
+wire [31:0] mem_forward_data = (ex_mem_out.ctrl_wb.is_csr) ? ex_mem_out.csr_rdata : ex_mem_out.alu_result;
 
-assign forward_rs1_data = (forward_a_sel == 2'b10) ? ex_mem_out.alu_result :
+assign forward_rs1_data = (forward_a_sel == 2'b10) ? mem_forward_data :
                           (forward_a_sel == 2'b01) ? wb_final_wdata :
                           id_ex_out.rs1_data;
 
-assign forward_rs2_data = (forward_b_sel == 2'b10) ? ex_mem_out.alu_result :
+assign forward_rs2_data = (forward_b_sel == 2'b10) ? mem_forward_data :
                           (forward_b_sel == 2'b01) ? wb_final_wdata :
                           id_ex_out.rs2_data;
 
@@ -640,6 +646,7 @@ ysyx_25040131_alu ALU(
 );
 
 logic [31:0] ex_wnpc;
+logic [31:0] csr_op_data; 
 
 always_comb begin
         if (ex_branch_taken) begin
@@ -647,15 +654,27 @@ always_comb begin
         end else begin
             ex_wnpc = id_ex_out.pc + 4;
         end
+        
         ex_mem_in.pc         = id_ex_out.pc;
         ex_mem_in.alu_result = out_alu; // ALU 计算结果
         ex_mem_in.mem_wdata  = forward_rs2_data; // Store 的数据
         ex_mem_in.rd_idx     = id_ex_out.rd_idx;
-        ex_mem_in.csr_wdata  = (id_ex_out.ctrl_ex.csr_use_imm) ? 
-                                {27'h0, id_ex_out.rs1_idx} :  // zimm 就是 rs1_idx
-                                forward_rs1_data;           // rs1 寄存器的值
+        
+        // 【核心修复】：完整的 CSR ALU 逻辑
+        // 1. 判断是用立即数 (zimm) 还是源寄存器的数据
+        csr_op_data = (id_ex_out.func3[2]) ? 
+                      {27'h0, id_ex_out.rs1_idx} : forward_rs1_data;
+                      
+        // 2. 利用 func3 的低两位区分是 RW, RS 还是 RC
+        case (id_ex_out.func3[1:0])
+            2'b01: ex_mem_in.csr_wdata = csr_op_data;                   // CSRRW / CSRRWI
+            2'b10: ex_mem_in.csr_wdata = csr_rdata | csr_op_data;       // CSRRS / CSRRSI
+            2'b11: ex_mem_in.csr_wdata = csr_rdata & ~csr_op_data;      // CSRRC / CSRRCI
+            default: ex_mem_in.csr_wdata = csr_op_data;                 // 防御性 default
+        endcase
+        
         ex_mem_in.csr_addr   = id_ex_out.csr_addr; // CSR地址
-        ex_mem_in.csr_rdata = csr_rdata;
+        ex_mem_in.csr_rdata  = csr_rdata;
 
         ex_mem_in.condition_branch = condition_branch;
         
@@ -859,22 +878,27 @@ ysyx_25040131_csr u_csr (
     .idu_valid(id_ex_valid_out),  // IDU输出有效时，CSR读操作立即可用
     .mem_ready(mem_ready),
     .exu_csr_valid(exu_csr_valid),
+
     // 写通道（WBU阶段）
-    .csr_waddr(mem_wb_out.csr_addr), // 【新增】将WBU阶段的地址连入写端口
-    .csr_we(mem_wb_out.ctrl_wb.csr_we && !mem_wb_out.exc_valid), // 异常指令不执行普通 CSR 写
+    .csr_waddr(mem_wb_out.csr_addr), 
+    // 【修改 3】：加入 mem_wb_valid_out 拦截气泡
+    .csr_we(mem_wb_out.ctrl_wb.csr_we && !mem_wb_out.exc_valid && mem_wb_valid_out), 
     .csr_wdata(mem_wb_out.csr_wdata),
+    
     // 流水线握手信号
-    .prev_valid(mem_wb_valid_out),  // MEM阶段有效
-    .next_ready(1'b1),   // WBU阶段next_ready（总是1，因为是最后阶段）
-    .out_valid(wbu_csr_valid),  // CSR写操作完成
-    .out_ready(wbu_csr_ready),  // CSR写通道ready
+    .prev_valid(mem_wb_valid_out),  
+    .next_ready(1'b1),   
+    .out_valid(wbu_csr_valid),  
+    .out_ready(wbu_csr_ready),  
+
     // 异常/中断控制信号
-    .exc_valid(mem_wb_out.exc_valid),
+    // 【修改 4】：加入 mem_wb_valid_out 防止虚假异常/mret触发
+    .exc_valid(mem_wb_out.exc_valid && mem_wb_valid_out),
     .exc_pc(mem_wb_out.pc),
     .exc_cause(mem_wb_out.exc_cause),
     .exc_tval(mem_wb_out.exc_tval),
-    .is_ecall(mem_wb_out.ctrl_wb.is_ecall),
-    .is_mret(mem_wb_out.ctrl_wb.is_mret) // 新增连接
+    .is_ecall(mem_wb_out.ctrl_wb.is_ecall && mem_wb_valid_out),
+    .is_mret(mem_wb_out.ctrl_wb.is_mret && mem_wb_valid_out)
 );
 
 
