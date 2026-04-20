@@ -276,9 +276,9 @@ module ysyx_25040131_lsu #(
             read_data <= sign_extend(lsu_rdata, read_mem_reg, addr_reg);
             if (lsu_rresp != 2'b00) begin
               access_fault <= 1'b1;
-              exc_valid    <= 1'b1;
-              exc_cause    <= 32'd5;      // Load access fault
-              exc_tval     <= addr_reg;   // 出错的物理地址
+              // exc_valid    <= 1'b1;
+              // exc_cause    <= 32'd5;      // Load access fault
+              // exc_tval     <= addr_reg;   // 出错的物理地址
             end
             state_load <= LOAD_DONE;
             lsu_rready <= 1'b0;
@@ -298,7 +298,7 @@ module ysyx_25040131_lsu #(
             addr_reg <= addr;
             write_mem_reg <= write_mem;
             access_fault <= 1'b0;
-            exc_valid <= 1'b0;
+            exc_valid  <= 1'b0;
             lsu_awaddr <= addr;
             lsu_awvalid <= 1'b1;
             state_store <= STORE_SYNC;
@@ -332,9 +332,9 @@ module ysyx_25040131_lsu #(
             state_store <= STORE_DONE;
             if (lsu_bresp != 2'b00) begin
               access_fault <= 1'b1;
-              exc_valid    <= 1'b1;
-              exc_cause    <= 32'd7;      // Store access fault
-              exc_tval     <= addr_reg;   // 出错的物理地址
+              // exc_valid    <= 1'b1;
+              // exc_cause    <= 32'd7;      // Store access fault
+              // exc_tval     <= addr_reg;   // 出错的物理地址
             end
             `YSYX_DPI_C_LSU_WRITE_COUNT;
           end

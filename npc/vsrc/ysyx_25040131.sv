@@ -856,7 +856,7 @@ ysyx_25040131_gpr REG_FILE(
     .read_rs1_data(read_rs1_data),
     .read_rs2_data(read_rs2_data),
     // 写通道（WBU阶段）
-    .write_reg(mem_wb_out.ctrl_wb.write_reg && !mem_wb_out.exc_valid), // 核心修改：异常指令拦截写回
+    .write_reg(mem_wb_out.ctrl_wb.write_reg), // 核心修改：异常指令拦截写回
     .target_reg(mem_wb_out.rd_idx),
     .write_rd_data(wb_final_wdata),
     // 流水线握手信号
