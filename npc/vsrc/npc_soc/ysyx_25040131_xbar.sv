@@ -54,17 +54,20 @@ module ysyx_25040131_xbar #(
     input m_axi_bready,
     output [3:0] m_axi_bid,
 
-    // AXI4-Lite Slave 接口 - SRAM
+    // AXI4 Slave 接口 - SRAM
     // Read Address Channel
     output [XLEN-1:0] sram_araddr,
+    output [7:0]      sram_arlen,
+    output [1:0]      sram_arburst,
     output sram_arvalid,
-    input sram_arready,
+    input  sram_arready,
 
     // Read Data Channel
     input [XLEN-1:0] sram_rdata,
-    input [1:0] sram_rresp,
-    input sram_rvalid,
-    output sram_rready,
+    input [1:0]      sram_rresp,
+    input            sram_rvalid,
+    input            sram_rlast,
+    output           sram_rready,
 
     // Write Address Channel
     output [XLEN-1:0] sram_awaddr,
@@ -146,9 +149,11 @@ module ysyx_25040131_xbar #(
   wire write_addr_is_uart = (m_axi_awaddr >= UART_BASE && m_axi_awaddr <= UART_END);
 
   // 读地址通道路由
-  assign sram_araddr = m_axi_araddr;
+  assign sram_araddr  = m_axi_araddr;
+  assign sram_arlen   = m_axi_arlen;
+  assign sram_arburst = m_axi_arburst;
   assign sram_arvalid = m_axi_arvalid && read_addr_is_sram;
-  assign uart_araddr = m_axi_araddr;
+  assign uart_araddr  = m_axi_araddr;
   assign uart_arvalid = m_axi_arvalid && read_addr_is_uart;
   assign m_axi_arready = read_addr_is_sram ? sram_arready :
                          read_addr_is_uart ? uart_arready :
@@ -175,12 +180,12 @@ module ysyx_25040131_xbar #(
                        {XLEN{1'b0}};
   assign m_axi_rresp = read_addr_is_sram ? sram_rresp :
                        read_addr_is_uart ? uart_rresp :
-                       AXI_RESP_DECERR;  // 地址错误返回 DECERR
+                       AXI_RESP_DECERR;
   assign m_axi_rvalid = read_addr_is_sram ? sram_rvalid :
                         read_addr_is_uart ? uart_rvalid :
                         1'b0;
-  // AXI4-Lite slave总是单次传输，rlast=1（当rvalid有效时）
-  assign m_axi_rlast = m_axi_rvalid;
+  // SRAM 支持 burst，rlast 由 SRAM 自己产生；UART 是单次传输
+  assign m_axi_rlast = read_addr_is_sram ? sram_rlast : m_axi_rvalid;
   assign m_axi_rid = read_id_valid ? read_id_reg : 4'b0;
   assign sram_rready = m_axi_rready && read_addr_is_sram;
   assign uart_rready = m_axi_rready && read_addr_is_uart;

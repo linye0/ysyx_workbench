@@ -22,6 +22,10 @@
 // random test setting
 `define YSYX_IFSR_ENABLE 0
 
+// ICache burst refill address range for SOC: SDRAM region
+`define YSYX_ICACHE_BURST_ADDR_LO 32'ha0000000
+`define YSYX_ICACHE_BURST_ADDR_HI 32'hbfffffff
+
 `endif
 
 `ifdef CONFIG_SYS_NPC
@@ -46,6 +50,10 @@
 `define YSYX_IFSR_ENABLE 0
 
 `define YSYX_AM_DEVICE 1
+
+// ICache burst refill address range for NPC: main memory region
+`define YSYX_ICACHE_BURST_ADDR_LO 32'h80000000
+`define YSYX_ICACHE_BURST_ADDR_HI 32'h87ffffff
 
 `endif
 
