@@ -1098,22 +1098,25 @@ assign bus_master_bid = io_master_bid;
 
 // XBAR 到 SRAM 的信号
 wire [31:0] xbar_sram_araddr;
-wire xbar_sram_arvalid;
-wire xbar_sram_arready;
+wire [7:0]  xbar_sram_arlen;
+wire [1:0]  xbar_sram_arburst;
+wire        xbar_sram_arvalid;
+wire        xbar_sram_arready;
 wire [31:0] xbar_sram_rdata;
-wire [1:0] xbar_sram_rresp;
-wire xbar_sram_rvalid;
-wire xbar_sram_rready;
+wire [1:0]  xbar_sram_rresp;
+wire        xbar_sram_rvalid;
+wire        xbar_sram_rlast;
+wire        xbar_sram_rready;
 wire [31:0] xbar_sram_awaddr;
-wire xbar_sram_awvalid;
-wire xbar_sram_awready;
+wire        xbar_sram_awvalid;
+wire        xbar_sram_awready;
 wire [31:0] xbar_sram_wdata;
-wire [3:0] xbar_sram_wstrb;
-wire xbar_sram_wvalid;
-wire xbar_sram_wready;
-wire [1:0] xbar_sram_bresp;
-wire xbar_sram_bvalid;
-wire xbar_sram_bready;
+wire [3:0]  xbar_sram_wstrb;
+wire        xbar_sram_wvalid;
+wire        xbar_sram_wready;
+wire [1:0]  xbar_sram_bresp;
+wire        xbar_sram_bvalid;
+wire        xbar_sram_bready;
 
 // XBAR 到 UART 的信号
 wire [31:0] xbar_uart_araddr;
@@ -1174,11 +1177,14 @@ ysyx_25040131_xbar #(
     
     // SRAM 接口
     .sram_araddr(xbar_sram_araddr),
+    .sram_arlen(xbar_sram_arlen),
+    .sram_arburst(xbar_sram_arburst),
     .sram_arvalid(xbar_sram_arvalid),
     .sram_arready(xbar_sram_arready),
     .sram_rdata(xbar_sram_rdata),
     .sram_rresp(xbar_sram_rresp),
     .sram_rvalid(xbar_sram_rvalid),
+    .sram_rlast(xbar_sram_rlast),
     .sram_rready(xbar_sram_rready),
     .sram_awaddr(xbar_sram_awaddr),
     .sram_awvalid(xbar_sram_awvalid),
@@ -1218,13 +1224,16 @@ ysyx_25040131_sram #(
     .clock(clock),
     .reset(reset),
     
-    // AXI4-Lite 接口（来自 XBAR）
+    // AXI4 接口（来自 XBAR，支持 burst）
     .io_master_araddr(xbar_sram_araddr),
+    .io_master_arlen(xbar_sram_arlen),
+    .io_master_arburst(xbar_sram_arburst),
     .io_master_arvalid(xbar_sram_arvalid),
     .io_master_arready(xbar_sram_arready),
     .io_master_rdata(xbar_sram_rdata),
     .io_master_rresp(xbar_sram_rresp),
     .io_master_rvalid(xbar_sram_rvalid),
+    .io_master_rlast(xbar_sram_rlast),
     .io_master_rready(xbar_sram_rready),
     .io_master_awaddr(xbar_sram_awaddr),
     .io_master_awvalid(xbar_sram_awvalid),
