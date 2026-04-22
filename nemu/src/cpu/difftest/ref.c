@@ -1,0 +1,126 @@
+/***************************************************************************************
+* Copyright (c) 2014-2024 Zihao Yu, Nanjing University
+*
+* NEMU is licensed under Mulan PSL v2.
+* You can use this software according to the terms and conditions of the Mulan PSL v2.
+* You may obtain a copy of Mulan PSL v2 at:
+*          http://license.coscl.org.cn/MulanPSL2
+*
+* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+* MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+*
+* See the Mulan PSL v2 for more details.
+***************************************************************************************/
+
+#include "common.h"
+#include "isa/isa-def.h"
+#include <isa.h>
+#include <cpu/cpu.h>
+#include <difftest-def.h>
+#include <memory/paddr.h>
+#include <sys/types.h>
+#include <npc/npc_verilog.h>
+
+#ifdef CONFIG_TARGET_SHARE
+
+__EXPORT word_t difftest_paddr_read(paddr_t addr, int len) {
+  return paddr_read(addr, len);
+}
+
+__EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
+  if (direction == DIFFTEST_TO_REF) {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr)) {
+      memcpy(guest_to_host(addr), buf, n);
+      return;
+    }
+    Assert(0, "DIFFTEST_TO_REF: addr = " FMT_PADDR " is not in pmem", addr);
+  } else {
+    if (in_pmem(addr) || in_mrom(addr) || in_sram(addr) || in_flash(addr) || in_psram(addr) || in_sdram(addr)) {
+      memcpy(buf, guest_to_host(addr), n);
+      return;
+    }
+    Assert(0, "DIFFTEST_TO_DUT: addr = " FMT_PADDR " is not in pmem", addr);
+  }
+}
+
+__EXPORT void difftest_reg_display(){
+  isa_reg_display();
+}
+
+__EXPORT void difftest_regcpy(void *dut, int direction) {
+  CPU_state *npc = (CPU_state *)dut;
+  if (direction == DIFFTEST_TO_REF_SKIP_REF) {
+    // only use for ref_difftest_skip, so cpu.pc = npc->pc(next_pc)
+    // 这边这样拷贝是错的，因为已经是流水线形式了cpu.pc = npc->cpc;
+    cpu.pc = npc->npc_for_pipeline;
+    for (int i = 0; i < 32; i++) {
+      cpu.gpr[i] = npc->gpr[i];
+    }
+    cpu.sr[CSR_MTVEC] = npc->sr[CSR_MTVEC];
+    cpu.sr[CSR_MCAUSE] = npc->sr[CSR_MCAUSE];
+    cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
+    cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
+    cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+    cpu.sr[CSR_MVENDORID] = npc->sr[CSR_MVENDORID];
+    cpu.sr[CSR_MARCHID] = npc->sr[CSR_MARCHID];
+  } else if (direction == DIFFTEST_TO_REF) {
+    cpu.pc = npc->cpc;
+    for (int i = 0; i < 32; i++) {
+      cpu.gpr[i] = npc->gpr[i];
+    } 
+    cpu.sr[CSR_MTVEC] = npc->sr[CSR_MTVEC];
+    cpu.sr[CSR_MCAUSE] = npc->sr[CSR_MCAUSE];
+    cpu.sr[CSR_MEPC] = npc->sr[CSR_MEPC];
+    cpu.sr[CSR_MSTATUS] = npc->sr[CSR_MSTATUS];
+    cpu.sr[CSR_MTVAL] = npc->sr[CSR_MTVAL];
+    cpu.sr[CSR_MVENDORID] = npc->sr[CSR_MVENDORID];
+    cpu.sr[CSR_MARCHID] = npc->sr[CSR_MARCHID];
+  } else if (direction == DIFFTEST_TO_DUT) {
+    npc->pc = cpu.pc;
+    for (int i = 0; i < 32; i++) {
+      npc->gpr[i] = cpu.gpr[i];
+    }
+    npc->sr[CSR_MTVEC] = cpu.sr[CSR_MTVEC];
+    npc->sr[CSR_MCAUSE] = cpu.sr[CSR_MCAUSE];
+    npc->sr[CSR_MEPC] = cpu.sr[CSR_MEPC];
+    npc->sr[CSR_MSTATUS] = cpu.sr[CSR_MSTATUS];
+    npc->sr[CSR_MTVAL] = cpu.sr[CSR_MTVAL];
+  }
+}
+
+__EXPORT void difftest_mem_display(int N, int startAddress) {
+  for (int i = 0; i < N; i++) {
+    printf("addr :0x%08x, data: 0x%08x\n", (uint32_t)startAddress, paddr_read(startAddress, 4));
+    startAddress += 4;
+  }
+}
+
+__EXPORT void difftest_exec(uint64_t n) {
+  cpu_exec(n);
+}
+
+__EXPORT void difftest_raise_intr(word_t NO) {
+  assert(0);
+}
+
+#ifdef CONFIG_TARGET_SHARE
+__EXPORT Mem_flag difftest_mem_flag_to_dut() {
+  Mem_flag ret;
+  ret.flag = mem_flag.flag;
+  ret.addr = mem_flag.addr;
+  ret.len = mem_flag.len;
+  mem_flag.flag = 0;
+  return ret;
+}
+#endif
+
+__EXPORT void difftest_init(int port) {
+  void init_mem();
+  init_mem();
+  /* Perform ISA dependent initialization. */
+  init_isa();
+}
+
+
+#endif

@@ -1,0 +1,59 @@
+# ============================================================================
+# SymbiYosys配置文件：ICache形式化验证
+# ============================================================================
+# 使用方法：
+#   sby -f icache_formal.sby
+#
+# 验证目标：
+#   证明icache的行为与直接访问存储器的行为一致
+# ============================================================================
+
+[tasks]
+# 定义多个测试任务，从简单到复杂
+depth5 bmc
+depth10 bmc
+depth15 bmc
+depth20 bmc
+
+# 默认任务
+depth10: default
+
+[options]
+# BMC模式：有界模型检查
+mode bmc
+
+# 验证深度（周期数）
+depth5: depth 5
+depth10: depth 10
+depth15: depth 15
+depth20: depth 20
+
+# 其他选项
+# append 1  # 保留之前的结果
+
+[engines]
+# 使用smtbmc作为求解引擎
+# smtbmc: SMT-based Bounded Model Checking
+smtbmc boolector
+
+[script]
+# Yosys脚本：读取设计文件并准备验证
+
+# 设置宏定义
+verilog_defines -DFORMAL
+verilog_defines -DCONFIG_SYS_NPC
+
+# 添加 include 搜索路径（使用绝对路径）
+verilog_defaults -add -I/home/lockedcore/ysyx/ysyx-workbench/npc/vsrc/include
+
+# 读取SystemVerilog文件（使用绝对路径）
+read_verilog -sv -formal /home/lockedcore/ysyx/ysyx-workbench/npc/vsrc/frontend/ysyx_25040131_icache.sv
+read_verilog -sv -formal icache_formal_tb.sv
+
+# 准备设计
+prep -top icache_formal_tb
+
+[files]
+# 只需要复制 testbench 文件
+icache_formal_tb.sv
+
