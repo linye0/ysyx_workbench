@@ -17,6 +17,8 @@
 `define YSYX_DPI_C_CYCLE_RECORD npc_cycle_record()
 `define YSYX_DPI_C_ICACHE_HIT npc_icache_hit()
 `define YSYX_DPI_C_ICACHE_MISS(flag) npc_icache_miss(flag)
+`define YSYX_DPI_C_BTB_PREDICT npc_btb_predict()
+`define YSYX_DPI_C_BTB_MISPREDICT npc_btb_mispredict()
 `define YSYX_DPI_C_DIFFTEST_COMMIT_INST(cpc, npc, valid) npc_difftest_commit_inst(cpc, npc, valid)
 `define YSYX_DPI_C_DIFFTEST_COMMIT_STORE(addr, data, mask, valid) npc_difftest_commit_store(addr, data, mask, valid)
 
@@ -37,7 +39,9 @@
 `define YSYX_DPI_C_CYCLE_RECORD 
 `define YSYX_DPI_C_ICACHE_HIT
 `define YSYX_DPI_C_ICACHE_MISS(flag)
-`define YSYX_DPI_C_DIFFTEST_COMMIT_INST(cpc, npc, valid) 
+`define YSYX_DPI_C_BTB_PREDICT
+`define YSYX_DPI_C_BTB_MISPREDICT
+`define YSYX_DPI_C_DIFFTEST_COMMIT_INST(cpc, npc, valid)
 `define YSYX_DPI_C_DIFFTEST_COMMIT_STORE(addr, data, mask, valid)
 
 `define YSYX_ASSERT(cond, msg) 

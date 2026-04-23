@@ -45,6 +45,9 @@ import "DPI-C" function void npc_icache_miss(
     input int flag
 );
 
+import "DPI-C" function void npc_btb_predict();
+import "DPI-C" function void npc_btb_mispredict();
+
 import "DPI-C" function void npc_difftest_commit_inst(
     input int cpc,
     input int npc,

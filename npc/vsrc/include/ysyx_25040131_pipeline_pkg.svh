@@ -30,10 +30,15 @@ typedef struct packed {
 typedef struct packed {
     logic [31:0] pc;          // 当前指令PC (用于跳转计算、异常记录)
     logic [31:0] inst;        // 指令内容
-    // 如果有取指异常，可以在这里加 exc_valid
     logic        exc_valid;
     logic [31:0] exc_cause;
     logic [31:0] exc_tval;
+    // BTB prediction info (used in EX to detect misprediction)
+    logic        btb_predicted; // 1 = IF stage predicted a taken branch
+    logic [31:0] btb_target;    // predicted target PC
+    // RAS prediction info
+    logic        ras_predicted; // 1 = ID stage predicted this ret via RAS
+    logic [31:0] ras_pred_target; // RAS predicted return address
 } if_id_data_t;
 
 typedef struct packed {
@@ -53,6 +58,13 @@ typedef struct packed {
     logic        exc_valid;   // 是否发生异常
     logic [31:0] exc_cause;
     logic [31:0] exc_tval;
+
+    // BTB prediction info (forwarded from IF/ID for misprediction check in EX)
+    logic        btb_predicted;
+    logic [31:0] btb_target;
+    // RAS prediction info
+    logic        ras_predicted;
+    logic [31:0] ras_pred_target;
 
     // 控制信号包
     ctrl_ex_t    ctrl_ex;     // EX阶段用的控制信号

@@ -38,6 +38,8 @@ typedef struct perfmetrics {
     uint64_t icache_hit_count;
     uint64_t icache_miss_count;
     uint64_t icache_miss_cycle;
+    uint64_t btb_predict_count;
+    uint64_t btb_mispredict_count;
     int cur_inst_type;        // 类型可以用 int
 } PerfMetrics;
 

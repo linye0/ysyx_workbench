@@ -321,6 +321,14 @@ extern "C" void npc_icache_miss(int flag) {
     }
 }
 
+extern "C" void npc_btb_predict() {
+    perf.btb_predict_count++;
+}
+
+extern "C" void npc_btb_mispredict() {
+    perf.btb_mispredict_count++;
+}
+
 // 修改后的百分比宏，确保使用 double 计算
 #define PCT(count) ((perf.total_inst > 0) ? (double)(count) * 100.0 / (double)perf.total_inst : 0.0)
 #define BLUE_START "\033[1;34m"
@@ -408,8 +416,8 @@ void print_performance_metrics() {
 
     fprintf(out, "----------------------- ICache Activity ----------------------------\n");
 
-    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n", 
-           "ICache Hit", perf.icache_hit_count, 
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n",
+           "ICache Hit", perf.icache_hit_count,
            "ICache Miss", perf.icache_miss_count);
 
     double perf_miss_ratio = (double)perf.icache_miss_count / (perf.icache_hit_count + perf.icache_miss_count);
@@ -419,9 +427,21 @@ void print_performance_metrics() {
             "ICache Miss Cycle", perf.icache_miss_cycle,
             "Miss Cycle Average", perf_miss_average_cycle);
 
-    fprintf(out, "%-20s: %-12.2f | %-20s: %-12.2f\n", 
-           "ICache Miss Ratio", perf_miss_ratio, 
+    fprintf(out, "%-20s: %-12.2f | %-20s: %-12.2f\n",
+           "ICache Miss Ratio", perf_miss_ratio,
            "AMAT", 1 + perf_miss_ratio * perf_miss_average_cycle);
+
+    fprintf(out, "----------------------- BTB Activity -------------------------------\n");
+
+    uint64_t btb_total = perf.btb_predict_count + perf.btb_mispredict_count;
+    double btb_acc = (btb_total > 0) ? (double)(btb_total - perf.btb_mispredict_count) * 100.0 / btb_total : 0.0;
+
+    fprintf(out, "%-20s: %-12" PRIu64 " | %-20s: %-12" PRIu64 "\n",
+            "BTB Predict", perf.btb_predict_count,
+            "BTB Mispredict", perf.btb_mispredict_count);
+
+    fprintf(out, "%-20s: %-12.2f%%\n",
+            "BTB Accuracy", btb_acc);
 
     fprintf(out, "====================================================================\n");
 

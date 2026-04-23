@@ -333,10 +333,48 @@ wire wbu_mret_fire = mem_wb_valid_out && mem_wb_out.ctrl_wb.is_mret;
 
 // 全局冲刷信号：分支跳转或发生 Trap
 wire global_trap_flush = wbu_trap_fire || wbu_mret_fire;
-wire jump_req = global_trap_flush || ex_branch_taken; // 组合所有需要重定向 PC 的情况 [cite: 1211]
+// jump_req: 只在 trap 或真正预测错误时冲刷，正确预测的跳转不冲刷
+wire jump_req = global_trap_flush || ex_mispredict;
 
 // --- 修复 flush_if_id 隐式声明 ---
 wire flush_if_id;
+
+// --- BTB 信号 ---
+wire        btb_hit;
+wire [31:0] btb_target_out;
+
+// --- RAS 信号 ---
+wire        ras_hit;
+wire [31:0] ras_target;
+// ID 阶段 call/ret 识别（基于 RISC-V 调用约定：x1/x5 为链接寄存器）
+wire id_valid_for_ras = if_id_valid_out;
+wire id_is_jal  = (opcode == `YSYX_OP_JAL___);
+wire id_is_jalr = (opcode == `YSYX_OP_JALR__);
+wire id_is_call = (id_is_jal || id_is_jalr) && (rd == 5'd1 || rd == 5'd5);
+wire id_is_ret  = id_is_jalr && (rd == 5'd0) && (rs1 == 5'd1 || rs1 == 5'd5);
+
+// BTB 预测：若命中且无更高优先级重定向，IFU 下一拍取 btb_target_out
+// 预测错误检测在 EX 阶段
+wire        ex_btb_predicted  = id_ex_out.btb_predicted;
+wire [31:0] ex_btb_target     = id_ex_out.btb_target;
+
+// EX 阶段：是否需要更新 BTB
+// 更新条件：EX 有效且是 branch/jal/jalr
+wire ex_is_branch = id_ex_valid_out && (|id_ex_out.ctrl_wb.pcImm_NEXTPC_rs1Imm ||
+                    (id_ex_out.ctrl_ex.aluc >= 5'b01011 && id_ex_out.ctrl_ex.aluc <= 5'b10000));
+wire ex_btb_update_en = ex_is_branch && ex_mem_ready_out; // 只在 EX 握手成功时更新
+
+// RAS 预测信息
+wire        ex_ras_predicted   = id_ex_out.ras_predicted;
+wire [31:0] ex_ras_pred_target = id_ex_out.ras_pred_target;
+
+// 预测错误：EX 实际跳转目标与预测不符，或实际不跳转但预测了跳转
+// 若 RAS 已正确预测（taken 且目标匹配），则不算 mispredict
+wire ex_ras_correct = ex_ras_predicted && ex_branch_taken && (ex_ras_pred_target == ex_branch_target);
+wire ex_mispredict = id_ex_valid_out && !ex_ras_correct && (
+    (ex_branch_taken  && (!ex_btb_predicted || (ex_btb_target != ex_branch_target))) ||
+    (!ex_branch_taken && ex_btb_predicted)
+);
 
 // --- 新增：用于接收 IFU 和 LSU 异常的连线 ---
 wire ifu_exc_valid;
@@ -350,11 +388,14 @@ wire [31:0] lsu_exc_tval;
 // 注意：原有的 flush_if_id 现在也应该包含 Trap
 assign flush_if_id = jump_req;
 
+// RAS 预测也需要 flush IFU（ID 阶段看到 ret，IFU 需要立即跳转）
+wire ifu_flush_req = jump_req || ras_hit;
+
 ysyx_25040131_ifu IFU(
     .clock(clock),
     .reset(reset),
     .next_pc(next_pc),
-    .flush_req(jump_req),
+    .flush_req(ifu_flush_req),
     .out_inst(ifu_inst),
     .out_pc(ifu_pc),
     // 与 BUS 的接口
@@ -376,14 +417,56 @@ ysyx_25040131_ifu IFU(
     .ifu_rresp(2'b00) // 目前 ICache 还没接 rresp，先固定传 0 (OKAY)
 );
 
+// BTB 实例化
+ysyx_25040131_btb #(
+    .ENTRIES(64),
+    .IDX_W(6)
+) BTB (
+    .clk(clock),
+    .rst(reset),
+    // IF 阶段查询
+    .if_pc(ifu_pc),
+    .btb_hit(btb_hit),
+    .btb_target(btb_target_out),
+    // EX 阶段更新
+    .ex_update_en(ex_btb_update_en),
+    .ex_pc(id_ex_out.pc),
+    .ex_target(ex_branch_target),
+    .ex_taken(ex_branch_taken),
+    .ex_mispredict_en(ex_mispredict && ex_mem_ready_out)
+);
+
+// RAS 实例化
+ysyx_25040131_ras #(
+    .DEPTH(8),
+    .PTR_W(3)
+) RAS (
+    .clk(clock),
+    .rst(reset),
+    .id_valid(id_valid_for_ras),
+    .id_is_call(id_is_call),
+    .id_is_ret(id_is_ret),
+    .id_pc(if_id_out.pc),
+    .ras_hit(ras_hit),
+    .ras_target(ras_target),
+    .flush(global_trap_flush || ex_mispredict)
+);
+
 always_comb begin
-    if_id_in = '0;            // 加上这句初始化
-    if_id_in.pc = ifu_pc;
-    if_id_in.inst = ifu_inst;
-    // --- 新增：把 IFU 抓到的异常塞进流水线包裹 ---
-    if_id_in.exc_valid = ifu_exc_valid;
-    if_id_in.exc_cause = ifu_exc_cause;
-    if_id_in.exc_tval  = ifu_exc_tval;
+    if_id_in = '0;
+    if_id_in.pc           = ifu_pc;
+    if_id_in.inst         = ifu_inst;
+    if_id_in.exc_valid    = ifu_exc_valid;
+    if_id_in.exc_cause    = ifu_exc_cause;
+    if_id_in.exc_tval     = ifu_exc_tval;
+    // BTB 预测信息随指令一起进入流水线
+    if_id_in.btb_predicted = btb_hit;
+    if_id_in.btb_target    = btb_target_out;
+    // RAS 预测信息：ID 阶段看到 ret 时填入（组合逻辑，此时 if_id_out 是 ret 本身）
+    // 注意：ras_hit 是基于 if_id_out（当前 ID 阶段的指令），不是 if_id_in
+    // 所以这里不能直接填，需要在 ID 阶段的 always_comb 里处理
+    if_id_in.ras_predicted  = 1'b0;
+    if_id_in.ras_pred_target = 32'b0;
 end
 
 ysyx_25040131_pipcon #(
@@ -558,10 +641,16 @@ always_comb begin
         id_ex_in.exc_cause = if_id_out.exc_cause;
         id_ex_in.exc_tval  = if_id_out.exc_tval;
     end else begin
-        id_ex_in.exc_valid = exc_valid; // 来自 controller 的异常信号
+        id_ex_in.exc_valid = exc_valid;
         id_ex_in.exc_cause = exc_cause;
         id_ex_in.exc_tval  = exc_tval;
     end
+    // 透传 BTB 预测信息到 EX 阶段
+    id_ex_in.btb_predicted = if_id_out.btb_predicted;
+    id_ex_in.btb_target    = if_id_out.btb_target;
+    // 透传 RAS 预测信息到 EX 阶段（ras_hit 反映的就是当前 if_id_out 这条指令）
+    id_ex_in.ras_predicted    = ras_hit;
+    id_ex_in.ras_pred_target  = ras_target;
 end
 
 ysyx_25040131_pipcon #(
@@ -863,10 +952,12 @@ ysyx_25040131_next_pc NEXT_PC(
     // 流水线握手信号
 );
 
-assign next_pc = (wbu_trap_fire) ? mtvec :          // 异常：跳到 mtvec
-                 (wbu_mret_fire) ? mepc  :          // mret：跳回 mepc
-                 (ex_branch_taken) ? ex_branch_target : // 分支/跳转
-                 (ifu_pc + 4);                      // 顺序执行
+assign next_pc = (wbu_trap_fire)   ? mtvec :
+                 (wbu_mret_fire)   ? mepc  :
+                 (ex_mispredict)   ? (ex_branch_taken ? ex_branch_target : (id_ex_out.pc + 4)) :
+                 (ras_hit)         ? ras_target :
+                 (btb_hit)         ? btb_target_out :
+                 (ifu_pc + 4);
 
 // GPR读通道（ID阶段）
 ysyx_25040131_gpr REG_FILE(
